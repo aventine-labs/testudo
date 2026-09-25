@@ -35,7 +35,12 @@ export class TestudoScan {
     const clean = scopeQuery.trim();
 
     // 1. Direct standard CSS selector check (e.g. #contact, .modal, form[name="checkout"])
-    if (clean.startsWith('#') || clean.startsWith('.') || clean.includes('[') || clean.includes('>')) {
+    if (
+      clean.startsWith('#') ||
+      clean.startsWith('.') ||
+      clean.includes('[') ||
+      clean.includes('>')
+    ) {
       const found = document.querySelectorAll(clean);
       if (found.length > 0) return Array.from(found) as HTMLElement[];
     }
@@ -55,11 +60,11 @@ export class TestudoScan {
 
     // Priority 1: data-testid
     const byTestId = document.querySelectorAll(`[data-testid="${clean}" i]`);
-    if (byTestId.length > 0) candidates.push(...Array.from(byTestId) as HTMLElement[]);
+    if (byTestId.length > 0) candidates.push(...(Array.from(byTestId) as HTMLElement[]));
 
     // Priority 2: data-test
     const byDataTest = document.querySelectorAll(`[data-test="${clean}" i]`);
-    if (byDataTest.length > 0) candidates.push(...Array.from(byDataTest) as HTMLElement[]);
+    if (byDataTest.length > 0) candidates.push(...(Array.from(byDataTest) as HTMLElement[]));
 
     // Priority 3: id
     const byId = document.getElementById(clean) || document.querySelector(`[id*="${clean}" i]`);
@@ -67,11 +72,11 @@ export class TestudoScan {
 
     // Priority 4: name attribute
     const byName = document.querySelectorAll(`[name="${clean}" i]`);
-    if (byName.length > 0) candidates.push(...Array.from(byName) as HTMLElement[]);
+    if (byName.length > 0) candidates.push(...(Array.from(byName) as HTMLElement[]));
 
     // Priority 5: aria-label
     const byAria = document.querySelectorAll(`[aria-label*="${clean}" i]`);
-    if (byAria.length > 0) candidates.push(...Array.from(byAria) as HTMLElement[]);
+    if (byAria.length > 0) candidates.push(...(Array.from(byAria) as HTMLElement[]));
 
     // Priority 6: heading text (h1..h6)
     const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -84,11 +89,11 @@ export class TestudoScan {
 
     // Priority 7: class name
     const byClass = document.querySelectorAll(`.${clean}`);
-    if (byClass.length > 0) candidates.push(...Array.from(byClass) as HTMLElement[]);
+    if (byClass.length > 0) candidates.push(...(Array.from(byClass) as HTMLElement[]));
 
     // Priority 8: tag name (e.g. 'form', 'table', 'nav', 'header')
     const byTag = document.querySelectorAll(clean);
-    if (byTag.length > 0) candidates.push(...Array.from(byTag) as HTMLElement[]);
+    if (byTag.length > 0) candidates.push(...(Array.from(byTag) as HTMLElement[]));
 
     if (candidates.length > 0) {
       // Deduplicate elements
@@ -106,7 +111,8 @@ export class TestudoScan {
     if (scopes.length === 0) return [];
 
     const results: ScannedElement[] = [];
-    const interactiveQuery = 'button, input, select, textarea, a[href], [role="button"], [role="link"], [role="tab"], [onclick]';
+    const interactiveQuery =
+      'button, input, select, textarea, a[href], [role="button"], [role="link"], [role="tab"], [onclick]';
 
     let index = 1;
     for (const scope of scopes) {
@@ -175,7 +181,11 @@ export class TestudoScan {
 
     // Production Guard Kill Switch
     const globalObj = typeof globalThis !== 'undefined' ? (globalThis as any) : (window as any);
-    if (globalObj.process && globalObj.process.env && globalObj.process.env.NODE_ENV === 'production') {
+    if (
+      globalObj.process &&
+      globalObj.process.env &&
+      globalObj.process.env.NODE_ENV === 'production'
+    ) {
       if (!globalObj.__ENABLE_TESTUDO__) {
         console.warn('[Testudo] $T.explore() disabled in production mode.');
         return;

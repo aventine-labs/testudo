@@ -36,6 +36,9 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Verify deterministic bundle size limits (<5KB core / <10KB full)
+        run: npm run size
+
   python:
     name: Load Engine Syntax Validation
     runs-on: ubuntu-latest

@@ -5,10 +5,10 @@
  */
 
 export interface TypeOptions {
-  delay?: number;        // Base delay in milliseconds between keystrokes
-  jitter?: number;       // Random variance in milliseconds (+/- jitter)
+  delay?: number; // Base delay in milliseconds between keystrokes
+  jitter?: number; // Random variance in milliseconds (+/- jitter)
   mask?: 'creditCard' | 'phone' | 'ssn' | 'date' | string;
-  clearFirst?: boolean;  // Clear existing input before typing
+  clearFirst?: boolean; // Clear existing input before typing
 }
 
 export class TestudoType {
@@ -52,9 +52,10 @@ export class TestudoType {
    * Sets value on an HTMLInputElement bypassing React/Vue internal state trackers (_valueTracker).
    */
   public setNativeValue(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
-    const prototype = element instanceof HTMLTextAreaElement
-      ? window.HTMLTextAreaElement.prototype
-      : window.HTMLInputElement.prototype;
+    const prototype =
+      element instanceof HTMLTextAreaElement
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
 
     const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
     if (descriptor && descriptor.set) {

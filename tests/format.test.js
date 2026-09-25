@@ -9,26 +9,26 @@ test('TestudoFormat: Whitespace normalizer removes invisible NBSP characters', (
 });
 
 test('TestudoFormat: Excel pattern formatting', () => {
-  assert.strictEqual(format.pattern(1249.50, '€#,##0.00'), '€1,249.50');
-  assert.strictEqual(format.pattern(1249.50, '€#.##0,00'), '€1.249,50');
-  assert.strictEqual(format.pattern(1249.50, '#.##0,00 €'), '1.249,50 €');
-  assert.strictEqual(format.pattern(1249.50, 'EUR #,##0.00'), 'EUR 1,249.50');
-  assert.strictEqual(format.pattern(-1249.50, '€#,##0.00'), '-€1,249.50');
+  assert.strictEqual(format.pattern(1249.5, '€#,##0.00'), '€1,249.50');
+  assert.strictEqual(format.pattern(1249.5, '€#.##0,00'), '€1.249,50');
+  assert.strictEqual(format.pattern(1249.5, '#.##0,00 €'), '1.249,50 €');
+  assert.strictEqual(format.pattern(1249.5, 'EUR #,##0.00'), 'EUR 1,249.50');
+  assert.strictEqual(format.pattern(-1249.5, '€#,##0.00'), '-€1,249.50');
 });
 
 test('TestudoFormat: Universal currency parsing across global standards', () => {
-  assert.strictEqual(format.parse('€1.249,50'), 1249.50, 'Dutch/European prefix');
-  assert.strictEqual(format.parse('1.249,50 €'), 1249.50, 'German/French suffix');
-  assert.strictEqual(format.parse('$1,249.50'), 1249.50, 'US/UK dollar');
-  assert.strictEqual(format.parse('1 249,50 €'), 1249.50, 'French thin-space thousands');
-  assert.strictEqual(format.parse('(€1,249.50)'), -1249.50, 'Accounting negative parentheses');
-  assert.strictEqual(format.parse('1.249,50- EUR'), -1249.50, 'SAP mainframe trailing minus');
-  assert.strictEqual(format.parse('-€1.249,50'), -1249.50, 'Standard negative prefix');
-  assert.strictEqual(format.parse('$ 5,420.00 USD'), 5420.00, 'Currency code combo');
+  assert.strictEqual(format.parse('€1.249,50'), 1249.5, 'Dutch/European prefix');
+  assert.strictEqual(format.parse('1.249,50 €'), 1249.5, 'German/French suffix');
+  assert.strictEqual(format.parse('$1,249.50'), 1249.5, 'US/UK dollar');
+  assert.strictEqual(format.parse('1 249,50 €'), 1249.5, 'French thin-space thousands');
+  assert.strictEqual(format.parse('(€1,249.50)'), -1249.5, 'Accounting negative parentheses');
+  assert.strictEqual(format.parse('1.249,50- EUR'), -1249.5, 'SAP mainframe trailing minus');
+  assert.strictEqual(format.parse('-€1.249,50'), -1249.5, 'Standard negative prefix');
+  assert.strictEqual(format.parse('$ 5,420.00 USD'), 5420.0, 'Currency code combo');
 });
 
 test('TestudoFormat: Granular currency options formatting', () => {
-  const result = format.currency(1249.50, {
+  const result = format.currency(1249.5, {
     currency: 'EUR',
     position: 'prefix',
     decimal: ',',

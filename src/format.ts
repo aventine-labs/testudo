@@ -169,7 +169,11 @@ export class TestudoFormat {
   /**
    * Formats a currency value with granular options or standard ISO codes.
    */
-  public currency(value: number, optionsOrCurrency: string | CurrencyOptions = 'USD', locale: string = 'en-US'): string {
+  public currency(
+    value: number,
+    optionsOrCurrency: string | CurrencyOptions = 'USD',
+    locale: string = 'en-US'
+  ): string {
     if (typeof optionsOrCurrency === 'string') {
       const curr = optionsOrCurrency;
       const symbols: Record<string, string> = {
@@ -195,9 +199,8 @@ export class TestudoFormat {
     const thou = opts.thousand || ',';
     const sp = opts.space ? ' ' : '';
 
-    const mask = pos === 'prefix'
-      ? `${sym}${sp}#${thou}##0${dec}00`
-      : `#${thou}##0${dec}00${sp}${sym}`;
+    const mask =
+      pos === 'prefix' ? `${sym}${sp}#${thou}##0${dec}00` : `#${thou}##0${dec}00${sp}${sym}`;
 
     return this.pattern(value, mask);
   }

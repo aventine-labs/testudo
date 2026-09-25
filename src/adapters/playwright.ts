@@ -55,7 +55,12 @@ export const testudoFixture = {
     await use(testudoInstance);
 
     // 4. Teardown hook: If test failed, capture screenshot and attach to testInfo
-    if (testInfo && testInfo.status !== testInfo.expectedStatus && page && typeof page.screenshot === 'function') {
+    if (
+      testInfo &&
+      testInfo.status !== testInfo.expectedStatus &&
+      page &&
+      typeof page.screenshot === 'function'
+    ) {
       try {
         const screenshot = await page.screenshot({ fullPage: false });
         await testInfo.attach('testudo-failure-forensics', {

@@ -15,9 +15,9 @@ test('TestudoMath: Handles negative zero (-0 vs 0)', () => {
 });
 
 test('TestudoMath: Currency closeness tolerance', () => {
-  assert.strictEqual(math.isCloseTo(1249.99, 1250.00, 0.01), true, 'Within 1 penny');
-  assert.strictEqual(math.isCloseTo(1249.98, 1250.00, 0.01), false, 'Outside 1 penny');
-  assert.strictEqual(math.isCloseTo(1250.00, 1250.00, 0.00), true, 'Exact match');
+  assert.strictEqual(math.isCloseTo(1249.99, 1250.0, 0.01), true, 'Within 1 penny');
+  assert.strictEqual(math.isCloseTo(1249.98, 1250.0, 0.01), false, 'Outside 1 penny');
+  assert.strictEqual(math.isCloseTo(1250.0, 1250.0, 0.0), true, 'Exact match');
 });
 
 test('TestudoMath: Rounding modes (HALF_UP, HALF_EVEN, FLOOR, CEIL)', () => {

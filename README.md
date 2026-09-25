@@ -74,6 +74,7 @@ test('validate checkout balance and masks', async ({ page, $T }) => {
 ## Core Feature Showcase
 
 ### 1. Financial Math with Allowable Tolerance
+
 Prevent brittle test failures caused by floating point drift or rounding differences:
 
 ```javascript
@@ -83,18 +84,19 @@ import { math, format } from '@aventine/testudo';
 math.eq(0.1 + 0.2, 0.3); // => true
 
 // Closeness check within 1 penny
-math.isCloseTo(1249.99, 1250.00, 0.01); // => true
+math.isCloseTo(1249.99, 1250.0, 0.01); // => true
 
 // Excel pattern formatting
-format.pattern(1249.50, '€#.##0,00'); // => "€1.249,50"
+format.pattern(1249.5, '€#.##0,00'); // => "€1.249,50"
 
 // Universal parsing
-format.parse('(€1,249.50)');   // => -1249.50
-format.parse('1.249,50- EUR');  // => -1249.50
-format.parse('1 249,50 €');     // => 1249.50
+format.parse('(€1,249.50)'); // => -1249.50
+format.parse('1.249,50- EUR'); // => -1249.50
+format.parse('1 249,50 €'); // => 1249.50
 ```
 
 ### 2. Framework-Safe Typing (`$T.type`)
+
 React and Vue intercept native property setters. Setting `input.value = "foo"` directly often fails to trigger component state changes. Testudo bypasses prototype trackers and dispatches the full event lifecycle:
 
 ```javascript
@@ -107,6 +109,7 @@ await $T('#phone').type('5551234567', {
 ```
 
 ### 3. Visual Error Forensics & Character Diff HUD
+
 When an assertion fails, Testudo does not just throw text. It highlights the target element in glowing neon red, centers the viewport, and renders a character-level diff:
 
 ```text
@@ -116,10 +119,11 @@ When an assertion fails, Testudo does not just throw text. It highlights the tar
 +--------------------------------------------------------------+
 ```
 
-* **Input Mode**: Uses a non-destructive absolute-positioned ghost overlay over `<input>` elements. Zero React hydration breakage.
-* **Read Mode**: Uses native `Range.getBoundingClientRect()` for sub-pixel character accuracy across variable web fonts and emojis.
+- **Input Mode**: Uses a non-destructive absolute-positioned ghost overlay over `<input>` elements. Zero React hydration breakage.
+- **Read Mode**: Uses native `Range.getBoundingClientRect()` for sub-pixel character accuracy across variable web fonts and emojis.
 
 ### 4. Interactive DOM Explorer (`$T.scan`)
+
 Designed for junior testers exploring a complex web application:
 
 ```javascript
@@ -128,6 +132,7 @@ $T.scan('contact');
 ```
 
 Output in DevTools Console:
+
 ```text
 [TESTUDO SCOPED SCAN] Target Scope: <form id="contact-form">
 Found 3 Interactive Elements inside Scope:
@@ -143,6 +148,7 @@ Found 3 Interactive Elements inside Scope:
 ```
 
 ### 5. Free High-Concurrency Load Testing Engine
+
 Included directly in the repository under `engines/python/AventineLoadEngine.py` to eliminate expensive SaaS load testing bills:
 
 ```bash
@@ -150,9 +156,9 @@ Included directly in the repository under `engines/python/AventineLoadEngine.py`
 python3 engines/python/AventineLoadEngine.py --url https://app.example.com --workers 50 --duration 30
 ```
 
-* **Microsecond Latency Breakdown**: Separate DNS, TCP handshake, TLS negotiation, and TTFB metrics.
-* **SLA Percentiles**: Accurate p50, p90, p95, and p99 percentile computation.
-* **Auto-Correlation**: Built-in cookie and dynamic token extraction.
+- **Microsecond Latency Breakdown**: Separate DNS, TCP handshake, TLS negotiation, and TTFB metrics.
+- **SLA Percentiles**: Accurate p50, p90, p95, and p99 percentile computation.
+- **Auto-Correlation**: Built-in cookie and dynamic token extraction.
 
 ---
 

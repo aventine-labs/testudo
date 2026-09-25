@@ -43,7 +43,9 @@ export function createTestudoInstance() {
             expected: typeof expected === 'string' ? expected : String(expected),
             actual: raw
           });
-          throw new Error(`[Testudo] Currency assertion failed. Expected: ${expVal}, Actual: ${actualVal}`);
+          throw new Error(
+            `[Testudo] Currency assertion failed. Expected: ${expVal}, Actual: ${actualVal}`
+          );
         }
       },
       highlightError: async (message?: string) => {

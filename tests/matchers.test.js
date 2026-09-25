@@ -16,10 +16,10 @@ test('TestudoMatchers: toEqualCurrency fails outside tolerance', async () => {
 });
 
 test('TestudoMatchers: toEqualCurrency handles SAP trailing minus and accounting parens', async () => {
-  const sap = await testudoMatchers.toEqualCurrency('1.250,00- EUR', -1250.00, { tolerance: 0.01 });
+  const sap = await testudoMatchers.toEqualCurrency('1.250,00- EUR', -1250.0, { tolerance: 0.01 });
   assert.strictEqual(sap.pass, true);
 
-  const parens = await testudoMatchers.toEqualCurrency('(€1,250.00)', -1250.00, { tolerance: 0.01 });
+  const parens = await testudoMatchers.toEqualCurrency('(€1,250.00)', -1250.0, { tolerance: 0.01 });
   assert.strictEqual(parens.pass, true);
 });
 

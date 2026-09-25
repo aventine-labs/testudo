@@ -57,7 +57,8 @@ export const testudoMatchers = {
     const delta = Math.abs(actualVal - expectedVal);
     const pass = delta <= tolerance;
 
-    const diff = typeof expected === 'string' ? charDiff(expected, format.normalizeWhitespace(rawText)) : null;
+    const diff =
+      typeof expected === 'string' ? charDiff(expected, format.normalizeWhitespace(rawText)) : null;
 
     return {
       pass,
@@ -66,7 +67,7 @@ export const testudoMatchers = {
         return pass
           ? `Expected currency NOT to equal ${expectedVal} (within ±${tolerance}), but got ${actualVal} (raw: "${rawText}")`
           : `[Testudo Assertion Error] Expected currency: ${expectedVal} (within ±${tolerance})\n` +
-            `Actual: ${actualVal} (raw: "${rawText}") | Delta: ${delta.toFixed(4)}${diffInfo}`;
+              `Actual: ${actualVal} (raw: "${rawText}") | Delta: ${delta.toFixed(4)}${diffInfo}`;
       }
     };
   },
@@ -74,11 +75,7 @@ export const testudoMatchers = {
   /**
    * Asserts that a Locator or raw value equals an expected number within floating-point tolerance.
    */
-  async toEqualNumber(
-    received: any,
-    expected: number,
-    options: { tolerance?: number } = {}
-  ) {
+  async toEqualNumber(received: any, expected: number, options: { tolerance?: number } = {}) {
     const { tolerance = 0.000001 } = options;
     let rawVal = 0;
 

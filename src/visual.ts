@@ -196,7 +196,11 @@ export class TestudoVisual {
     renderGhost();
 
     // Listen for late dynamic web font swaps (e.g. Next.js Google Fonts)
-    if (typeof document !== 'undefined' && (document as any).fonts && (document as any).fonts.addEventListener) {
+    if (
+      typeof document !== 'undefined' &&
+      (document as any).fonts &&
+      (document as any).fonts.addEventListener
+    ) {
       (document as any).fonts.addEventListener('loadingdone', () => renderGhost(), { once: true });
     }
   }
@@ -213,10 +217,14 @@ export class TestudoVisual {
 
     try {
       const textNode = element.firstChild;
-      if (textNode && textNode.nodeType === Node.TEXT_NODE && diff.index < (textNode.textContent?.length || 0)) {
+      if (
+        textNode &&
+        textNode.nodeType === Node.TEXT_NODE &&
+        diff.index < (textNode.textContent?.length || 0)
+      ) {
         const range = document.createRange();
         range.setStart(textNode, diff.index);
-        range.setEnd(textNode, Math.min((textNode.textContent?.length || 0), diff.index + 1));
+        range.setEnd(textNode, Math.min(textNode.textContent?.length || 0, diff.index + 1));
 
         const rangeRect = range.getBoundingClientRect();
         if (rangeRect.width > 0 && rangeRect.height > 0) {
