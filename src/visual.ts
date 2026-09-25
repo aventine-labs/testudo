@@ -352,7 +352,7 @@ export class TestudoVisual {
         }
         if (el) {
           el.setAttribute('data-testudo-outlined', 'true');
-          el.style.setProperty('outline', `2px solid ${op.color}`, 'important');
+          el.style.setProperty('outline', `2px ${op.borderPattern || 'solid'} ${op.color}`, 'important');
           el.style.setProperty('outline-offset', '2px', 'important');
           el.style.setProperty('box-shadow', `0 0 12px ${op.color}80`, 'important');
 
@@ -374,7 +374,7 @@ export class TestudoVisual {
             font-family: monospace;
             pointer-events: none;
           `;
-          pill.textContent = `${op.label} ${op.selector}`;
+          pill.textContent = `${op.shape ? op.shape + ' ' : ''}${op.label} ${op.selector}`;
           document.body.appendChild(pill);
         }
       }
@@ -406,10 +406,10 @@ export class TestudoVisual {
       font-family: monospace;
       pointer-events: none;
     `;
-    targetPill.textContent = `TARGET [ERROR] (Δ ${delta >= 0 ? '+' : ''}${delta})`;
+    targetPill.textContent = `🚨 TARGET [ERROR] (Δ ${delta >= 0 ? '+' : ''}${delta})`;
     document.body.appendChild(targetPill);
 
-    // 3. Floating Character-Level Diff Zoom Card
+    // 3. Floating Character-Level Diff Zoom Card (4K-Crisp)
     const targetText = ((targetEl as any).value !== undefined ? (targetEl as any).value : targetEl.textContent) || '';
     const expectedText = `$${Number(evaluation.expectedValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const diff = charDiff(expectedText, targetText.trim());
@@ -425,7 +425,7 @@ export class TestudoVisual {
       border: 2px solid ${crimson};
       border-radius: 8px;
       padding: 10px 14px;
-      box-shadow: 0 12px 28px rgba(0,0,0,0.8), 0 0 20px rgba(244, 63, 94, 0.3);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 12px rgba(244, 63, 94, 0.4);
       z-index: 100001;
       font-family: monospace;
       color: #F8FAFC;

@@ -284,7 +284,7 @@
       animation: pulseAlert 2s infinite;
     }
 
-    /* Zoomed Callout Box */
+    /* Zoomed Callout Box (4K High-DPI Optimized) */
     .zoomed-callout-overlay {
       position: absolute;
       right: 24px;
@@ -293,9 +293,15 @@
       border: 2px solid var(--crimson);
       border-radius: 12px;
       padding: 14px 18px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(244, 63, 94, 0.3);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 12px rgba(244, 63, 94, 0.4);
+      animation: pulseCrimsonGlow 2.5s infinite ease-in-out;
       width: 380px;
       z-index: 50;
+    }
+
+    @keyframes pulseCrimsonGlow {
+      0%, 100% { box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 12px rgba(244, 63, 94, 0.4); }
+      50% { box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 24px rgba(244, 63, 94, 0.75); }
     }
 
     .callout-header {
@@ -318,7 +324,7 @@
       background: #080D1A;
       padding: 10px;
       border-radius: 6px;
-      border: 1px solid #1E293B;
+      border: 1px solid rgba(244, 63, 94, 0.35);
     }
 
     .diff-label { color: #64748B; }
@@ -338,6 +344,71 @@
       padding: 0 2px;
       border-radius: 2px;
     }
+
+    /* WCAG 2.1 AAA Colorblind Accessible Legend Styles */
+    .hud-btn-legend {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud-btn-legend:hover, .hud-btn-legend.active {
+      background: #38BDF8;
+      color: #040711;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+
+    .hud-legend-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #080D1A;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .swatch-a { background: rgba(56,189,248,0.25); border: 2px solid var(--cyan); color: var(--cyan); }
+    .swatch-b { background: rgba(245,158,11,0.25); border: 2px dashed var(--amber); color: var(--amber); }
+    .swatch-c { background: rgba(192,132,252,0.25); border: 2px dotted var(--purple); color: var(--purple); }
+    .swatch-d { background: rgba(52,211,153,0.25); border: 2px double var(--emerald); color: var(--emerald); }
+    .swatch-expected { background: rgba(52,211,153,0.3); border: 2px solid var(--emerald); color: var(--emerald); }
+    .swatch-fail { background: rgba(244,63,94,0.3); border: 2px solid var(--crimson); color: var(--crimson); }
+
+    /* Tactile Geometric Pattern Borders for Colorblind Differentiation */
+    body.wcag-active .testudo-operand-a, body.wcag-active .chip-a { border: 2px solid var(--cyan) !important; }
+    body.wcag-active .testudo-operand-b, body.wcag-active .chip-b { border: 2px dashed var(--amber) !important; }
+    body.wcag-active .testudo-operand-c, body.wcag-active .chip-c { border: 2px dotted var(--purple) !important; }
+    body.wcag-active .testudo-operand-d, body.wcag-active .chip-d { border: 2px double var(--emerald) !important; }
+    body.wcag-active .chip-expected { border: 2px solid var(--emerald) !important; }
+    body.wcag-active .chip-actual-fail { border: 2px solid var(--crimson) !important; }
 
     .code-snippet-box {
       margin-top: 10px;
@@ -492,8 +563,13 @@
           <div class="hud-title">TESTUDO FINANCIAL CALCULUS FORENSICS <span class="hud-tag">$T.calc() v0.2.0</span></div>
         </div>
       </div>
-      <div style="font-size: 11px; color: #94A3B8; font-family: monospace;">
-        ASSERTION: <span style="color: #F43F5E;">DISCREPANCY DETECTED (Δ -0.01)</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="btn-toggle-legend" class="hud-btn-legend" onclick="toggleWcagLegend()" title="Toggle WCAG 2.1 AAA high-contrast pattern borders for colorblind accessibility">
+          <span>♿</span> High-Contrast Legend
+        </button>
+        <div style="font-size: 11px; color: #94A3B8; font-family: monospace;">
+          ASSERTION: <span style="color: #F43F5E;">DISCREPANCY DETECTED (Δ -0.01)</span>
+        </div>
       </div>
     </div>
 
@@ -527,6 +603,17 @@
       <span class="formula-chip chip-actual-fail">ACTUAL DOM: $1,249,499.99</span>
     </div>
 
+    <!-- WCAG 2.1 AAA Colorblind & High-Contrast Legend -->
+    <div id="hud-legend-bar" class="hud-legend-bar">
+      <span style="color: #64748B; font-weight: 700; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;">WCAG AAA LEGEND:</span>
+      <span class="legend-item"><span class="legend-swatch swatch-a">🔷</span> <span>OP 1: Principal (Solid)</span></span>
+      <span class="legend-item"><span class="legend-swatch swatch-b">🔶</span> <span>OP 2: Interest (Dashed)</span></span>
+      <span class="legend-item"><span class="legend-swatch swatch-c">🟣</span> <span>OP 3: Fees (Dotted)</span></span>
+      <span class="legend-item"><span class="legend-swatch swatch-d">🟩</span> <span>OP 4: Tax (Double)</span></span>
+      <span class="legend-item"><span class="legend-swatch swatch-expected">🔺</span> <span>EXPECTED (Target Sum)</span></span>
+      <span class="legend-item"><span class="legend-swatch swatch-fail">🚨</span> <span>FAIL: Live DOM Drift</span></span>
+    </div>
+
     <!-- Playwright 1-Liner Output -->
     <div class="code-snippet-box">
       <span style="color: #64748B;">// Generated by Testudo Interactive Inspector:</span><br>
@@ -552,5 +639,18 @@
 
   </div>
 
+  <script>
+    function toggleWcagLegend() {
+      document.body.classList.toggle('wcag-active');
+      const btn = document.getElementById('btn-toggle-legend');
+      if (document.body.classList.contains('wcag-active')) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span>♿</span> High-Contrast Active';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>♿</span> High-Contrast Legend';
+      }
+    }
+  </script>
 </body>
 </html>

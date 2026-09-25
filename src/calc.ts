@@ -18,6 +18,8 @@ export interface CalcOperand {
   value: number;
   color: string;
   label: string;
+  shape?: string;
+  borderPattern?: string;
   element?: any;
 }
 
@@ -53,6 +55,26 @@ const PALETTE: string[] = [
   '#60A5FA', // Sky Blue (Operand E)
   '#F472B6', // Pink (Operand F)
   '#A78BFA'  // Violet (Operand G)
+];
+
+const PATTERNS: string[] = [
+  'solid',
+  'dashed',
+  'dotted',
+  'double',
+  'groove',
+  'ridge',
+  'dashed'
+];
+
+const SHAPES: string[] = [
+  '🔷',
+  '🔶',
+  '🟣',
+  '🟩',
+  '🔹',
+  '🔸',
+  '◽'
 ];
 
 type TokenType = 'NUMBER' | 'SELECTOR' | 'OPERATOR' | 'LPAREN' | 'RPAREN' | 'FUNCTION' | 'COMMA';
@@ -261,6 +283,8 @@ export class TestudoCalc {
             rawText: String(val),
             value: numVal,
             color: PALETTE[operandIndex % PALETTE.length],
+            borderPattern: PATTERNS[operandIndex % PATTERNS.length],
+            shape: SHAPES[operandIndex % SHAPES.length],
             label: `Operand [${String.fromCharCode(65 + (operandIndex % 26))}]`
           });
           operandIndex++;
@@ -279,6 +303,8 @@ export class TestudoCalc {
               rawText: rawText.trim(),
               value: numVal,
               color: PALETTE[operandIndex % PALETTE.length],
+              borderPattern: PATTERNS[operandIndex % PATTERNS.length],
+              shape: SHAPES[operandIndex % SHAPES.length],
               label: `Operand [${String.fromCharCode(65 + (operandIndex % 26))}]`,
               element: el
             });
@@ -294,6 +320,8 @@ export class TestudoCalc {
           rawText: 'NOT_FOUND',
           value: 0,
           color: PALETTE[operandIndex % PALETTE.length],
+          borderPattern: PATTERNS[operandIndex % PATTERNS.length],
+          shape: SHAPES[operandIndex % SHAPES.length],
           label: `Operand [${String.fromCharCode(65 + (operandIndex % 26))}]`
         });
         operandIndex++;
