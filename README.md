@@ -179,7 +179,7 @@ Found 3 Interactive Elements inside Scope:
         Snippet: await $T('#contact-form button[type="submit"]').click();
 ```
 
-### 5. Free High-Concurrency Load Testing Engine
+### 6. Free High-Concurrency Load Testing Engine
 
 Included directly in the repository under `engines/python/AventineLoadEngine.py` to eliminate expensive SaaS load testing bills:
 
