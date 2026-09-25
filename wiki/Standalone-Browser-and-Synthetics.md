@@ -6,7 +6,7 @@ In addition to headless E2E test runners, Testudo is compiled as a self-executin
 
 ## 1. CDN Drop-in for Synthetic Monitors
 
-Synthetic monitoring tools execute scheduled browser scripts against production endpoints to detect downtime and transaction latency. 
+Synthetic monitoring tools execute scheduled browser scripts against production endpoints to detect downtime and transaction latency.
 
 Inject Testudo directly via CDN:
 
@@ -62,8 +62,9 @@ await $T('#promo-code').highlightError({
 ```
 
 ### Supported Wrapper Methods
-* `$T(selector).type(text, options)`: Dispatches full synthetic event lifecycle with framework `_valueTracker` bypass.
-* `$T(selector).click()`: Dispatches focus, mousedown, mouseup, and click events.
-* `$T(selector).highlightError(options)`: Renders glowing red outline and floating HUD.
-* `$T(selector).scan()`: Scans elements scoped strictly within the selected container.
-* `$T(selector).element`: Returns the raw `HTMLElement`.
+
+- `$T(selector).type(text, options)`: Dispatches full synthetic event lifecycle with framework `_valueTracker` bypass.
+- `$T(selector).click()`: Dispatches focus, mousedown, mouseup, and click events.
+- `$T(selector).highlightError(options)`: Renders glowing red outline and floating HUD.
+- `$T(selector).scan()`: Scans elements scoped strictly within the selected container.
+- `$T(selector).element`: Returns the raw `HTMLElement`.

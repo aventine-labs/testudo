@@ -9,9 +9,14 @@ test('TestudoMath: Float precision equality with epsilon', () => {
   assert.strictEqual(math.eq(0.1 + 0.2, 0.30001, 0.0001), true, 'Tolerance check');
 });
 
-test('TestudoMath: Handles negative zero (-0 vs 0)', () => {
+test('TestudoMath: Handles negative zero (-0 vs 0) and non-finite values', () => {
   assert.strictEqual(math.eq(-0, 0), true);
   assert.strictEqual(math.eq(0, -0), true);
+  assert.strictEqual(math.eq(Infinity, Infinity), true);
+  assert.strictEqual(math.eq(-Infinity, -Infinity), true);
+  assert.strictEqual(math.eq(Infinity, -Infinity), false);
+  assert.strictEqual(math.eq(NaN, 5), false);
+  assert.strictEqual(math.isCloseTo(Infinity, Infinity), true);
 });
 
 test('TestudoMath: Currency closeness tolerance', () => {

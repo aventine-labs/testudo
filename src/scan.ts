@@ -23,6 +23,31 @@ export class TestudoScan {
   private activeBadges: HTMLElement[] = [];
 
   /**
+   * Safely queries attributes with case-insensitive matching.
+   * Uses native CSS4 [attr="value" i] with graceful fallback for Safari 16.
+   */
+  private safeQueryAttr(attr: string, value: string, partial: boolean = false): HTMLElement[] {
+    const selector = partial ? `[${attr}*="${value}" i]` : `[${attr}="${value}" i]`;
+    try {
+      const found = document.querySelectorAll(selector);
+      if (found.length > 0) return Array.from(found) as HTMLElement[];
+    } catch {
+      // Fallback for Safari 16 / older WebKit engines lacking CSS4 'i' flag
+      const all = document.querySelectorAll(`[${attr}]`);
+      const lower = value.toLowerCase();
+      const matched: HTMLElement[] = [];
+      all.forEach((el) => {
+        const val = el.getAttribute(attr)?.toLowerCase() || '';
+        if (partial ? val.includes(lower) : val === lower) {
+          matched.push(el as HTMLElement);
+        }
+      });
+      return matched;
+    }
+    return [];
+  }
+
+  /**
    * Deterministic Smart Scope Resolver.
    * Resolves plain words (e.g. 'contact' or 'modal' or 'form.contact') into target container elements.
    * Priority cascade: data-testid > data-test > id > name > aria-label > heading text > class > tag.
@@ -59,24 +84,24 @@ export class TestudoScan {
     const candidates: HTMLElement[] = [];
 
     // Priority 1: data-testid
-    const byTestId = document.querySelectorAll(`[data-testid="${clean}" i]`);
-    if (byTestId.length > 0) candidates.push(...(Array.from(byTestId) as HTMLElement[]));
+    const byTestId = this.safeQueryAttr('data-testid', clean);
+    if (byTestId.length > 0) candidates.push(...byTestId);
 
     // Priority 2: data-test
-    const byDataTest = document.querySelectorAll(`[data-test="${clean}" i]`);
-    if (byDataTest.length > 0) candidates.push(...(Array.from(byDataTest) as HTMLElement[]));
+    const byDataTest = this.safeQueryAttr('data-test', clean);
+    if (byDataTest.length > 0) candidates.push(...byDataTest);
 
     // Priority 3: id
-    const byId = document.getElementById(clean) || document.querySelector(`[id*="${clean}" i]`);
+    const byId = document.getElementById(clean) || this.safeQueryAttr('id', clean, true)[0];
     if (byId) candidates.push(byId as HTMLElement);
 
     // Priority 4: name attribute
-    const byName = document.querySelectorAll(`[name="${clean}" i]`);
-    if (byName.length > 0) candidates.push(...(Array.from(byName) as HTMLElement[]));
+    const byName = this.safeQueryAttr('name', clean);
+    if (byName.length > 0) candidates.push(...byName);
 
     // Priority 5: aria-label
-    const byAria = document.querySelectorAll(`[aria-label*="${clean}" i]`);
-    if (byAria.length > 0) candidates.push(...(Array.from(byAria) as HTMLElement[]));
+    const byAria = this.safeQueryAttr('aria-label', clean, true);
+    if (byAria.length > 0) candidates.push(...byAria);
 
     // Priority 6: heading text (h1..h6)
     const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');

@@ -22,6 +22,7 @@ $T.scan();
 ```
 
 ### Deterministic Priority Cascade
+
 When resolving a plain word query like `'contact'`, Testudo follows a strict, deterministic priority cascade to eliminate selector ambiguity:
 
 ```text
@@ -51,6 +52,7 @@ console.table(elements);
 ```
 
 ### Sample Console Output
+
 ```text
 [TESTUDO SCOPED SCAN] Target Scope: <form id="contact-form">
 Found 3 Interactive Elements inside Scope:
@@ -66,11 +68,12 @@ Found 3 Interactive Elements inside Scope:
 ```
 
 Each returned element object includes:
-* `index`: Numbered sequence identifier `[1]`, `[2]`, `[3]`.
-* `tag`: Tag name (`button`, `input`, `select`).
-* `selector`: Most resilient CSS selector available (`data-testid` preferred over ID, ID preferred over class).
-* `snippet`: Runnable Playwright code snippet.
-* `element`: Direct reference to the live DOM node.
+
+- `index`: Numbered sequence identifier `[1]`, `[2]`, `[3]`.
+- `tag`: Tag name (`button`, `input`, `select`).
+- `selector`: Most resilient CSS selector available (`data-testid` preferred over ID, ID preferred over class).
+- `snippet`: Runnable Playwright code snippet.
+- `element`: Direct reference to the live DOM node.
 
 ---
 
@@ -83,9 +86,9 @@ In addition to console output, `$T.explore()` renders visual numbered blue badge
 $T.explore('contact');
 ```
 
-* **Hovering**: Displays element details and the recommended selector snippet.
-* **Clicking a Badge**: Automatically copies the runnable Playwright code snippet (`await $T(...).click();`) directly to your clipboard, turning green with a `"✓ Copied!"` indicator.
-* **Calling Again**: Toggles badges off to clean up the page (`$T.explore()` or `$T.scan.clearBadges()`).
+- **Hovering**: Displays element details and the recommended selector snippet.
+- **Clicking a Badge**: Automatically copies the runnable Playwright code snippet (`await $T(...).click();`) directly to your clipboard, turning green with a `"✓ Copied!"` indicator.
+- **Calling Again**: Toggles badges off to clean up the page (`$T.explore()` or `$T.scan.clearBadges()`).
 
 ---
 

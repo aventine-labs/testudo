@@ -13,14 +13,19 @@ When React renders an `<input>`, it attaches an internal value tracker:
 ```javascript
 // React internal mechanism (simplified)
 input._valueTracker = {
-  getValue() { return lastValue; },
-  setValue(val) { lastValue = val; }
+  getValue() {
+    return lastValue;
+  },
+  setValue(val) {
+    lastValue = val;
+  }
 };
 ```
 
 If a test runner or synthetic script sets `element.value = "new value"`, React's synthetic event system compares the current DOM value with `_valueTracker.getValue()`. If they appear identical or the native setter was skipped, React treats the change as a no-op and does not trigger `onChange` or update component state.
 
 ### How Testudo Solves This
+
 Testudo retrieves the native descriptor setter directly from the HTML prototype chain:
 
 ```javascript
@@ -60,8 +65,8 @@ Synthetic bots that input 50 characters in 0 milliseconds often trigger anti-bot
 import { type } from '@aventine/testudo';
 
 await type.type('#search-input', 'Aventine Labs', {
-  delay: 35,  // Base delay of 35ms per keystroke
-  jitter: 10  // Random Gaussian jitter ±10ms per keystroke
+  delay: 35, // Base delay of 35ms per keystroke
+  jitter: 10 // Random Gaussian jitter ±10ms per keystroke
 });
 ```
 
@@ -95,6 +100,7 @@ await type.type('#sku', 'AB1234XY', { mask: 'AA-####-AA' });
 ```
 
 ### Signature
+
 ```typescript
 interface TypeOptions {
   mask?: 'creditCard' | 'phone' | 'ssn' | 'date' | string;
@@ -103,5 +109,9 @@ interface TypeOptions {
   clear?: boolean;
 }
 
-function type(elementOrSelector: string | HTMLElement, text: string, options?: TypeOptions): Promise<void>;
+function type(
+  elementOrSelector: string | HTMLElement,
+  text: string,
+  options?: TypeOptions
+): Promise<void>;
 ```

@@ -17,6 +17,7 @@ expect.extend(testudoMatchers);
 ```
 
 ### `toEqualCurrency(expected, options)`
+
 Asserts that a Playwright `Locator`, string, or number matches the expected currency value within an allowable tolerance:
 
 ```typescript
@@ -32,11 +33,13 @@ await expect(page.locator('#adjustment')).toEqualCurrency('1.250,00- EUR');
 ```
 
 #### How Polling Retries Work Without Crashing
-During React or Vue page re-renders, `locator.textContent()` can momentarily return an empty string `""` before the framework populates data. 
+
+During React or Vue page re-renders, `locator.textContent()` can momentarily return an empty string `""` before the framework populates data.
 
 If a custom matcher throws an uncaught exception on an empty string, Playwright aborts immediately. Testudo guards intermediate states by returning `{ pass: false, message: () => 'Element text is not yet populated' }`, allowing Playwright to continue retrying every 100ms until the timeout expires or the data settles.
 
 ### `toEqualNumber(expected, options)`
+
 Asserts numeric equality with floating-point tolerance:
 
 ```typescript
@@ -61,6 +64,7 @@ export const test = base.extend(testudoFixture);
 ```
 
 ### Using `$T` Inside Tests
+
 ```typescript
 test('complete checkout flow', async ({ page, $T }) => {
   await page.goto('https://app.example.com/checkout');
@@ -95,6 +99,7 @@ if (testInfo.status !== testInfo.expectedStatus) {
 ```
 
 In your Playwright HTML report (`npx playwright show-report`), the failure report displays:
-* The glowing neon red outline around the failing element.
-* The floating HUD detailing the exact character-level diff.
-* The complete error stack trace.
+
+- The glowing neon red outline around the failing element.
+- The floating HUD detailing the exact character-level diff.
+- The complete error stack trace.

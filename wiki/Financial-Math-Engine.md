@@ -22,6 +22,7 @@ math.eq(10.0000001, 10.0000002, 1e-6); // => true
 ```
 
 ### Signature
+
 ```typescript
 function eq(a: number, b: number, epsilon: number = Number.EPSILON * 10): boolean;
 ```
@@ -38,13 +39,14 @@ When testing checkout flows, tax calculations, currency conversions, and billing
 import { math } from '@aventine/testudo';
 
 // Check if balance matches expected within 1 penny
-math.isCloseTo(1249.99, 1250.00, 0.01); // => true
+math.isCloseTo(1249.99, 1250.0, 0.01); // => true
 
 // Negative zero (-0 vs 0) handling
 math.isCloseTo(-0, 0, 0.0001); // => true
 ```
 
 ### Signature
+
 ```typescript
 function isCloseTo(a: number, b: number, tolerance: number = 0.01): boolean;
 ```
@@ -75,8 +77,13 @@ math.round(2.551, 2, 'CEIL'); // => 2.56
 ```
 
 ### Signature
+
 ```typescript
-function round(value: number, decimals: number = 2, mode: 'HALF_UP' | 'HALF_EVEN' | 'FLOOR' | 'CEIL' = 'HALF_UP'): number;
+function round(
+  value: number,
+  decimals: number = 2,
+  mode: 'HALF_UP' | 'HALF_EVEN' | 'FLOOR' | 'CEIL' = 'HALF_UP'
+): number;
 ```
 
 ---
@@ -96,6 +103,7 @@ const p50 = math.percentile(latencies, 50); // => 72
 ```
 
 ### Signature
+
 ```typescript
 function percentile(values: number[], p: number): number;
 ```

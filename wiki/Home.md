@@ -21,16 +21,16 @@ Automated browser testing often fails not because the application logic is broke
 
 ## Feature Overview
 
-| Capability | Module | Description |
-| :--- | :--- | :--- |
-| **Financial Math** | `$T.math` | Epsilon float equality, currency penny tolerance (`isCloseTo`), negative zero handling, and statistical SLA percentiles (p50-p99). |
-| **Format & Currency** | `$T.format` | Universal currency parser (`(€1,249.50)`, `1.249,50- EUR`), Excel pattern masks (`€#.##0,00`), and invisible space normalization. |
-| **Framework-Safe Typing** | `$T.type` | React/Vue `_valueTracker` bypass, full synthetic event lifecycle dispatch, typing cadence jitter, and standard input masks. |
-| **Linear Character Diff** | `$T.diff` | Sub-300-byte character walk divergence scanner pinpointing the exact first index of mismatch with localized context snippet. |
-| **Visual Error Forensics** | `$T.visual` | Two-mode non-destructive highlighting (hidden mirror div for inputs, native Range for text), glowing neon outline, floating HUD, and SPA cleanup. |
-| **Interactive DOM Explorer** | `$T.scan` | Smart Scope Resolver with deterministic priority cascade, resilient snippet generator, visual numbered badges, and production kill switch. |
-| **Playwright Matchers** | `$T.matchers` | Native `expect.extend` matchers (`toEqualCurrency`, `toEqualNumber`) with polling retry support and automatic HTML report screenshot attachment. |
-| **High-Concurrency Load Engine** | `AventineLoadEngine.py` | Free, multi-threaded load testing engine with microsecond DNS/TLS/TTFB breakdown and dynamic auto-correlation. |
+| Capability                       | Module                  | Description                                                                                                                                       |
+| :------------------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Financial Math**               | `$T.math`               | Epsilon float equality, currency penny tolerance (`isCloseTo`), negative zero handling, and statistical SLA percentiles (p50-p99).                |
+| **Format & Currency**            | `$T.format`             | Universal currency parser (`(€1,249.50)`, `1.249,50- EUR`), Excel pattern masks (`€#.##0,00`), and invisible space normalization.                 |
+| **Framework-Safe Typing**        | `$T.type`               | React/Vue `_valueTracker` bypass, full synthetic event lifecycle dispatch, typing cadence jitter, and standard input masks.                       |
+| **Linear Character Diff**        | `$T.diff`               | Sub-300-byte character walk divergence scanner pinpointing the exact first index of mismatch with localized context snippet.                      |
+| **Visual Error Forensics**       | `$T.visual`             | Two-mode non-destructive highlighting (hidden mirror div for inputs, native Range for text), glowing neon outline, floating HUD, and SPA cleanup. |
+| **Interactive DOM Explorer**     | `$T.scan`               | Smart Scope Resolver with deterministic priority cascade, resilient snippet generator, visual numbered badges, and production kill switch.        |
+| **Playwright Matchers**          | `$T.matchers`           | Native `expect.extend` matchers (`toEqualCurrency`, `toEqualNumber`) with polling retry support and automatic HTML report screenshot attachment.  |
+| **High-Concurrency Load Engine** | `AventineLoadEngine.py` | Free, multi-threaded load testing engine with microsecond DNS/TLS/TTFB breakdown and dynamic auto-correlation.                                    |
 
 ---
 
@@ -71,13 +71,14 @@ test('validate checkout invoice and phone mask', async ({ page, $T }) => {
 ## Documentation Index
 
 Explore the detailed engine guides in the sidebar:
-* [Architecture & Philosophy](Architecture-and-Philosophy)
-* [Financial Math Engine](Financial-Math-Engine)
-* [Format & Currency Parser](Format-and-Currency-Parser)
-* [Framework-Safe Typing](Framework-Safe-Typing)
-* [Linear Character Diff](Linear-Character-Diff)
-* [Visual Forensics & HUD](Visual-Forensics-and-HUD)
-* [DOM Explorer & Smart Scoping](DOM-Explorer-and-Smart-Scoping)
-* [Playwright Integration & Matchers](Playwright-Integration-and-Matchers)
-* [Standalone Browser & Synthetics](Standalone-Browser-and-Synthetics)
-* [High-Concurrency Load Testing Engine](Load-Testing-Engine)
+
+- [Architecture & Philosophy](Architecture-and-Philosophy)
+- [Financial Math Engine](Financial-Math-Engine)
+- [Format & Currency Parser](Format-and-Currency-Parser)
+- [Framework-Safe Typing](Framework-Safe-Typing)
+- [Linear Character Diff](Linear-Character-Diff)
+- [Visual Forensics & HUD](Visual-Forensics-and-HUD)
+- [DOM Explorer & Smart Scoping](DOM-Explorer-and-Smart-Scoping)
+- [Playwright Integration & Matchers](Playwright-Integration-and-Matchers)
+- [Standalone Browser & Synthetics](Standalone-Browser-and-Synthetics)
+- [High-Concurrency Load Testing Engine](Load-Testing-Engine)

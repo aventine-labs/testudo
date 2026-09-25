@@ -7,9 +7,10 @@ Testudo includes a free, multi-threaded high-concurrency Python load testing eng
 ## 1. Why Free Load Testing Matters
 
 Modern engineering teams face an expensive dilemma:
-* They write functional E2E tests in Playwright or Cypress for free.
-* But when they need to verify if their infrastructure can handle 50,000 concurrent users for a launch, commercial load testing platforms (BlazeMeter, LoadNinja, k6 Cloud) charge thousands of dollars per month.
-* Teams are forced to spend weeks manually rewriting their browser tests into JMeter XML or k6 JavaScript.
+
+- They write functional E2E tests in Playwright or Cypress for free.
+- But when they need to verify if their infrastructure can handle 50,000 concurrent users for a launch, commercial load testing platforms (BlazeMeter, LoadNinja, k6 Cloud) charge thousands of dollars per month.
+- Teams are forced to spend weeks manually rewriting their browser tests into JMeter XML or k6 JavaScript.
 
 Testudo bridges this gap by bundling a high-throughput load testing engine directly into the repository for free.
 
@@ -18,17 +19,21 @@ Testudo bridges this gap by bundling a high-throughput load testing engine direc
 ## 2. Key Engine Capabilities
 
 ### Microsecond Latency Breakdown
+
 Standard HTTP clients only report total request duration. `AventineLoadEngine.py` uses low-level socket instrumentation (`time.perf_counter_ns`) to decompose every transaction into its constituent network phases:
-* **DNS Resolution Time**: Measuring DNS lookup latency.
-* **TCP Handshake Time**: Measuring 3-way SYN/ACK connection latency.
-* **TLS/SSL Handshake Time**: Measuring cryptographic negotiation latency.
-* **Time to First Byte (TTFB)**: Measuring server processing latency before initial response byte.
-* **Total Transaction Duration**: End-to-end completion time.
+
+- **DNS Resolution Time**: Measuring DNS lookup latency.
+- **TCP Handshake Time**: Measuring 3-way SYN/ACK connection latency.
+- **TLS/SSL Handshake Time**: Measuring cryptographic negotiation latency.
+- **Time to First Byte (TTFB)**: Measuring server processing latency before initial response byte.
+- **Total Transaction Duration**: End-to-end completion time.
 
 ### Statistical Percentile SLAs
+
 The engine automatically computes p50, p90, p95, and p99 percentiles across thousands of requests to catch tail latency spikes.
 
 ### Dynamic Auto-Correlation
+
 In real-world applications, user journeys require passing session cookies and CSRF tokens from one step to the next. The engine's built-in `CorrelationExtractor` extracts tokens from response headers, cookies, or JSON bodies and injects them into downstream requests.
 
 ---
@@ -36,26 +41,29 @@ In real-world applications, user journeys require passing session cookies and CS
 ## 3. CLI Usage & Options
 
 ### Single Target Stress Test
+
 ```bash
 # Run 50 concurrent workers against an endpoint for 30 seconds
 python3 engines/python/AventineLoadEngine.py --url https://app.example.com/api/health --workers 50 --duration 30
 ```
 
 ### Multi-Step Scenario Execution
+
 ```bash
 # Execute a multi-step user journey from a scenario JSON file
 python3 engines/python/AventineLoadEngine.py --scenario scenario.json --workers 100 --duration 60 --csv results.csv
 ```
 
 ### Supported Arguments
-| Flag | Default | Description |
-| :--- | :--- | :--- |
-| `--url` | None | Target URL to test. |
-| `--scenario` | None | Path to a declarative JSON scenario file. |
-| `--workers` | `10` | Number of concurrent worker threads. |
-| `--duration` | `30` | Test duration in seconds. |
-| `--headers` | None | Custom headers as JSON string. |
-| `--csv` | None | Path to export raw request metrics to CSV. |
+
+| Flag         | Default | Description                                |
+| :----------- | :------ | :----------------------------------------- |
+| `--url`      | None    | Target URL to test.                        |
+| `--scenario` | None    | Path to a declarative JSON scenario file.  |
+| `--workers`  | `10`    | Number of concurrent worker threads.       |
+| `--duration` | `30`    | Test duration in seconds.                  |
+| `--headers`  | None    | Custom headers as JSON string.             |
+| `--csv`      | None    | Path to export raw request metrics to CSV. |
 
 ---
 
@@ -63,7 +71,7 @@ python3 engines/python/AventineLoadEngine.py --scenario scenario.json --workers 
 
 ```text
 ================================================================================
-                      AVENTINE LOAD ENGINE BENCHMARK REPORT                      
+                      AVENTINE LOAD ENGINE BENCHMARK REPORT
 ================================================================================
 Target URL:        https://app.example.com/checkout
 Concurrent Workers: 50
@@ -90,5 +98,6 @@ LATENCY WATERFALL PERCENTILES (Microseconds):
 ## 5. Load Testing Recorder & Converter Roadmap
 
 Upcoming releases will integrate:
+
 1. **`npx testudo record`**: An in-browser CDP recording bridge that records live browser clicks and network traffic, automatically producing runnable scenario JSON files.
 2. **`npx testudo convert <spec>`**: Translates existing Playwright test files directly into high-concurrency `AventineLoadEngine` load scripts with zero manual rewriting.

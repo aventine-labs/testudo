@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { format } from '../dist/format.js';
 
 test('TestudoFormat: Whitespace normalizer removes invisible NBSP characters', () => {
-  const dirty = '1.249,50\u202F€\u00A0 \uFEFF';
+  const dirty = '1.249,50\u202F€\u00A0 \uFEFF\u2002\u2009';
   const clean = format.normalizeWhitespace(dirty);
   assert.strictEqual(clean, '1.249,50 €');
 });
@@ -23,6 +23,7 @@ test('TestudoFormat: Universal currency parsing across global standards', () => 
   assert.strictEqual(format.parse('1 249,50 €'), 1249.5, 'French thin-space thousands');
   assert.strictEqual(format.parse('(€1,249.50)'), -1249.5, 'Accounting negative parentheses');
   assert.strictEqual(format.parse('1.249,50- EUR'), -1249.5, 'SAP mainframe trailing minus');
+  assert.strictEqual(format.parse('1.249,50-'), -1249.5, 'SAP trailing minus end of string');
   assert.strictEqual(format.parse('-€1.249,50'), -1249.5, 'Standard negative prefix');
   assert.strictEqual(format.parse('$ 5,420.00 USD'), 5420.0, 'Currency code combo');
 });

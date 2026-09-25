@@ -9,9 +9,10 @@ The Testudo Diff Engine provides a sub-300-byte linear divergence walk scanner r
 ## 1. Why Linear Character Walk?
 
 In 95% of test assertion failures (e.g. SKU codes, tax form IDs, currency values, error messages):
-* String lengths are under 100 characters.
-* The failure is caused by an unexpected hyphen (`"1040ES"` vs `"1040-ES"`), a transposed digit, or a missing space.
-* A linear loop walking index-by-index instantly pinpoints the point of divergence in under 1 microsecond.
+
+- String lengths are under 100 characters.
+- The failure is caused by an unexpected hyphen (`"1040ES"` vs `"1040-ES"`), a transposed digit, or a missing space.
+- A linear loop walking index-by-index instantly pinpoints the point of divergence in under 1 microsecond.
 
 ---
 
@@ -25,6 +26,7 @@ console.log(result);
 ```
 
 ### Output:
+
 ```json
 {
   "index": 4,
@@ -39,6 +41,7 @@ console.log(result);
 ```
 
 If the strings are strictly identical, `charDiff` returns `null`:
+
 ```javascript
 diff.charDiff('$1,250.00', '$1,250.00'); // => null
 ```
@@ -50,18 +53,21 @@ diff.charDiff('$1,250.00', '$1,250.00'); // => null
 `charDiff` automatically differentiates between substitution, extra characters, and missing characters:
 
 ### Unexpected Character (Substitution)
+
 ```javascript
 diff.charDiff('TOTAL: $100', 'TOTAL: €100');
 // => Unexpected '€' at index 7 (expected '$')
 ```
 
 ### Extra Characters
+
 ```javascript
 diff.charDiff('test', 'testing');
 // => Extra character 'i' at index 4
 ```
 
 ### Missing Characters
+
 ```javascript
 diff.charDiff('testing', 'test');
 // => Missing character 'i' at index 4
@@ -82,6 +88,7 @@ The `context` object captures 10 characters before and after the failure index, 
 ```
 
 ### Signature
+
 ```typescript
 interface CharDiffResult {
   index: number;

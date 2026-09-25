@@ -20,7 +20,7 @@ export class TestudoFormat {
   public normalizeWhitespace(text: string): string {
     if (!text) return '';
     return text
-      .replace(/[\u00A0\u202F\uFEFF]/g, ' ')
+      .replace(/[\u00A0\u2000-\u200B\u202F\uFEFF]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -114,9 +114,10 @@ export class TestudoFormat {
     let isNegative = false;
     if (clean.startsWith('(') && clean.endsWith(')')) {
       isNegative = true;
-    } else if (clean.startsWith('-') || clean.includes(' -')) {
+    } else if (clean.startsWith('-') || /^[^\d\w]*-/.test(clean)) {
       isNegative = true;
-    } else if (clean.endsWith('-') || clean.includes('- ')) {
+    } else if (/(?:-\s*$|-\s*[A-Z]{3}$)/.test(clean)) {
+      // SAP trailing minus (e.g. "1.249,50-" or "1.249,50- EUR" or "1.249,50 - USD")
       isNegative = true;
     }
 

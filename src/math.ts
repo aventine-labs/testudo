@@ -10,17 +10,25 @@ export class TestudoMath {
   /**
    * Compare two numbers with floating-point epsilon tolerance.
    * Handles IEEE-754 float drift (e.g. 0.1 + 0.2 === 0.3).
-   * Also safely handles negative zero (-0 vs 0).
+   * Intentionally collapses negative zero (-0 vs 0) for financial equality.
+   * Handles non-finite values (Infinity vs Infinity, NaN) safely.
    */
   public eq(a: number, b: number, epsilon: number = 0.000001): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      return a === b;
+    }
     return Math.abs(a - b) <= epsilon;
   }
 
   /**
    * Checks if value 'a' is close to 'b' within an allowable absolute or relative tolerance.
    * Essential for financial assertion checks (e.g. within 1 penny / 0.01).
+   * Intentionally collapses negative zero (-0 vs 0).
    */
   public isCloseTo(a: number, b: number, tolerance: number = 0.01): boolean {
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      return a === b;
+    }
     return Math.abs(a - b) <= tolerance;
   }
 
