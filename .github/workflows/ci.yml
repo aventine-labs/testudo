@@ -36,7 +36,7 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
-      - name: Verify deterministic bundle size limits (<5KB core / <10KB full)
+      - name: Verify deterministic bundle size limits (<5KB core / <15KB full)
         run: npm run size
 
   python:

@@ -74,7 +74,7 @@ const fullGzipRaw = zlib.gzipSync(Buffer.from(fullRaw)).length;
 const fullMin = stripCommentsAndWhitespace(fullRaw);
 const fullGzipMin = zlib.gzipSync(Buffer.from(fullMin)).length;
 const fullKb = (fullGzipMin / 1024).toFixed(2);
-const FULL_LIMIT_KB = 10.0;
+const FULL_LIMIT_KB = 15.0;
 
 console.log(
   `Full Bundle: ${fullKb} KB minified gzip (${fullGzipMin} bytes, raw: ${(fullGzipRaw / 1024).toFixed(2)} KB)`

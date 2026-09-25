@@ -5,7 +5,7 @@
   <p>High-Precision Financial Math, Framework-Safe Typing, and In-Browser Visual Forensics for Playwright, Puppeteer, and Synthetic Monitors.</p>
 
   <p>
-    <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/badge/tests-19%2F19%20passing-brightgreen?style=flat-square" alt="Tests"></a>
+    <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/badge/tests-32%2F32%20passing-brightgreen?style=flat-square" alt="Tests"></a>
     <a href="https://www.npmjs.com/package/@aventine/testudo"><img src="https://img.shields.io/badge/dependencies-0-success?style=flat-square" alt="Dependencies"></a>
     <a href="https://github.com/aventine-labs/testudo/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="License"></a>
     <img src="https://img.shields.io/badge/size-%3C5KB%20gzip-informational?style=flat-square" alt="Bundle Size">
