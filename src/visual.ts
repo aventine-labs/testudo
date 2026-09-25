@@ -129,13 +129,15 @@ export class TestudoVisual {
       const computed = window.getComputedStyle(input);
 
       // Create off-screen mirror div copying typography and padding styles
+      const isTextarea = input instanceof HTMLTextAreaElement;
       const mirror = document.createElement('div');
       mirror.style.cssText = `
         position: absolute;
         top: -9999px;
         left: -9999px;
         visibility: hidden;
-        white-space: pre;
+        white-space: ${isTextarea ? 'pre-wrap' : 'pre'};
+        ${isTextarea ? `width: ${computed.width};` : ''}
         font-family: ${computed.fontFamily};
         font-size: ${computed.fontSize};
         font-weight: ${computed.fontWeight};
@@ -195,13 +197,13 @@ export class TestudoVisual {
 
     renderGhost();
 
-    // Listen for late dynamic web font swaps (e.g. Next.js Google Fonts)
+    // Listen for dynamic web font swaps (e.g. Next.js Google Fonts)
     if (
       typeof document !== 'undefined' &&
       (document as any).fonts &&
       (document as any).fonts.addEventListener
     ) {
-      (document as any).fonts.addEventListener('loadingdone', () => renderGhost(), { once: true });
+      (document as any).fonts.addEventListener('loadingdone', () => renderGhost());
     }
   }
 

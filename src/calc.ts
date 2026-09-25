@@ -1,6 +1,6 @@
 /**
  * @aventine/testudo - Multi-Cell Financial Calculus Engine (src/calc.ts)
- * Zero-dependency mathematical expression tokenizer, AST evaluator, and multi-cell financial auditor.
+ * Zero-dependency mathematical expression tokenizer, Shunting-Yard RPN evaluator, and multi-cell financial auditor.
  * Safe arithmetic parsing without eval() or new Function(). 100% CSP compliant.
  *
  * (c) 2026 Aventine Labs LLC. Apache-2.0 License.
@@ -20,7 +20,7 @@ export interface CalcOperand {
   label: string;
   shape?: string;
   borderPattern?: string;
-  element?: any;
+  element?: Element | null;
 }
 
 export interface CalcEvaluation {
@@ -33,7 +33,7 @@ export interface CalcEvaluation {
 export interface CalcAssertOptions {
   tolerance?: number;
   autoHighlight?: boolean;
-  contextNode?: any;
+  contextNode?: Element | Document | null;
 }
 
 export interface CalcAssertResult {
@@ -257,7 +257,7 @@ export class TestudoCalc {
   /**
    * Evaluates the calculus expression against the active DOM or custom mock values.
    */
-  public evaluate(contextNode?: any): CalcEvaluation {
+  public evaluate(contextNode?: Element | Document | null): CalcEvaluation {
     const tokens = tokenizeExpression(this.expression);
     const operands: CalcOperand[] = [];
     const doc = contextNode || (typeof document !== 'undefined' ? document : null);
@@ -295,7 +295,7 @@ export class TestudoCalc {
         if (doc && doc.querySelector) {
           const el = doc.querySelector(sel);
           if (el) {
-            const rawText = (el.value !== undefined ? el.value : el.textContent) || '';
+            const rawText = ((el as any).value !== undefined ? (el as any).value : el.textContent) || '';
             const numVal = parseCurrency(rawText);
             operands.push({
               index: operandIndex,
@@ -334,6 +334,7 @@ export class TestudoCalc {
     // Evaluate tokens using Shunting-Yard Algorithm to produce RPN and compute result
     const outputQueue: (number | string)[] = [];
     const opStack: string[] = [];
+    const funcArgCountStack: number[] = [];
 
     const PRECEDENCE: Record<string, number> = {
       '+': 1,
@@ -351,10 +352,18 @@ export class TestudoCalc {
         outputQueue.push(val);
       } else if (tok.type === 'FUNCTION') {
         opStack.push(tok.value);
+        funcArgCountStack.push(1);
+      } else if (tok.type === 'COMMA') {
+        while (opStack.length > 0 && opStack[opStack.length - 1] !== '(') {
+          outputQueue.push(opStack.pop()!);
+        }
+        if (funcArgCountStack.length > 0) {
+          funcArgCountStack[funcArgCountStack.length - 1]++;
+        }
       } else if (tok.type === 'OPERATOR') {
         let op = tok.value;
         const prevTok = k > 0 ? tokens[k - 1] : null;
-        if (op === '-' && (!prevTok || prevTok.type === 'OPERATOR' || prevTok.type === 'LPAREN')) {
+        if (op === '-' && (!prevTok || prevTok.type === 'OPERATOR' || prevTok.type === 'LPAREN' || prevTok.type === 'COMMA')) {
           op = 'u-';
         }
 
@@ -375,9 +384,11 @@ export class TestudoCalc {
         if (opStack.length > 0 && opStack[opStack.length - 1] === '(') {
           opStack.pop(); // discard '('
         }
-        // If top of stack is function, pop it
+        // If top of stack is function, pop it with its argument count
         if (opStack.length > 0 && /^(sum|avg|min|max)$/.test(opStack[opStack.length - 1])) {
-          outputQueue.push(opStack.pop()!);
+          const fn = opStack.pop()!;
+          const count = funcArgCountStack.length > 0 ? funcArgCountStack.pop()! : 0;
+          outputQueue.push(`${fn}:${count}`);
         }
       }
     }
@@ -403,11 +414,34 @@ export class TestudoCalc {
             case '+': res = a + b; break;
             case '-': res = a - b; break;
             case '*': res = a * b; break;
-            case '/': res = b !== 0 ? a / b : 0; break;
+            case '/':
+              if (b === 0) {
+                throw new Error('TestudoCalc: Division by zero in expression');
+              }
+              res = a / b;
+              break;
           }
           evalStack.push(res);
-        } else if (item === 'sum') {
-          // Handled via aggregations or binary evaluation
+        } else if (item.startsWith('sum:') || item.startsWith('avg:') || item.startsWith('min:') || item.startsWith('max:')) {
+          const [fn, countStr] = item.split(':');
+          const count = parseInt(countStr, 10);
+          const args: number[] = [];
+          for (let c = 0; c < count; c++) {
+            if (evalStack.length > 0) {
+              args.unshift(evalStack.pop()!);
+            }
+          }
+          if (args.length === 0) {
+            evalStack.push(0);
+          } else if (fn === 'sum') {
+            evalStack.push(args.reduce((acc, curr) => acc + curr, 0));
+          } else if (fn === 'avg') {
+            evalStack.push(args.reduce((acc, curr) => acc + curr, 0) / args.length);
+          } else if (fn === 'min') {
+            evalStack.push(Math.min(...args));
+          } else if (fn === 'max') {
+            evalStack.push(Math.max(...args));
+          }
         }
       }
     }
@@ -490,3 +524,9 @@ export class TestudoCalc {
 export function calc(expression: string, customValues?: Record<string, number | string>): TestudoCalc {
   return new TestudoCalc(expression, customValues);
 }
+
+calc.evaluate = (expression: string, customValues?: Record<string, number | string>): number => {
+  return new TestudoCalc(expression, customValues).evaluate().expectedValue;
+};
+
+calc.eval = calc.evaluate;

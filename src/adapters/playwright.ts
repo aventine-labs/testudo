@@ -22,6 +22,21 @@ export interface TestudoFixture {
   };
 }
 
+let matchersRegistered = false;
+
+function ensureMatchersRegistered(): void {
+  if (matchersRegistered) return;
+  try {
+    const globalAny = globalThis as any;
+    if (globalAny.expect && typeof globalAny.expect.extend === 'function') {
+      globalAny.expect.extend(testudoMatchers);
+      matchersRegistered = true;
+    }
+  } catch {
+    // Clean fallback
+  }
+}
+
 /**
  * Playwright Fixture Definition.
  * Usage:
@@ -41,15 +56,8 @@ export const testudoFixture = {
       visual
     };
 
-    // 2. Automatically register matchers on global expect if available
-    try {
-      const globalAny = globalThis as any;
-      if (globalAny.expect && typeof globalAny.expect.extend === 'function') {
-        globalAny.expect.extend(testudoMatchers);
-      }
-    } catch {
-      // Clean fallback
-    }
+    // 2. Automatically register matchers on global expect if available (once globally)
+    ensureMatchersRegistered();
 
     // 3. Provide fixture to test runner
     await use(testudoInstance);

@@ -13,48 +13,61 @@ export class TestudoMath {
    * Intentionally collapses negative zero (-0 vs 0) for financial equality.
    * Handles non-finite values (Infinity vs Infinity, NaN) safely.
    */
-  public eq(a: number, b: number, epsilon: number = 0.000001): boolean {
+  public eq(a: number, b: number, epsilon: number = 0.000001, relativeEpsilon: number = 1e-13): boolean {
     if (!Number.isFinite(a) || !Number.isFinite(b)) {
       return a === b;
     }
-    return Math.abs(a - b) <= epsilon;
+    const diff = Math.abs(a - b);
+    return diff <= Math.max(epsilon, relativeEpsilon * Math.max(Math.abs(a), Math.abs(b)));
   }
 
   /**
    * Checks if value 'a' is close to 'b' within an allowable absolute or relative tolerance.
-   * Essential for financial assertion checks (e.g. within 1 penny / 0.01).
+   * Essential for financial assertion checks (e.g. within 1 penny / 0.01) across small and large magnitudes.
    * Intentionally collapses negative zero (-0 vs 0).
    */
-  public isCloseTo(a: number, b: number, tolerance: number = 0.01): boolean {
+  public isCloseTo(a: number, b: number, tolerance: number = 0.01, relativeTolerance: number = 1e-13): boolean {
     if (!Number.isFinite(a) || !Number.isFinite(b)) {
       return a === b;
     }
-    return Math.abs(a - b) <= tolerance;
+    const diff = Math.abs(a - b);
+    return diff <= Math.max(tolerance, relativeTolerance * Math.max(Math.abs(a), Math.abs(b)));
   }
 
   /**
    * Deterministic decimal rounding avoiding floating point rounding drift.
+   * Uses exponential notation shift to guarantee exact half-up rounding (e.g. 1.005 -> 1.01, 2.555 -> 2.56).
    */
   public round(value: number, decimals: number = 2, mode: RoundingMode = 'HALF_UP'): number {
-    const factor = Math.pow(10, decimals);
-    const scaled = value * factor;
+    if (!Number.isFinite(value)) return value;
+    if (decimals === 0 && mode === 'HALF_UP') {
+      return Math.round(value);
+    }
 
     if (mode === 'HALF_UP') {
-      return Math.round(scaled) / factor;
+      const sign = value < 0 ? -1 : 1;
+      const absVal = Math.abs(value);
+      const shifted = Number(absVal + 'e+' + decimals);
+      const rounded = Math.round(shifted);
+      return sign * Number(rounded + 'e-' + decimals);
     } else if (mode === 'FLOOR') {
-      return Math.floor(scaled) / factor;
+      const factor = Math.pow(10, decimals);
+      return Math.floor(value * factor) / factor;
     } else if (mode === 'CEIL') {
-      return Math.ceil(scaled) / factor;
+      const factor = Math.pow(10, decimals);
+      return Math.ceil(value * factor) / factor;
     } else if (mode === 'HALF_EVEN') {
+      const factor = Math.pow(10, decimals);
+      const scaled = value * factor;
       const floor = Math.floor(scaled);
       const diff = scaled - floor;
       if (Math.abs(diff - 0.5) < 0.000001) {
         return (floor % 2 === 0 ? floor : floor + 1) / factor;
       }
-      return Math.round(scaled) / factor;
+      return this.round(value, decimals, 'HALF_UP');
     }
 
-    return Math.round(scaled) / factor;
+    return this.round(value, decimals, 'HALF_UP');
   }
 
   /**

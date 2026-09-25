@@ -22,23 +22,27 @@ export interface CharDiffResult {
 export function charDiff(expected: string, actual: string): CharDiffResult | null {
   if (expected === actual) return null;
 
-  let i = 0;
-  const max = Math.max(expected.length, actual.length);
+  // Convert to Unicode code points so multi-byte surrogate pairs (e.g. emojis 👍, 🎉) are never split
+  const expPoints = Array.from(expected);
+  const actPoints = Array.from(actual);
 
-  while (i < max && expected[i] === actual[i]) {
+  let i = 0;
+  const max = Math.max(expPoints.length, actPoints.length);
+
+  while (i < max && expPoints[i] === actPoints[i]) {
     i++;
   }
 
-  const expChar = expected[i] ?? '(end of string)';
-  const actChar = actual[i] ?? '(end of string)';
+  const expChar = expPoints[i] ?? '(end of string)';
+  const actChar = actPoints[i] ?? '(end of string)';
 
   const start = Math.max(0, i - 10);
   const end = Math.min(max, i + 10);
 
   let message = `Unexpected '${actChar}' at index ${i} (expected '${expChar}')`;
-  if (!expected[i] && actual[i]) {
+  if (!expPoints[i] && actPoints[i]) {
     message = `Extra character '${actChar}' at index ${i}`;
-  } else if (expected[i] && !actual[i]) {
+  } else if (expPoints[i] && !actPoints[i]) {
     message = `Missing character '${expChar}' at index ${i}`;
   }
 
@@ -48,8 +52,13 @@ export function charDiff(expected: string, actual: string): CharDiffResult | nul
     actualChar: actChar,
     message,
     context: {
-      expected: expected.slice(start, end),
-      actual: actual.slice(start, end)
+      expected: expPoints.slice(start, end).join(''),
+      actual: actPoints.slice(start, end).join('')
     }
   };
 }
+
+export const diff = {
+  chars: charDiff,
+  charDiff
+};

@@ -77,27 +77,28 @@ export class TestudoReporter {
       return '';
     }
 
-    if (!event.timestamp && this.config.includeTimestamp) {
-      event.timestamp = new Date().toISOString();
+    const ev: ReportEvent = { ...event };
+    if (!ev.timestamp && this.config.includeTimestamp) {
+      ev.timestamp = new Date().toISOString();
     }
 
     let output = '';
     switch (this.config.format) {
       case 'splunk':
-        output = this.formatSplunk(event);
+        output = this.formatSplunk(ev);
         break;
       case 'plain':
-        output = this.formatPlain(event);
+        output = this.formatPlain(ev);
         break;
       case 'json':
-        output = this.formatJson(event);
+        output = this.formatJson(ev);
         break;
       case 'github-summary':
-        output = this.formatGithubSummary(event);
+        output = this.formatGithubSummary(ev);
         break;
       case 'formatted':
       default:
-        output = this.formatAnsi(event);
+        output = this.formatAnsi(ev);
         break;
     }
 
@@ -124,23 +125,39 @@ export class TestudoReporter {
     return this.log({ level: 'error', event: 'assertion_failed', message, ...meta });
   }
 
+  private escapeSplunk(val: string): string {
+    return val
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\r?\n/g, ' ');
+  }
+
+  private escapeGfmCell(val: string): string {
+    return val
+      .replace(/\\/g, '\\\\')
+      .replace(/\|/g, '\\|')
+      .replace(/`/g, "'")
+      .replace(/\r?\n/g, ' ');
+  }
+
   /**
    * Splunk SIEM Key-Value Format: key="value"
    * Automatically indexed by Splunk, Datadog, and Sumo Logic into searchable dimensions
    */
   public formatSplunk(ev: ReportEvent): string {
+    const esc = (v: string): string => this.escapeSplunk(v);
     const fields: string[] = [];
-    if (ev.timestamp) fields.push(`timestamp="${ev.timestamp}"`);
+    if (ev.timestamp) fields.push(`timestamp="${esc(ev.timestamp)}"`);
     fields.push(`tool="testudo"`);
-    fields.push(`level="${ev.level}"`);
-    fields.push(`event="${ev.event}"`);
-    fields.push(`msg="${ev.message.replace(/"/g, '\\"')}"`);
+    fields.push(`level="${esc(ev.level)}"`);
+    fields.push(`event="${esc(ev.event)}"`);
+    fields.push(`msg="${esc(ev.message)}"`);
 
-    if (ev.testId) fields.push(`test_id="${ev.testId}"`);
-    if (ev.selector) fields.push(`selector="${ev.selector}"`);
-    if (ev.formula) fields.push(`formula="${ev.formula}"`);
-    if (ev.expected !== undefined) fields.push(`expected="${ev.expected}"`);
-    if (ev.actual !== undefined) fields.push(`actual="${ev.actual}"`);
+    if (ev.testId) fields.push(`test_id="${esc(ev.testId)}"`);
+    if (ev.selector) fields.push(`selector="${esc(ev.selector)}"`);
+    if (ev.formula) fields.push(`formula="${esc(ev.formula)}"`);
+    if (ev.expected !== undefined) fields.push(`expected="${esc(String(ev.expected))}"`);
+    if (ev.actual !== undefined) fields.push(`actual="${esc(String(ev.actual))}"`);
     if (ev.delta !== undefined) fields.push(`delta="${ev.delta}"`);
     if (ev.tolerance !== undefined) fields.push(`tolerance="${ev.tolerance}"`);
     if (ev.divergenceIndex !== undefined) fields.push(`divergence_index=${ev.divergenceIndex}`);
@@ -148,7 +165,7 @@ export class TestudoReporter {
 
     if (ev.metadata) {
       for (const [k, v] of Object.entries(ev.metadata)) {
-        fields.push(`${k}="${String(v).replace(/"/g, '\\"')}"`);
+        fields.push(`${esc(k)}="${esc(String(v))}"`);
       }
     }
 
@@ -240,17 +257,23 @@ export class TestudoReporter {
       error: '❌'
     }[ev.level];
 
-    let md = `### ${icon} Testudo Forensic Report: ${ev.message}\n\n`;
+    const esc = (v: string | number | undefined): string => {
+      if (v === undefined) return '';
+      return this.escapeGfmCell(String(v));
+    };
+
+    let md = `### ${icon} Testudo Forensic Report: ${esc(ev.message)}\n\n`;
     md += `| Property | Value |\n| :--- | :--- |\n`;
-    md += `| **Event** | \`${ev.event}\` |\n`;
-    md += `| **Level** | \`${ev.level.toUpperCase()}\` |\n`;
-    if (ev.testId) md += `| **Test ID** | \`${ev.testId}\` |\n`;
-    if (ev.formula) md += `| **Calculus Formula** | \`${ev.formula}\` |\n`;
-    if (ev.selector) md += `| **DOM Selector** | \`${ev.selector}\` |\n`;
-    if (ev.expected !== undefined) md += `| **Expected Value** | \`${ev.expected}\` |\n`;
-    if (ev.actual !== undefined) md += `| **Actual DOM Value** | \`${ev.actual}\` |\n`;
-    if (ev.delta !== undefined) md += `| **Numerical Delta** | \`${ev.delta}\` |\n`;
-    if (ev.tolerance !== undefined) md += `| **Allowable Epsilon** | \`${ev.tolerance}\` |\n`;
+    md += `| **Event** | \`${esc(ev.event)}\` |\n`;
+    md += `| **Level** | \`${esc(ev.level.toUpperCase())}\` |\n`;
+    if (ev.testId) md += `| **Test ID** | \`${esc(ev.testId)}\` |\n`;
+    if (ev.formula) md += `| **Calculus Formula** | \`${esc(ev.formula)}\` |\n`;
+    if (ev.selector) md += `| **DOM Selector** | \`${esc(ev.selector)}\` |\n`;
+    if (ev.expected !== undefined) md += `| **Expected Value** | \`${esc(ev.expected)}\` |\n`;
+    if (ev.actual !== undefined) md += `| **Actual DOM Value** | \`${esc(ev.actual)}\` |\n`;
+    if (ev.delta !== undefined) md += `| **Numerical Delta** | \`${esc(ev.delta)}\` |\n`;
+    if (ev.tolerance !== undefined) md += `| **Allowable Epsilon** | \`${esc(ev.tolerance)}\` |\n`;
+    if (ev.divergenceIndex !== undefined) md += `| **Divergence Index** | \`${esc(ev.divergenceIndex)}\` |\n`;
     if (ev.elapsedMs !== undefined) md += `| **Duration** | \`${ev.elapsedMs.toFixed(2)}ms\` |\n`;
 
     return md;

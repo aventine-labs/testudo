@@ -1,6 +1,6 @@
 {
   "name": "@aventine/testudo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The Zero-Dependency Master of Test Suites: High-Precision Financial Math, Framework-Safe Typing, and In-Browser QA Forensics",
   "main": "dist/index.js",
   "module": "dist/index.js",

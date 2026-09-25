@@ -91,8 +91,8 @@ export class TestudoScan {
     const byDataTest = this.safeQueryAttr('data-test', clean);
     if (byDataTest.length > 0) candidates.push(...byDataTest);
 
-    // Priority 3: id
-    const byId = document.getElementById(clean) || this.safeQueryAttr('id', clean, true)[0];
+    // Priority 3: id (strict exact match only)
+    const byId = document.getElementById(clean) || this.safeQueryAttr('id', clean, false)[0];
     if (byId) candidates.push(byId as HTMLElement);
 
     // Priority 4: name attribute
@@ -112,13 +112,22 @@ export class TestudoScan {
       }
     }
 
-    // Priority 7: class name
-    const byClass = document.querySelectorAll(`.${clean}`);
-    if (byClass.length > 0) candidates.push(...(Array.from(byClass) as HTMLElement[]));
+    // Priority 7: class name (escapes numeric prefixes / special chars)
+    try {
+      const escapedClass = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(clean) : clean;
+      const byClass = document.querySelectorAll(`.${escapedClass}`);
+      if (byClass.length > 0) candidates.push(...(Array.from(byClass) as HTMLElement[]));
+    } catch {
+      // Gracefully ignore invalid CSS selector
+    }
 
     // Priority 8: tag name (e.g. 'form', 'table', 'nav', 'header')
-    const byTag = document.querySelectorAll(clean);
-    if (byTag.length > 0) candidates.push(...(Array.from(byTag) as HTMLElement[]));
+    try {
+      const byTag = document.querySelectorAll(clean);
+      if (byTag.length > 0) candidates.push(...(Array.from(byTag) as HTMLElement[]));
+    } catch {
+      // Gracefully ignore invalid tag selector
+    }
 
     if (candidates.length > 0) {
       // Deduplicate elements
@@ -204,13 +213,12 @@ export class TestudoScan {
   public explore(scopeQuery?: string | HTMLElement): void {
     if (typeof document === 'undefined') return;
 
-    // Production Guard Kill Switch
+    // Production Guard Kill Switch (supports both Bundler static replacement and Browser CDN environments)
     const globalObj = typeof globalThis !== 'undefined' ? (globalThis as any) : (window as any);
-    if (
-      globalObj.process &&
-      globalObj.process.env &&
-      globalObj.process.env.NODE_ENV === 'production'
-    ) {
+    const isNodeProd = globalObj.process?.env?.NODE_ENV === 'production';
+    const isBrowserProd = globalObj.TESTUDO_ENV === 'production' || globalObj.TESTUDO_DISABLE_EXPLORER === true;
+
+    if (isNodeProd || isBrowserProd) {
       if (!globalObj.__ENABLE_TESTUDO__) {
         console.warn('[Testudo] $T.explore() disabled in production mode.');
         return;

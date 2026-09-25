@@ -106,8 +106,13 @@ export class TestudoFormat {
    *   "(€1,249.50)" => -1249.50 (accounting negative)
    *   "1.249,50- EUR" => -1249.50 (SAP trailing minus)
    */
-  public parse(raw: string): number {
+  public parseCurrency(raw: string, optionsOrLocale?: { locale?: string } | string): number {
+    return this.parse(raw, optionsOrLocale);
+  }
+
+  public parse(raw: string, optionsOrLocale?: { locale?: string } | string): number {
     if (!raw) return 0;
+    const locale = typeof optionsOrLocale === 'string' ? optionsOrLocale : optionsOrLocale?.locale;
     const clean = this.normalizeWhitespace(raw);
 
     // 1. Detect negative indicators
@@ -116,8 +121,8 @@ export class TestudoFormat {
       isNegative = true;
     } else if (clean.startsWith('-') || /^[^\d\w]*-/.test(clean)) {
       isNegative = true;
-    } else if (/(?:-\s*$|-\s*[A-Z]{3}$)/.test(clean)) {
-      // SAP trailing minus (e.g. "1.249,50-" or "1.249,50- EUR" or "1.249,50 - USD")
+    } else if (/(?:-\s*$|-\s*[A-Za-z]{3}$)/i.test(clean)) {
+      // SAP trailing minus (e.g. "1.249,50-" or "1.249,50- EUR" or "1.249,50 - usd")
       isNegative = true;
     }
 
@@ -138,26 +143,37 @@ export class TestudoFormat {
         // European: dots are thousands, comma is decimal (1.249,50)
         sanitized = withoutSpaces.replace(/\./g, '').replace(',', '.');
       } else {
-        // Standard US/UK: commas are thousands, dot is decimal (1,249.50)
+        // Standard US/UK or Indian lakh/crore: commas are thousands (1,249.50 or 12,34,567.89)
         sanitized = withoutSpaces.replace(/,/g, '');
       }
     } else if (lastComma > -1 && lastDot === -1) {
-      // Only commas: check if it's decimal (e.g. "1249,50") or thousands ("1,250,000")
+      // Only commas: check locale and parts
+      const isEuropeanLocale = locale && /^(de|fr|es|it|pt|nl|ru)/i.test(locale);
+      const isUSLocale = locale && /^(en|ja|zh)/i.test(locale);
       const parts = withoutSpaces.split(',');
-      if (parts.length === 2 && parts[1].length <= 2) {
+      if (parts.length === 2 && (parts[1].length <= 2 || isEuropeanLocale) && !isUSLocale) {
         sanitized = parts[0] + '.' + parts[1];
       } else {
+        // Indian numbering integer (12,34,567) or standard thousands (1,250,000)
         sanitized = withoutSpaces.replace(/,/g, '');
       }
     } else if (lastDot > -1 && lastComma === -1) {
-      // Only dots: check if it's thousands ("1.250.000") or decimal ("1249.50")
+      // Only dots: check if thousands ("1.250.000") or decimal ("1249.50")
       const parts = withoutSpaces.split('.');
       if (parts.length > 2) {
         sanitized = withoutSpaces.replace(/\./g, '');
-      } else if (parts.length === 2 && parts[1].length === 3 && parseInt(parts[0], 10) < 1000) {
-        // Ambiguous: "1.250" could be thousands in Europe
-        // Default to decimal unless integer
-        sanitized = withoutSpaces;
+      } else if (parts.length === 2) {
+        const isEuropeanLocale = locale && /^(de|fr|es|it|pt|nl|ru)/i.test(locale);
+        if (parts[1].length === 3 && parseInt(parts[0], 10) < 1000) {
+          // Ambiguous: "1.250"
+          if (isEuropeanLocale) {
+            sanitized = withoutSpaces.replace(/\./g, ''); // 1250 in European locale
+          } else {
+            sanitized = withoutSpaces; // decimal 1.25
+          }
+        } else {
+          sanitized = withoutSpaces;
+        }
       }
     }
 

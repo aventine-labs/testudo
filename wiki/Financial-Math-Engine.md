@@ -97,8 +97,8 @@ import { math } from '@aventine/testudo';
 
 const latencies = [45, 52, 55, 60, 68, 72, 85, 95, 120, 250, 480];
 
-// Compute p95 latency
-const p95 = math.percentile(latencies, 95); // => 480
+// Compute p95 latency (weighted linear interpolation between index 9 [250] and index 10 [480])
+const p95 = math.percentile(latencies, 95); // => 365
 const p50 = math.percentile(latencies, 50); // => 72
 ```
 
@@ -121,6 +121,6 @@ import { math } from '@aventine/testudo';
 const memorySamples = [100, 110, 125, 145, 170];
 const growthRate = math.rateOfChange(memorySamples, 1.0); // => [10, 15, 20, 25]
 
-// Moving average smoothing (sliding window of 3)
-const smoothed = math.movingAverage([10, 12, 14, 16, 18], 3); // => [12, 14, 16]
+// Moving average smoothing (sliding window of 3 across all points)
+const smoothed = math.movingAverage([10, 12, 14, 16, 18], 3); // => [10, 11, 12, 14, 16]
 ```
