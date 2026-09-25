@@ -112,15 +112,20 @@ await $T('#phone').type('5551234567', {
 
 When an assertion fails, Testudo does not just dump unformatted text into a log. It renders an in-DOM forensic HUD, centers the viewport, and highlights every contributing operand in distinct, color-coded bounding boxes:
 
-![Testudo Visual Forensics](assets/screenshots/testudo_fintech_full_settlement_screengrab.png)
+![Testudo Visual Forensics Full Blotter](assets/screenshots/testudo_fintech_full_settlement_screengrab.png)
 
 #### Multi-Cell Financial Calculus Inspector
 In enterprise accounting and prime brokerage trading (Tier-1 Clearing / Institutional Blotter style), balances depend on multiple contributing cells. Testudo highlights each operand with non-colliding colors so you can inspect the entire audit trail at a glance:
+
+![Testudo Tight Calculus Crop](assets/screenshots/testudo_calculus_tight_crop.png)
+
 - **Operand [A] Principal**: Highlighted in Electric Cyan (`#38BDF8`).
 - **Operand [B] Interest (+)**: Highlighted in Vibrant Amber (`#F59E0B`).
 - **Operand [C] Regulatory Fee (-)**: Highlighted in Neon Purple (`#C084FC`).
 - **Operand [D] Tax Withheld (-)**: Highlighted in Emerald Green (`#34D399`).
 - **Target Live Balance**: Snapped in Pulsing Crimson (`#F43F5E`) with micro-magnified character-by-character diff callout.
+
+> **Live Interactive Demo**: You can run and inspect this live settlement blotter by opening [`demo/fintech_settlement.html`](./demo/fintech_settlement.html) directly in any browser.
 
 ### 4. Enterprise Multi-Format Reporting (Splunk, Clean Text, ANSI, GitHub Actions)
 
