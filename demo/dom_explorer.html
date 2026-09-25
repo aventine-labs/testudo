@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testudo DOM Explorer & Smart Scoping - Institutional Trading Blotter</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.85);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --blue: #2563EB;
+      --amber: #F59E0B;
+      --purple: #C084FC;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; position: relative; }
+    
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo { width: 38px; height: 38px; background: linear-gradient(135deg, #1E3A8A, #3B82F6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 18px; border: 1px solid rgba(255,255,255,0.2); }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 12px; color: var(--text-muted); font-family: monospace; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .nav-btn { background: #1E293B; color: #E2E8F0; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.15s; }
+    .nav-btn:hover { background: #334155; color: #fff; }
+    .nav-btn.active { background: rgba(37, 99, 235, 0.2); border-color: #3B82F6; color: #93C5FD; }
+    .env-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--cyan); padding: 5px 12px; border-radius: 6px; font-size: 11px; font-family: monospace; font-weight: 700; }
+    
+    /* Metrics Row */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+    .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; backdrop-filter: blur(12px); }
+    .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; font-weight: 600; margin-bottom: 4px; }
+    .metric-val { font-size: 20px; font-weight: 700; font-family: "JetBrains Mono", monospace; }
+    .metric-tag { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .tag-blue { color: var(--cyan); }
+    .tag-green { color: var(--emerald); }
+    .tag-red { color: var(--crimson); }
+    
+    /* Scoped Container: Blotter Controls Bar */
+    .controls-panel {
+      position: relative;
+      background: rgba(15, 23, 42, 0.95);
+      border: 2px dashed rgba(56, 189, 248, 0.6);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(56, 189, 248, 0.03);
+    }
+    .scope-label-badge {
+      position: absolute;
+      top: -12px;
+      left: 18px;
+      background: #0284C7;
+      color: #FFFFFF;
+      font-size: 10px;
+      font-family: monospace;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    /* Interactive Elements inside Scope */
+    .input-wrapper { position: relative; display: inline-block; }
+    .control-input {
+      background: #090E1A;
+      border: 1px solid #334155;
+      color: #F1F5F9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: "JetBrains Mono", monospace;
+      outline: none;
+      min-width: 250px;
+      transition: border-color 0.15s;
+    }
+    .control-input:focus { border-color: var(--cyan); }
+    
+    .control-select {
+      background: #090E1A;
+      border: 1px solid #334155;
+      color: #F1F5F9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: "JetBrains Mono", monospace;
+      outline: none;
+      cursor: pointer;
+    }
+    
+    .tab-list {
+      display: inline-flex;
+      background: #090E1A;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 2px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: #1E293B;
+      color: #fff;
+      font-weight: 700;
+    }
+    
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .btn-primary { background: #2563EB; color: #fff; border-color: #3B82F6; }
+    .btn-primary:hover { background: #1D4ED8; }
+    .btn-danger { background: rgba(244, 63, 94, 0.15); color: #FCA5A5; border-color: rgba(244, 63, 94, 0.4); }
+    .btn-secondary { background: #1E293B; color: #E2E8F0; border-color: #334155; }
+    
+    /* ------------------------------------------------------------- */
+    /* TESTUDO IN-BROWSER VISUAL EXPLORER BADGES ($T.explore)        */
+    /* ------------------------------------------------------------- */
+    .testudo-badge {
+      position: absolute;
+      top: -10px;
+      left: -8px;
+      background: #2563EB;
+      color: #FFFFFF;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), 0 0 8px rgba(37, 99, 235, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      z-index: 50;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.15s, background 0.2s;
+    }
+    .testudo-badge:hover {
+      transform: scale(1.1);
+      background: #1D4ED8;
+    }
+    .testudo-badge.copied {
+      background: #059669 !important;
+      border-color: #34D399 !important;
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.6) !important;
+    }
+    
+    /* Floating Tooltip Callout on Badge [6] */
+    .badge-tooltip-callout {
+      position: absolute;
+      bottom: -110px;
+      right: 180px;
+      background: #0F172A;
+      border: 2px solid #10B981;
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.8), 0 0 16px rgba(16, 185, 129, 0.3);
+      z-index: 100;
+      width: 360px;
+      animation: pulseEmeraldGlow 2.5s infinite ease-in-out;
+    }
+    @keyframes pulseEmeraldGlow {
+      0%, 100% { box-shadow: 0 16px 36px rgba(0,0,0,0.8), 0 0 12px rgba(16, 185, 129, 0.25); }
+      50% { box-shadow: 0 16px 36px rgba(0,0,0,0.8), 0 0 20px rgba(16, 185, 129, 0.5); }
+    }
+    .tooltip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .tooltip-badge-pill {
+      background: #10B981;
+      color: #000;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .tooltip-code {
+      background: #070B14;
+      border: 1px solid #1E293B;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #38BDF8;
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+    .tooltip-meta {
+      font-size: 10px;
+      color: #94A3B8;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    /* Institutional Blotter Table */
+    .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 22px; }
+    .table-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(10, 15, 29, 0.6); }
+    .table-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+    th { padding: 10px 14px; background: rgba(15, 23, 42, 0.8); color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 14px; border-bottom: 1px solid rgba(30, 41, 59, 0.5); vertical-align: middle; }
+    .mono { font-family: "JetBrains Mono", monospace; font-size: 12px; }
+    .num { text-align: right; font-family: "JetBrains Mono", monospace; font-size: 12px; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; font-family: monospace; }
+    .badge-matched { background: rgba(52, 211, 153, 0.1); color: var(--emerald); border: 1px solid rgba(52, 211, 153, 0.25); }
+    .badge-failed { background: rgba(244, 63, 94, 0.15); color: var(--crimson); border: 1px solid rgba(244, 63, 94, 0.4); }
+    
+    /* ------------------------------------------------------------- */
+    /* FLOATING TESTUDO DOM EXPLORER INSPECTOR DRAWER                */
+    /* ------------------------------------------------------------- */
+    .testudo-inspector-drawer {
+      background: #090E1A;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .drawer-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 10px;
+    }
+    .drawer-title-box { display: flex; align-items: center; gap: 8px; }
+    .drawer-title { font-size: 13px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; }
+    .drawer-tag { background: rgba(56, 189, 248, 0.2); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-family: monospace; font-weight: 600; }
+    .resolution-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-family: "JetBrains Mono", monospace;
+      color: #94A3B8;
+      background: #0F172A;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #1E293B;
+    }
+    .crumb-hilite { color: #38BDF8; font-weight: 700; }
+    .crumb-priority { background: rgba(52, 211, 153, 0.15); color: #34D399; padding: 1px 5px; border-radius: 3px; font-weight: 700; border: 1px solid rgba(52, 211, 153, 0.3); }
+    
+    /* Scanned Elements Table */
+    .scanned-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .scanned-table th { padding: 6px 10px; background: #0F172A; color: #94A3B8; text-transform: uppercase; font-size: 9px; letter-spacing: 0.05em; border-bottom: 1px solid #1E293B; }
+    .scanned-table td { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); font-family: "JetBrains Mono", monospace; vertical-align: middle; }
+    .badge-index { background: #2563EB; color: #fff; font-weight: 800; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+    .snippet-cell { color: #A5F3FC; }
+    .copy-btn { background: #1E293B; border: 1px solid #334155; color: #94A3B8; font-size: 10px; padding: 2px 6px; border-radius: 3px; cursor: pointer; }
+    .copy-btn:hover { background: #334155; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Bar -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">🛡️</div>
+      <div>
+        <div class="brand-title">TESTUDO DOM EXPLORER & SMART SCOPING RUNTIME</div>
+        <div class="brand-sub">TIER-1 INSTITUTIONAL PRIME BROKERAGE BLOTTER • $T.scan() & $T.explore()</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <a href="fintech_settlement.html" class="nav-btn">← Financial Calculus Demo ($T.calc)</a>
+      <button class="nav-btn active" id="btn-toggle-badges" onclick="toggleBadges()">⚡ Badges Active: [8 Scanned]</button>
+      <span class="env-badge">IN-BROWSER QA FORENSICS</span>
+    </div>
+  </div>
+
+  <!-- High-Level Metrics Row -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Target Scoped Container</div>
+      <div class="metric-val" style="color: var(--cyan); font-size: 16px;">[data-testid="blotter-controls"]</div>
+      <div class="metric-tag tag-blue">✓ Priority 1: data-testid matched</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Actionable Elements</div>
+      <div class="metric-val">8 Elements</div>
+      <div class="metric-tag tag-green">✓ Inputs, Selects, Tabs & Buttons</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Selector Resilience</div>
+      <div class="metric-val">100% Deterministic</div>
+      <div class="metric-tag tag-green">✓ 0 Volatile/Generated CSS Classes</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Playwright Snippets</div>
+      <div class="metric-val" style="color: var(--emerald);">1-Click Ready</div>
+      <div class="metric-tag tag-green">✓ Click Badge to Copy Snippet</div>
+    </div>
+  </div>
+
+  <!-- Target Scoped Container: Blotter Controls Panel -->
+  <div class="controls-panel" data-testid="blotter-controls" id="blotter-controls">
+    <div class="scope-label-badge">🎯 TARGET SCOPE: &lt;div data-testid="blotter-controls"&gt; • [PRIORITY 1 RESOLVED]</div>
+
+    <div class="controls-row">
+      <!-- Filter Controls Left -->
+      <div class="filter-group">
+        
+        <!-- [1] Search Input -->
+        <div class="input-wrapper">
+          <div class="testudo-badge" id="badge-1" onclick="copySnippet(1, 'await $T(\'[data-testid=\\\'search-input\\\']\').type(\'TRD-90414\');')">[1]</div>
+          <input type="text" data-testid="search-input" class="control-input" placeholder="Search Trade ID, CUSIP, Issuer..." value="TRD-90414" />
+        </div>
+
+        <!-- [2] Asset Filter Select -->
+        <div class="input-wrapper">
+          <div class="testudo-badge" id="badge-2" onclick="copySnippet(2, 'await $T(\'#asset-filter\').selectOption(\'structured-credit\');')">[2]</div>
+          <select id="asset-filter" class="control-select">
+            <option value="structured-credit">Structured Credit (ABS/MBS)</option>
+            <option value="sovereign">US Sovereign Treasuries</option>
+            <option value="corporate">Corporate High-Yield</option>
+          </select>
+        </div>
+
+        <!-- [3] Settlement Date Picker -->
+        <div class="input-wrapper">
+          <div class="testudo-badge" id="badge-3" onclick="copySnippet(3, 'await $T(\'input[name=\\\'settlement-date\\\']\').type(\'2026-09-25\');')">[3]</div>
+          <input type="date" name="settlement-date" class="control-input" style="min-width: 130px;" value="2026-09-25" />
+        </div>
+
+        <!-- [4] & [5] Status Tabs -->
+        <div class="input-wrapper">
+          <div class="tab-list" role="tablist">
+            <div style="position: relative; display: inline-block;">
+              <div class="testudo-badge" id="badge-4" onclick="copySnippet(4, 'await $T(\'button:has-text(\\\'All Positions\\\')\').click();')">[4]</div>
+              <button role="tab" class="tab-btn">All Positions</button>
+            </div>
+            <div style="position: relative; display: inline-block;">
+              <div class="testudo-badge" id="badge-5" onclick="copySnippet(5, 'await $T(\'button:has-text(\\\'Discrepancies\\\')\').click();')">[5]</div>
+              <button role="tab" class="tab-btn active">Discrepancies (1)</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons Right -->
+      <div class="filter-group">
+        <!-- [6] Recalc Button (Active Clicked State with Tooltip) -->
+        <div class="input-wrapper">
+          <div class="testudo-badge copied" id="badge-6" onclick="copySnippet(6, 'await $T(\'#btn-recalc\').click();')">✓ [6]</div>
+          <button id="btn-recalc" class="btn btn-primary">⚡ Re-run Calculus</button>
+        </div>
+
+        <!-- [7] Flag Dispute Button -->
+        <div class="input-wrapper">
+          <div class="testudo-badge" id="badge-7" onclick="copySnippet(7, 'await $T(\'[data-testid=\\\'flag-dispute\\\']\').click();')">[7]</div>
+          <button data-testid="flag-dispute" class="btn btn-danger">⚠ Flag Dispute</button>
+        </div>
+
+        <!-- [8] Export CSV Button -->
+        <div class="input-wrapper">
+          <div class="testudo-badge" id="badge-8" onclick="copySnippet(8, 'await $T(\'#btn-export-csv\').click();')">[8]</div>
+          <button id="btn-export-csv" class="btn btn-secondary">📥 Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Badge [6] Floating Tooltip Callout -->
+    <div class="badge-tooltip-callout">
+      <div class="tooltip-header">
+        <span style="color: #34D399; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+          <span>✓ COPIED TO CLIPBOARD</span>
+        </span>
+        <span class="tooltip-badge-pill">BADGE [6] CLICKED</span>
+      </div>
+      <div class="tooltip-code">await $T('#btn-recalc').click();</div>
+      <div class="tooltip-meta">
+        <span>Target: &lt;button id="btn-recalc"&gt;</span>
+        <span style="color: #38BDF8;">Priority 3: #id (Unique ID)</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Read-Only Blotter Table under Scope Context -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Prime Liquidity Blotter: Positions Matching Active Scope Filter</div>
+      <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">Filtered by: Structured Credit (1 Match)</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Trade ID</th>
+          <th>Security / CUSIP</th>
+          <th style="text-align: right;">Units</th>
+          <th style="text-align: right;">Principal [A]</th>
+          <th style="text-align: right;">Accrued Interest [B]</th>
+          <th style="text-align: right;">Calculated Net</th>
+          <th style="text-align: right;">Live System Balance</th>
+          <th style="text-align: center;">Reconciliation Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background: rgba(244, 63, 94, 0.05);">
+          <td class="mono" style="color: #F87171; font-weight: 700;">TRD-90414</td>
+          <td>
+            <div style="font-weight: 600; color: #fff;">Institutional Prime Tranche A-1</div>
+            <div style="color: #94A3B8; font-size: 10px;">61747Y-AA-9 • Floating Rate Note</div>
+          </td>
+          <td class="num">1,200,000</td>
+          <td class="num" style="color: #E0F2FE;">$1,200,000.00</td>
+          <td class="num" style="color: #FEF3C7;">+$52,450.00</td>
+          <td class="num" style="font-weight: 700; color: #34D399;">$1,249,500.00</td>
+          <td class="num" style="font-weight: 800; color: #FFA4B2;">$1,249,499.99</td>
+          <td style="text-align: center;"><span class="badge badge-failed">FAIL (-$0.01 DRIFT)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FLOATING TESTUDO DOM EXPLORER INSPECTOR DRAWER -->
+  <div class="testudo-inspector-drawer">
+    
+    <!-- Drawer Top Bar -->
+    <div class="drawer-top-bar">
+      <div class="drawer-title-box">
+        <span style="font-size: 16px;">🛡️</span>
+        <div class="drawer-title">TESTUDO DOM EXPLORER & SMART SCOPING INSPECTOR <span class="drawer-tag">$T.scan() v0.2.0</span></div>
+      </div>
+      <div class="resolution-breadcrumb">
+        <span>Query: <span class="crumb-hilite">'blotter-controls'</span></span>
+        <span>→</span>
+        <span>Matched: <span class="crumb-hilite">&lt;div data-testid="blotter-controls"&gt;</span></span>
+        <span>→</span>
+        <span class="crumb-priority">CASCADE: Priority 1 [data-testid]</span>
+      </div>
+    </div>
+
+    <!-- Scanned Elements Table -->
+    <table class="scanned-table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Badge</th>
+          <th style="width: 70px;">Tag</th>
+          <th>Matched Identifier</th>
+          <th>Resilient Selector</th>
+          <th>Generated Playwright Test Snippet</th>
+          <th style="width: 80px; text-align: center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge-index">[1]</span></td>
+          <td>input</td>
+          <td style="color: #38BDF8;">data-testid="search-input"</td>
+          <td>[data-testid="search-input"]</td>
+          <td class="snippet-cell">await $T('[data-testid="search-input"]').type('TRD-90414');</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(1, 'await $T(\'[data-testid=\\\'search-input\\\']\').type(\'TRD-90414\');')">Copy</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[2]</span></td>
+          <td>select</td>
+          <td style="color: #F59E0B;">id="asset-filter"</td>
+          <td>#asset-filter</td>
+          <td class="snippet-cell">await $T('#asset-filter').selectOption('structured-credit');</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(2, 'await $T(\'#asset-filter\').selectOption(\'structured-credit\');')">Copy</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[3]</span></td>
+          <td>input</td>
+          <td style="color: #C084FC;">name="settlement-date"</td>
+          <td>input[name="settlement-date"]</td>
+          <td class="snippet-cell">await $T('input[name="settlement-date"]').type('2026-09-25');</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(3, 'await $T(\'input[name=\\\'settlement-date\\\']\').type(\'2026-09-25\');')">Copy</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[4]</span></td>
+          <td>button</td>
+          <td style="color: #94A3B8;">role="tab" ("All Positions")</td>
+          <td>button:has-text("All Positions")</td>
+          <td class="snippet-cell">await $T('button:has-text("All Positions")').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(4, 'await $T(\'button:has-text(\\\'All Positions\\\')\').click();')">Copy</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[5]</span></td>
+          <td>button</td>
+          <td style="color: #94A3B8;">role="tab" ("Discrepancies")</td>
+          <td>button:has-text("Discrepancies")</td>
+          <td class="snippet-cell">await $T('button:has-text("Discrepancies")').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(5, 'await $T(\'button:has-text(\\\'Discrepancies\\\')\').click();')">Copy</button></td>
+        </tr>
+        <tr style="background: rgba(16, 185, 129, 0.08);">
+          <td><span class="badge-index" style="background: #10B981;">✓ [6]</span></td>
+          <td>button</td>
+          <td style="color: #34D399; font-weight: 700;">id="btn-recalc" (ACTIVE)</td>
+          <td style="font-weight: 700;">#btn-recalc</td>
+          <td class="snippet-cell" style="color: #34D399; font-weight: 700;">await $T('#btn-recalc').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" style="background: #10B981; color: #000; font-weight: 700;">Copied!</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[7]</span></td>
+          <td>button</td>
+          <td style="color: #F43F5E;">data-testid="flag-dispute"</td>
+          <td>[data-testid="flag-dispute"]</td>
+          <td class="snippet-cell">await $T('[data-testid="flag-dispute"]').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(7, 'await $T(\'[data-testid=\\\'flag-dispute\\\']\').click();')">Copy</button></td>
+        </tr>
+        <tr>
+          <td><span class="badge-index">[8]</span></td>
+          <td>button</td>
+          <td style="color: #38BDF8;">id="btn-export-csv"</td>
+          <td>#btn-export-csv</td>
+          <td class="snippet-cell">await $T('#btn-export-csv').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(8, 'await $T(\'#btn-export-csv\').click();')">Copy</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <script>
+    function copySnippet(index, code) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code);
+      }
+      const badge = document.getElementById('badge-' + index);
+      if (badge) {
+        badge.classList.add('copied');
+        badge.innerText = '✓ [' + index + ']';
+        setTimeout(() => {
+          if (index !== 6) {
+            badge.classList.remove('copied');
+            badge.innerText = '[' + index + ']';
+          }
+        }, 1500);
+      }
+    }
+
+    function toggleBadges() {
+      const badges = document.querySelectorAll('.testudo-badge');
+      const callout = document.querySelector('.badge-tooltip-callout');
+      const btn = document.getElementById('btn-toggle-badges');
+      let isVisible = true;
+      badges.forEach(b => {
+        if (b.style.display === 'none') {
+          b.style.display = 'flex';
+          isVisible = true;
+        } else {
+          b.style.display = 'none';
+          isVisible = false;
+        }
+      });
+      if (callout) {
+        callout.style.display = isVisible ? 'block' : 'none';
+      }
+      if (btn) {
+        btn.innerText = isVisible ? '⚡ Badges Active: [8 Scanned]' : '⚡ Badges Hidden (Click to Show)';
+        btn.classList.toggle('active', isVisible);
+      }
+    }
+  </script>
+</body>
+</html>
