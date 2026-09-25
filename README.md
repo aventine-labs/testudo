@@ -162,6 +162,23 @@ python3 engines/python/AventineLoadEngine.py --url https://app.example.com --wor
 
 ---
 
+## 🛡️ Part of the Aventine Labs Sovereign Developer Suite
+
+`@aventine/testudo` is part of Aventine Labs' open ecosystem of 100% client-side, zero-telemetry engineering workbenches. All tools execute purely in your browser's WebAssembly sandbox with zero network home-calls and zero server-side telemetry:
+
+| Tool | Focus Area | Live Application |
+| :--- | :--- | :--- |
+| **[PromptForge™](https://aventinelabs.com/forges/prompt)** | In-browser AST prompt sanitizer and lossless bi-directional entity restorer for LLMs. | [Launch Tool](https://aventinelabs.com/forges/prompt) |
+| **[JWTForge™](https://aventinelabs.com/forges/jwt)** | RFC 7519 token claims studio, header inspector, and signature verification with zero token leakage. | [Launch Tool](https://aventinelabs.com/forges/jwt) |
+| **[EnvForge™](https://aventinelabs.com/forges/env)** | In-browser `.env` diff engine, secret rotation planner, and Shannon entropy scanner. | [Launch Tool](https://aventinelabs.com/forges/env) |
+| **[RegexForge™](https://aventinelabs.com/forges/regex)** | ReDoS catastrophic backtracking analyzer, dialect transpiler, and visual AST sandbox. | [Launch Tool](https://aventinelabs.com/forges/regex) |
+| **[CertForge™](https://aventinelabs.com/forges/cert)** | X.509 certificate chain visualizer, SAN parser, and in-browser local development Root CA generator. | [Launch Tool](https://aventinelabs.com/forges/cert) |
+| **[SQLForge™](https://aventinelabs.com/forges/sql)** | EXPLAIN ANALYZE visualizer, index selectivity advisor, and N+1 query detector. | [Launch Tool](https://aventinelabs.com/forges/sql) |
+
+👉 Explore all 16 client-side developer utilities at [aventinelabs.com/forges](https://aventinelabs.com/forges).
+
+---
+
 ## License
 
 Apache-2.0. Copyright (c) 2026 Aventine Labs LLC.
