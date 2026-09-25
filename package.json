@@ -39,6 +39,10 @@
       "types": "./dist/matchers.d.ts",
       "import": "./dist/matchers.js"
     },
+    "./report": {
+      "types": "./dist/report.d.ts",
+      "import": "./dist/report.js"
+    },
     "./playwright": {
       "types": "./dist/adapters/playwright.d.ts",
       "import": "./dist/adapters/playwright.js"

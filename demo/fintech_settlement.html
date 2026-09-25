@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tier-1 Institutional Prime Brokerage - Portfolio Settlement</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.85);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --amber: #F59E0B;
+      --purple: #C084FC;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 14px; }
+    .brand-logo { width: 38px; height: 38px; background: linear-gradient(135deg, #1E3A8A, #3B82F6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 18px; border: 1px solid rgba(255,255,255,0.2); }
+    .brand-title { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand-sub { font-size: 12px; color: var(--text-muted); font-mono: monospace; }
+    .env-badge { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--cyan); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-family: monospace; font-weight: 600; }
+    
+    /* Metrics Row */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; backdrop-filter: blur(12px); }
+    .metric-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; font-weight: 600; margin-bottom: 6px; }
+    .metric-val { font-size: 22px; font-weight: 700; font-family: "JetBrains Mono", monospace; }
+    .metric-tag { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .tag-green { color: var(--emerald); }
+    .tag-red { color: var(--crimson); }
+    
+    /* Table Container */
+    .table-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .table-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(10, 15, 29, 0.6); }
+    .table-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .table-desc { font-size: 12px; color: var(--text-muted); }
+    
+    /* Table Styles */
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { padding: 12px 16px; background: rgba(15, 23, 42, 0.8); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid var(--border); }
+    td { padding: 16px; border-bottom: 1px solid rgba(30, 41, 59, 0.5); vertical-align: middle; }
+    .mono { font-family: "JetBrains Mono", monospace; font-size: 13px; }
+    .num { text-align: right; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+    .cusip { color: var(--text-muted); font-size: 11px; }
+    .security-name { font-weight: 600; color: #fff; }
+    
+    /* Status Badges */
+    .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: monospace; }
+    .badge-matched { background: rgba(52, 211, 153, 0.1); color: var(--emerald); border: 1px solid rgba(52, 211, 153, 0.25); }
+    .badge-failed { background: rgba(244, 63, 94, 0.15); color: var(--crimson); border: 1px solid rgba(244, 63, 94, 0.4); animation: pulseAlert 2s infinite; }
+
+    @keyframes pulseAlert {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+      50% { box-shadow: 0 0 12px 2px rgba(244, 63, 94, 0.3); }
+    }
+
+    /* ------------------------------------------------------------- */
+    /* TESTUDO MULTI-CELL FINANCIAL CALCULUS INSPECTOR HIGHLIGHTS    */
+    /* ------------------------------------------------------------- */
+
+    /* Cell Operand A: Principal (Cyan) */
+    .testudo-operand-a {
+      position: relative;
+      background: rgba(56, 189, 248, 0.12) !important;
+      outline: 2px solid var(--cyan) !important;
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+    .testudo-operand-a::before {
+      content: "OPERAND [A] PRINCIPAL";
+      position: absolute;
+      top: -12px;
+      right: 4px;
+      background: var(--cyan);
+      color: #000;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    /* Cell Operand B: Accrued Interest (Amber) */
+    .testudo-operand-b {
+      position: relative;
+      background: rgba(245, 158, 11, 0.12) !important;
+      outline: 2px solid var(--amber) !important;
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+    .testudo-operand-b::before {
+      content: "OPERAND [B] INTEREST (+)";
+      position: absolute;
+      top: -12px;
+      right: 4px;
+      background: var(--amber);
+      color: #000;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    /* Cell Operand C: Clearing Fee (Purple) */
+    .testudo-operand-c {
+      position: relative;
+      background: rgba(192, 132, 252, 0.12) !important;
+      outline: 2px solid var(--purple) !important;
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+    .testudo-operand-c::before {
+      content: "OPERAND [C] FEE (-)";
+      position: absolute;
+      top: -12px;
+      right: 4px;
+      background: var(--purple);
+      color: #000;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    /* Cell Operand D: Withholding Tax (Emerald) */
+    .testudo-operand-d {
+      position: relative;
+      background: rgba(52, 211, 153, 0.12) !important;
+      outline: 2px solid var(--emerald) !important;
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+    .testudo-operand-d::before {
+      content: "OPERAND [D] TAX (-)";
+      position: absolute;
+      top: -12px;
+      right: 4px;
+      background: var(--emerald);
+      color: #000;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    /* Target Cell: Live System Balance (Crimson Red / Failure) */
+    .testudo-target-failed {
+      position: relative;
+      background: rgba(244, 63, 94, 0.2) !important;
+      outline: 2px solid var(--crimson) !important;
+      outline-offset: -2px;
+      border-radius: 4px;
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+    }
+    .testudo-target-failed::before {
+      content: "TARGET [BALANCE] ERROR (-$0.01)";
+      position: absolute;
+      top: -12px;
+      right: 4px;
+      background: var(--crimson);
+      color: #fff;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 10;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* FLOATING TESTUDO FORENSIC CALCULUS HUD BAR                    */
+    /* ------------------------------------------------------------- */
+    .testudo-floating-hud {
+      margin-top: 24px;
+      background: #090E1A;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 18px 24px;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+    }
+
+    .hud-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 12px;
+    }
+
+    .hud-title-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hud-mascot-icon {
+      width: 28px;
+      height: 28px;
+      background: #1E293B;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .hud-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hud-tag {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--cyan);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: monospace;
+      font-weight: 600;
+    }
+
+    .hud-formula-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    .formula-chip {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-a { background: rgba(56, 189, 248, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
+    .chip-b { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+    .chip-c { background: rgba(192, 132, 252, 0.15); color: var(--purple); border: 1px solid var(--purple); }
+    .chip-d { background: rgba(52, 211, 153, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .chip-op { color: #94A3B8; font-weight: 700; font-size: 14px; }
+    .chip-eq { color: #fff; font-weight: 800; font-size: 15px; }
+
+    .chip-expected {
+      background: rgba(52, 211, 153, 0.2);
+      color: var(--emerald);
+      border: 1px solid var(--emerald);
+      font-weight: 700;
+    }
+
+    .chip-actual-fail {
+      background: rgba(244, 63, 94, 0.25);
+      color: #FFA4B2;
+      border: 1px solid var(--crimson);
+      font-weight: 700;
+      animation: pulseAlert 2s infinite;
+    }
+
+    /* Zoomed Callout Box */
+    .zoomed-callout-overlay {
+      position: absolute;
+      right: 24px;
+      top: -120px;
+      background: #0F172A;
+      border: 2px solid var(--crimson);
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(244, 63, 94, 0.3);
+      width: 380px;
+      z-index: 50;
+    }
+
+    .callout-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--crimson);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 6px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      background: #080D1A;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #1E293B;
+    }
+
+    .diff-label { color: #64748B; }
+    .diff-expected-str { color: var(--emerald); }
+    .diff-actual-str { color: var(--crimson); }
+    .diff-highlight-err {
+      background: #F43F5E;
+      color: #000;
+      font-weight: 900;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+    .diff-highlight-good {
+      background: #10B981;
+      color: #000;
+      font-weight: 900;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    .code-snippet-box {
+      margin-top: 10px;
+      background: #040711;
+      border: 1px solid #1E293B;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #38BDF8;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">PB</div>
+      <div>
+        <div class="brand-title">Tier-1 Institutional Prime Brokerage & Trade Settlement</div>
+        <div class="brand-sub">ACCOUNT: PB-QUANT-7702-NYC • SETTLEMENT CYCLE: T+1 ATOMIC CLEARING</div>
+      </div>
+    </div>
+    <div class="env-badge">TESTUDO CI MONITOR ACTIVE • PID 94812</div>
+  </div>
+
+  <!-- Metric Overview Cards -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-label">Settled Notional (24H)</div>
+      <div class="metric-val">$48,290,150.00</div>
+      <div class="metric-tag tag-green">✓ 100% On-Time Delivery</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Active Settlement Blotters</div>
+      <div class="metric-val">14 Blotters</div>
+      <div class="metric-tag tag-green">✓ Fedwire & DTC Connected</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Reconciled Positions</div>
+      <div class="metric-val">99.88%</div>
+      <div class="metric-tag tag-green">✓ 8,241 Verified Matches</div>
+    </div>
+    <div class="metric-card" style="border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.05);">
+      <div class="metric-label" style="color: var(--crimson);">Unreconciled Blotter</div>
+      <div class="metric-val" style="color: var(--crimson);">1 Discrepancy</div>
+      <div class="metric-tag tag-red">⚠ $T.calc Assertion Failed (-$0.01)</div>
+    </div>
+  </div>
+
+  <!-- Main Institutional Blotter Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <div>
+        <div class="table-title">Prime Liquidity Blotter: Fixed Income & Structured Credit</div>
+        <div class="table-desc">Cross-clearing validation comparing principal, accrued coupon interest, and regulatory withholding deductions.</div>
+      </div>
+    </div>
+
+    <table id="settlement-blotter">
+      <thead>
+        <tr>
+          <th>Trade ID</th>
+          <th>Security / CUSIP</th>
+          <th style="text-align: right;">Units / Par</th>
+          <th style="text-align: right;">Principal [A]</th>
+          <th style="text-align: right;">Interest [B]</th>
+          <th style="text-align: right;">Exchange Fee [C]</th>
+          <th style="text-align: right;">Tax Withheld [D]</th>
+          <th style="text-align: right;">Calculated Total</th>
+          <th style="text-align: right;">Live System Balance</th>
+          <th style="text-align: center;">Reconciliation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Trade 1: Clean -->
+        <tr>
+          <td class="mono">TRD-90412</td>
+          <td>
+            <div class="security-name">US Treasury 4.250% 15-AUG-2034</div>
+            <div class="cusip">91282CGM8 • Sovereign Benchmark</div>
+          </td>
+          <td class="num">5,000,000</td>
+          <td class="num">$4,985,000.00</td>
+          <td class="num" style="color: var(--emerald);">+$106,250.00</td>
+          <td class="num" style="color: #94A3B8;">-$150.00</td>
+          <td class="num" style="color: #94A3B8;">$0.00</td>
+          <td class="num" style="font-weight: 600;">$5,091,100.00</td>
+          <td class="num" style="font-weight: 600;">$5,091,100.00</td>
+          <td style="text-align: center;"><span class="badge badge-matched">MATCHED</span></td>
+        </tr>
+
+        <!-- Trade 2: Clean -->
+        <tr>
+          <td class="mono">TRD-90413</td>
+          <td>
+            <div class="security-name">Apple Inc 3.850% 04-AUG-2028</div>
+            <div class="cusip">037833EF2 • Senior Unsecured</div>
+          </td>
+          <td class="num">2,500,000</td>
+          <td class="num">$2,475,000.00</td>
+          <td class="num" style="color: var(--emerald);">+$48,125.00</td>
+          <td class="num" style="color: #94A3B8;">-$125.00</td>
+          <td class="num" style="color: #94A3B8;">-$1,440.00</td>
+          <td class="num" style="font-weight: 600;">$2,521,560.00</td>
+          <td class="num" style="font-weight: 600;">$2,521,560.00</td>
+          <td style="text-align: center;"><span class="badge badge-matched">MATCHED</span></td>
+        </tr>
+
+        <!-- Trade 3: The Calculus Discrepancy Highlighted by Testudo -->
+        <tr style="background: rgba(244, 63, 94, 0.04);">
+          <td class="mono" style="color: #F87171;">TRD-90414</td>
+          <td>
+            <div class="security-name">Institutional Prime Tranche A-1</div>
+            <div class="cusip">61747Y-AA-9 • Floating Rate Note</div>
+          </td>
+          <td class="num">1,200,000</td>
+          
+          <!-- OPERAND A: Principal (Cyan) -->
+          <td class="num testudo-operand-a" id="cell-principal" style="font-weight: 700; color: #E0F2FE;">$1,200,000.00</td>
+          
+          <!-- OPERAND B: Accrued Interest (Amber) -->
+          <td class="num testudo-operand-b" id="cell-interest" style="font-weight: 700; color: #FEF3C7;">+$52,450.00</td>
+          
+          <!-- OPERAND C: Clearing Fee (Purple) -->
+          <td class="num testudo-operand-c" id="cell-fee" style="font-weight: 700; color: #F3E8FF;">-$1,200.00</td>
+          
+          <!-- OPERAND D: Withholding Tax (Emerald) -->
+          <td class="num testudo-operand-d" id="cell-tax" style="font-weight: 700; color: #D1FAE5;">-$1,750.00</td>
+          
+          <!-- Calculated Expected Balance -->
+          <td class="num" style="font-weight: 700; color: var(--emerald); background: rgba(52, 211, 153, 0.05);">$1,249,500.00</td>
+          
+          <!-- TARGET LIVE BALANCE: Discrepancy (Crimson) -->
+          <td class="num testudo-target-failed" id="cell-live-balance" style="font-weight: 800; color: #FFA4B2;">$1,249,499.99</td>
+          
+          <td style="text-align: center;"><span class="badge badge-failed">FAIL (-$0.01)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FLOATING TESTUDO CALCULUS INSPECTOR HUD -->
+  <div class="testudo-floating-hud">
+    
+    <!-- Top HUD Bar -->
+    <div class="hud-top-bar">
+      <div class="hud-title-box">
+        <div class="hud-mascot-icon">🛡️</div>
+        <div>
+          <div class="hud-title">TESTUDO FINANCIAL CALCULUS FORENSICS <span class="hud-tag">$T.calc() v0.2.0</span></div>
+        </div>
+      </div>
+      <div style="font-size: 11px; color: #94A3B8; font-family: monospace;">
+        ASSERTION: <span style="color: #F43F5E;">DISCREPANCY DETECTED (Δ -0.01)</span>
+      </div>
+    </div>
+
+    <!-- The Color-Coded Arithmetic Formula Bar -->
+    <div class="hud-formula-row">
+      <span style="color: #94A3B8; font-weight: 700; font-size: 11px;">FORMULA EQUATION:</span>
+      
+      <!-- Operand A -->
+      <span class="formula-chip chip-a">[A: #cell-principal] $1,200,000.00</span>
+      <span class="chip-op">+</span>
+      
+      <!-- Operand B -->
+      <span class="formula-chip chip-b">[B: #cell-interest] $52,450.00</span>
+      <span class="chip-op">-</span>
+      
+      <!-- Operand C -->
+      <span class="formula-chip chip-c">[C: #cell-fee] $1,200.00</span>
+      <span class="chip-op">-</span>
+      
+      <!-- Operand D -->
+      <span class="formula-chip chip-d">[D: #cell-tax] $1,750.00</span>
+      
+      <span class="chip-eq">==</span>
+      
+      <!-- Expected -->
+      <span class="formula-chip chip-expected">EXPECTED: $1,249,500.00</span>
+      
+      <span class="chip-op" style="color: var(--crimson); font-size: 16px;">≠</span>
+      
+      <!-- Actual Live Failed Target -->
+      <span class="formula-chip chip-actual-fail">ACTUAL DOM: $1,249,499.99</span>
+    </div>
+
+    <!-- Playwright 1-Liner Output -->
+    <div class="code-snippet-box">
+      <span style="color: #64748B;">// Generated by Testudo Interactive Inspector:</span><br>
+      <span style="color: #F472B6;">await</span> expect($T.calc(<span style="color: #A5F3FC;">'#cell-principal + #cell-interest - #cell-fee - #cell-tax'</span>))
+        .toEqualCurrency(<span style="color: #FCA5A5;">'#cell-live-balance'</span>, { tolerance: <span style="color: #FDE047;">0.005</span> });
+    </div>
+
+    <!-- Zoomed High-Magnification Callout Overlay (Positioned directly over Target Cell) -->
+    <div class="zoomed-callout-overlay">
+      <div class="callout-header">
+        <span>🔍 CHARACTER-LEVEL DIFF ZOOM</span>
+        <span style="color: #94A3B8;">Index 10 Divergence</span>
+      </div>
+      <div class="diff-grid">
+        <span class="diff-label">Expected:</span>
+        <span class="diff-expected-str">$1,249,50<span class="diff-highlight-good">0.00</span></span>
+        <span class="diff-label">Actual DOM:</span>
+        <span class="diff-actual-str">$1,249,49<span class="diff-highlight-err">9.99</span></span>
+        <span class="diff-label">Divergence:</span>
+        <span style="color: #FDE047;">-$0.01 (1 Cent IEEE-754 Drift)</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

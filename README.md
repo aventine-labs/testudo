@@ -108,21 +108,48 @@ await $T('#phone').type('5551234567', {
 // Result: React state updates to "(555) 123-4567"
 ```
 
-### 3. Visual Error Forensics & Character Diff HUD
+### 3. Visual Error Forensics & Multi-Cell Financial Calculus
 
-When an assertion fails, Testudo does not just throw text. It highlights the target element in glowing neon red, centers the viewport, and renders a character-level diff:
+When an assertion fails, Testudo does not just dump unformatted text into a log. It renders an in-DOM forensic HUD, centers the viewport, and highlights every contributing operand in distinct, color-coded bounding boxes:
 
-```text
-+--------------------------------------------------------------+
-| [TESTUDO FAIL] Assertion Failed                              |
-| Unexpected '-' at index 4 (expected 'E')                     |
-+--------------------------------------------------------------+
+![Testudo Visual Forensics](assets/screenshots/testudo_fintech_full_settlement_screengrab.png)
+
+#### Multi-Cell Financial Calculus Inspector
+In enterprise accounting and prime brokerage trading (Tier-1 Clearing / Institutional Blotter style), balances depend on multiple contributing cells. Testudo highlights each operand with non-colliding colors so you can inspect the entire audit trail at a glance:
+- **Operand [A] Principal**: Highlighted in Electric Cyan (`#38BDF8`).
+- **Operand [B] Interest (+)**: Highlighted in Vibrant Amber (`#F59E0B`).
+- **Operand [C] Regulatory Fee (-)**: Highlighted in Neon Purple (`#C084FC`).
+- **Operand [D] Tax Withheld (-)**: Highlighted in Emerald Green (`#34D399`).
+- **Target Live Balance**: Snapped in Pulsing Crimson (`#F43F5E`) with micro-magnified character-by-character diff callout.
+
+### 4. Enterprise Multi-Format Reporting (Splunk, Clean Text, ANSI, GitHub Actions)
+
+Configure verbosity and log formatting to match your infrastructure requirements:
+
+```javascript
+import { reporter } from '@aventine/testudo';
+
+// 1. Splunk / Datadog / Sumo Logic SIEM Format (key="value")
+reporter.configure({ format: 'splunk', verbosity: 'all' });
+// Output: timestamp="2026-09-25T21:34:07Z" tool="testudo" level="error" event="assertion_failed" test_id="TRD-90414" formula="[A]+[B]-[C]-[D]" expected="1250000.00" actual="1249499.99" delta="-0.01" divergence_index=10 tolerance=0.005 selector="#cell-live-balance" elapsed_ms=4.20
+
+// 2. Clean Plain Text Format (No ANSI codes, raw CI log friendly)
+reporter.configure({ format: 'plain', verbosity: 'info' });
+// Output: [TESTUDO ERROR] Financial balance mismatch (Expected: $1,250,000.00, Actual: $1,249,499.99, Delta: -0.01) | Selector: #cell-live-balance
+
+// 3. GitHub Actions Step Summary (Markdown)
+reporter.configure({ format: 'github-summary', verbosity: 'error' });
+// Output: Generates structured Markdown tables directly compatible with $GITHUB_STEP_SUMMARY
 ```
 
-- **Input Mode**: Uses a non-destructive absolute-positioned ghost overlay over `<input>` elements. Zero React hydration breakage.
-- **Read Mode**: Uses native `Range.getBoundingClientRect()` for sub-pixel character accuracy across variable web fonts and emojis.
+**Verbosity Levels**:
+- `all` / `debug`: Logs every measured bounding box, font-load state, locator retry, and operand delta.
+- `info`: Logs suite milestones, scope scans, and assertions passed within allowable tolerance.
+- `warn`: Logs near-miss tolerances (within 10% of maximum epsilon) and detached node warnings.
+- `error`: Logs hard assertion failures and unhandled rejections.
+- `silent`: Suppresses terminal output; throws only on unhandled failures.
 
-### 4. Interactive DOM Explorer (`$T.scan`)
+### 5. Interactive DOM Explorer (`$T.scan`)
 
 Designed for junior testers exploring a complex web application:
 
