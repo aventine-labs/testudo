@@ -1,0 +1,243 @@
+/**
+ * @aventine/testudo - Interactive DOM Explorer & Smart Scoping
+ * Scans DOM for actionable elements, generates resilient code snippets, and provides visual badges.
+ * Built for junior testers and rapid test automation.
+ * Zero external dependencies.
+ */
+
+export interface ScannedElement {
+  index: number;
+  tag: string;
+  type?: string;
+  name?: string;
+  id?: string;
+  label?: string;
+  role?: string;
+  text?: string;
+  selector: string;
+  snippet: string;
+  element: HTMLElement;
+}
+
+export class TestudoScan {
+  private activeBadges: HTMLElement[] = [];
+
+  /**
+   * Deterministic Smart Scope Resolver.
+   * Resolves plain words (e.g. 'contact' or 'modal' or 'form.contact') into target container elements.
+   * Priority cascade: data-testid > data-test > id > name > aria-label > heading text > class > tag.
+   */
+  public resolveScope(scopeQuery?: string | HTMLElement): HTMLElement[] {
+    if (typeof document === 'undefined') return [];
+    if (!scopeQuery) return [document.body];
+    if (typeof scopeQuery !== 'string') return [scopeQuery];
+
+    const clean = scopeQuery.trim();
+
+    // 1. Direct standard CSS selector check (e.g. #contact, .modal, form[name="checkout"])
+    if (clean.startsWith('#') || clean.startsWith('.') || clean.includes('[') || clean.includes('>')) {
+      const found = document.querySelectorAll(clean);
+      if (found.length > 0) return Array.from(found) as HTMLElement[];
+    }
+
+    // 2. Handle dot-notation: e.g. "form.contact"
+    if (clean.includes('.')) {
+      const parts = clean.split('.');
+      const tag = parts[0];
+      const ident = parts[1];
+      const selector = `${tag}#${ident}, ${tag}.${ident}, ${tag}[name="${ident}"]`;
+      const found = document.querySelectorAll(selector);
+      if (found.length > 0) return Array.from(found) as HTMLElement[];
+    }
+
+    // 3. Deterministic Priority Cascade for plain words (e.g. 'contact')
+    const candidates: HTMLElement[] = [];
+
+    // Priority 1: data-testid
+    const byTestId = document.querySelectorAll(`[data-testid="${clean}" i]`);
+    if (byTestId.length > 0) candidates.push(...Array.from(byTestId) as HTMLElement[]);
+
+    // Priority 2: data-test
+    const byDataTest = document.querySelectorAll(`[data-test="${clean}" i]`);
+    if (byDataTest.length > 0) candidates.push(...Array.from(byDataTest) as HTMLElement[]);
+
+    // Priority 3: id
+    const byId = document.getElementById(clean) || document.querySelector(`[id*="${clean}" i]`);
+    if (byId) candidates.push(byId as HTMLElement);
+
+    // Priority 4: name attribute
+    const byName = document.querySelectorAll(`[name="${clean}" i]`);
+    if (byName.length > 0) candidates.push(...Array.from(byName) as HTMLElement[]);
+
+    // Priority 5: aria-label
+    const byAria = document.querySelectorAll(`[aria-label*="${clean}" i]`);
+    if (byAria.length > 0) candidates.push(...Array.from(byAria) as HTMLElement[]);
+
+    // Priority 6: heading text (h1..h6)
+    const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    for (const h of Array.from(headings)) {
+      if (h.textContent?.toLowerCase().includes(clean.toLowerCase())) {
+        const container = h.closest('section, form, div, main, article') || h.parentElement;
+        if (container) candidates.push(container as HTMLElement);
+      }
+    }
+
+    // Priority 7: class name
+    const byClass = document.querySelectorAll(`.${clean}`);
+    if (byClass.length > 0) candidates.push(...Array.from(byClass) as HTMLElement[]);
+
+    // Priority 8: tag name (e.g. 'form', 'table', 'nav', 'header')
+    const byTag = document.querySelectorAll(clean);
+    if (byTag.length > 0) candidates.push(...Array.from(byTag) as HTMLElement[]);
+
+    if (candidates.length > 0) {
+      // Deduplicate elements
+      return Array.from(new Set(candidates));
+    }
+
+    return [document.body];
+  }
+
+  /**
+   * Scans a target scope and returns all actionable interactive elements with resilient snippets.
+   */
+  public scan(scopeQuery?: string | HTMLElement): ScannedElement[] {
+    const scopes = this.resolveScope(scopeQuery);
+    if (scopes.length === 0) return [];
+
+    const results: ScannedElement[] = [];
+    const interactiveQuery = 'button, input, select, textarea, a[href], [role="button"], [role="link"], [role="tab"], [onclick]';
+
+    let index = 1;
+    for (const scope of scopes) {
+      const elements = scope.querySelectorAll(interactiveQuery);
+      for (const el of Array.from(elements) as HTMLElement[]) {
+        // Skip hidden elements
+        if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+
+        const tag = el.tagName.toLowerCase();
+        const type = (el as HTMLInputElement).type;
+        const name = (el as HTMLInputElement).name;
+        const id = el.id;
+        const role = el.getAttribute('role') || undefined;
+        const text = el.innerText?.trim().slice(0, 30);
+        const testId = el.getAttribute('data-testid');
+
+        // Build resilient selector & snippet
+        let selector = '';
+        let snippet = '';
+
+        if (testId) {
+          selector = `[data-testid="${testId}"]`;
+          snippet = `await $T('${selector}').click();`;
+        } else if (id) {
+          selector = `#${id}`;
+          snippet = `await $T('${selector}').click();`;
+        } else if (name) {
+          selector = `${tag}[name="${name}"]`;
+          if (tag === 'input' && type !== 'submit' && type !== 'button') {
+            snippet = `await $T('${selector}').type('example');`;
+          } else {
+            snippet = `await $T('${selector}').click();`;
+          }
+        } else if (text && (tag === 'button' || role === 'button')) {
+          selector = `button:has-text("${text}")`;
+          snippet = `await $T('${selector}').click();`;
+        } else {
+          selector = `${tag}${el.className ? '.' + el.className.split(' ')[0] : ''}`;
+          snippet = `await $T('${selector}').click();`;
+        }
+
+        results.push({
+          index: index++,
+          tag,
+          type,
+          name,
+          id,
+          role,
+          text,
+          selector,
+          snippet,
+          element: el
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Renders visual numbered badges [1], [2], [3] over all interactive elements.
+   * Includes production kill switch.
+   */
+  public explore(scopeQuery?: string | HTMLElement): void {
+    if (typeof document === 'undefined') return;
+
+    // Production Guard Kill Switch
+    const globalObj = typeof globalThis !== 'undefined' ? (globalThis as any) : (window as any);
+    if (globalObj.process && globalObj.process.env && globalObj.process.env.NODE_ENV === 'production') {
+      if (!globalObj.__ENABLE_TESTUDO__) {
+        console.warn('[Testudo] $T.explore() disabled in production mode.');
+        return;
+      }
+    }
+
+    // Dismiss existing badges if already open
+    if (this.activeBadges.length > 0) {
+      this.clearBadges();
+      return;
+    }
+
+    const items = this.scan(scopeQuery);
+    for (const item of items) {
+      const rect = item.element.getBoundingClientRect();
+      const badge = document.createElement('div');
+      badge.setAttribute('data-testudo-badge', 'true');
+      badge.style.cssText = `
+        position: absolute;
+        top: ${rect.top + window.scrollY}px;
+        left: ${rect.left + window.scrollX}px;
+        background: #2563EB;
+        color: #FFFFFF;
+        font-family: monospace;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        z-index: 100000;
+        cursor: pointer;
+      `;
+      badge.innerText = `[${item.index}]`;
+      badge.title = `${item.selector} - Click to copy: ${item.snippet}`;
+
+      badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(item.snippet);
+          badge.style.background = '#10B981'; // Green on copy
+          badge.innerText = `✓ Copied!`;
+          setTimeout(() => {
+            badge.style.background = '#2563EB';
+            badge.innerText = `[${item.index}]`;
+          }, 1500);
+        }
+      });
+
+      document.body.appendChild(badge);
+      this.activeBadges.push(badge);
+    }
+  }
+
+  /**
+   * Clears all visual explorer badges from the page.
+   */
+  public clearBadges(): void {
+    for (const b of this.activeBadges) {
+      b.remove();
+    }
+    this.activeBadges = [];
+  }
+}
+
+export const scan = new TestudoScan();

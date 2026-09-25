@@ -1,0 +1,90 @@
+{
+  "name": "@aventine/testudo",
+  "version": "0.1.0",
+  "description": "The Zero-Dependency Master of Test Suites: High-Precision Financial Math, Framework-Safe Typing, and In-Browser QA Forensics",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./math": {
+      "types": "./dist/math.d.ts",
+      "import": "./dist/math.js"
+    },
+    "./format": {
+      "types": "./dist/format.d.ts",
+      "import": "./dist/format.js"
+    },
+    "./type": {
+      "types": "./dist/type.d.ts",
+      "import": "./dist/type.js"
+    },
+    "./diff": {
+      "types": "./dist/diff.d.ts",
+      "import": "./dist/diff.js"
+    },
+    "./visual": {
+      "types": "./dist/visual.d.ts",
+      "import": "./dist/visual.js"
+    },
+    "./scan": {
+      "types": "./dist/scan.d.ts",
+      "import": "./dist/scan.js"
+    },
+    "./matchers": {
+      "types": "./dist/matchers.d.ts",
+      "import": "./dist/matchers.js"
+    },
+    "./playwright": {
+      "types": "./dist/adapters/playwright.d.ts",
+      "import": "./dist/adapters/playwright.js"
+    },
+    "./standalone": {
+      "types": "./dist/adapters/standalone.d.ts",
+      "import": "./dist/adapters/standalone.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "pretest": "tsc",
+    "test": "node --test tests/*.test.js",
+    "test:ts": "tsc && node --test dist/tests/*.test.js"
+  },
+  "keywords": [
+    "testudo",
+    "testing",
+    "playwright",
+    "synthetic-monitoring",
+    "financial-math",
+    "currency",
+    "qa",
+    "automation",
+    "e2e",
+    "zero-dependencies",
+    "aventine"
+  ],
+  "author": "Mark Gilbert <mark@aventinelabs.com> (Aventine Labs LLC)",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/aventine-labs/testudo#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aventine-labs/testudo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aventine-labs/testudo/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.0"
+  }
+}
