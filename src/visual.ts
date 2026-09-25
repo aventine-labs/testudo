@@ -314,6 +314,227 @@ export class TestudoVisual {
 
     this.activeObserver.observe(document.body, { childList: true, subtree: true });
   }
+
+  /**
+   * Highlights a multi-cell financial calculus failure with distinct non-colliding operand colors,
+   * a target failure outline, floating character-level diff zoom card, and connecting formula HUD.
+   */
+  public highlightCalculus(
+    evaluation: any,
+    targetElementOrSelector: string | HTMLElement,
+    options: { delta?: number; tolerance?: number; autoScroll?: boolean } = {}
+  ): void {
+    if (typeof document === 'undefined') return;
+
+    this.cleanup();
+
+    const { delta = 0, tolerance = 0.005, autoScroll = true } = options;
+
+    let targetEl: HTMLElement | null = null;
+    if (typeof targetElementOrSelector === 'string') {
+      targetEl = document.querySelector(targetElementOrSelector);
+    } else {
+      targetEl = targetElementOrSelector;
+    }
+
+    if (!targetEl) return;
+
+    if (autoScroll && targetEl.scrollIntoView) {
+      targetEl.scrollIntoView({ behavior: 'instant' as any, block: 'center', inline: 'center' });
+    }
+
+    // 1. Highlight each operand with its distinct palette color
+    if (evaluation && evaluation.operands) {
+      for (const op of evaluation.operands) {
+        let el = op.element;
+        if (!el && op.selector) {
+          el = document.querySelector(op.selector);
+        }
+        if (el) {
+          el.setAttribute('data-testudo-outlined', 'true');
+          el.style.setProperty('outline', `2px solid ${op.color}`, 'important');
+          el.style.setProperty('outline-offset', '2px', 'important');
+          el.style.setProperty('box-shadow', `0 0 12px ${op.color}80`, 'important');
+
+          const pill = document.createElement('div');
+          pill.setAttribute('data-testudo-overlay', 'true');
+          const rect = el.getBoundingClientRect();
+          pill.style.cssText = `
+            position: absolute;
+            top: ${window.scrollY + rect.top - 14}px;
+            left: ${window.scrollX + rect.left}px;
+            background: ${op.color};
+            color: #000;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 3px;
+            letter-spacing: 0.05em;
+            z-index: 100000;
+            font-family: monospace;
+            pointer-events: none;
+          `;
+          pill.textContent = `${op.label} ${op.selector}`;
+          document.body.appendChild(pill);
+        }
+      }
+    }
+
+    // 2. Highlight target element in pulsing crimson
+    const crimson = '#F43F5E';
+    targetEl.setAttribute('data-testudo-outlined', 'true');
+    targetEl.style.setProperty('outline', `2px solid ${crimson}`, 'important');
+    targetEl.style.setProperty('outline-offset', '2px', 'important');
+    targetEl.style.setProperty('box-shadow', `0 0 15px ${crimson}B3`, 'important');
+
+    const targetRect = targetEl.getBoundingClientRect();
+
+    const targetPill = document.createElement('div');
+    targetPill.setAttribute('data-testudo-overlay', 'true');
+    targetPill.style.cssText = `
+      position: absolute;
+      top: ${window.scrollY + targetRect.top - 14}px;
+      left: ${window.scrollX + targetRect.left}px;
+      background: ${crimson};
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+      z-index: 100000;
+      font-family: monospace;
+      pointer-events: none;
+    `;
+    targetPill.textContent = `TARGET [ERROR] (Δ ${delta >= 0 ? '+' : ''}${delta})`;
+    document.body.appendChild(targetPill);
+
+    // 3. Floating Character-Level Diff Zoom Card
+    const targetText = ((targetEl as any).value !== undefined ? (targetEl as any).value : targetEl.textContent) || '';
+    const expectedText = `$${Number(evaluation.expectedValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    const diff = charDiff(expectedText, targetText.trim());
+
+    const zoomCard = document.createElement('div');
+    zoomCard.setAttribute('data-testudo-overlay', 'true');
+    zoomCard.className = 'testudo-diff-zoom';
+    zoomCard.style.cssText = `
+      position: absolute;
+      top: ${window.scrollY + targetRect.top - 80}px;
+      left: ${window.scrollX + targetRect.left + 30}px;
+      background: #0F172A;
+      border: 2px solid ${crimson};
+      border-radius: 8px;
+      padding: 10px 14px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.8), 0 0 20px rgba(244, 63, 94, 0.3);
+      z-index: 100001;
+      font-family: monospace;
+      color: #F8FAFC;
+      font-size: 11px;
+      pointer-events: none;
+      min-width: 260px;
+    `;
+
+    zoomCard.innerHTML = `
+      <div style="font-weight: 800; color: ${crimson}; margin-bottom: 6px; font-size: 10px; display: flex; justify-content: space-between;">
+        <span>🔍 CHARACTER-LEVEL DIFF ZOOM</span>
+        <span style="color: #94A3B8;">Index ${diff ? diff.index : 0}</span>
+      </div>
+      <div style="display: grid; grid-template-columns: 70px 1fr; gap: 4px; font-size: 11px;">
+        <span style="color: #94A3B8;">Expected:</span>
+        <span style="color: #34D399; font-weight: 700;">${expectedText}</span>
+        <span style="color: #94A3B8;">Actual DOM:</span>
+        <span style="color: #F87171; font-weight: 700;">${targetText.trim()}</span>
+        <span style="color: #94A3B8;">Divergence:</span>
+        <span style="color: #FDE047;">Δ ${delta >= 0 ? '+' : ''}${delta} (Tol: ${tolerance})</span>
+      </div>
+    `;
+    document.body.appendChild(zoomCard);
+
+    this.watchForElementRemoval(targetEl);
+  }
+
+  /**
+   * Computes the bounding box union of all equation operands plus target element and zoom card.
+   */
+  public getCalculusClipBox(
+    evaluation: any,
+    targetElementOrSelector: string | HTMLElement,
+    padding = 16
+  ): { x: number; y: number; width: number; height: number } {
+    if (typeof document === 'undefined') return { x: 0, y: 0, width: 0, height: 0 };
+
+    const rects: Array<{ x: number; y: number; width: number; height: number }> = [];
+
+    if (evaluation && evaluation.operands) {
+      for (const op of evaluation.operands) {
+        let el = op.element;
+        if (!el && op.selector) {
+          el = document.querySelector(op.selector);
+        }
+        if (el && el.getBoundingClientRect) {
+          const r = el.getBoundingClientRect();
+          rects.push({ x: r.left, y: r.top, width: r.width, height: r.height });
+        }
+      }
+    }
+
+    let targetEl: HTMLElement | null = null;
+    if (typeof targetElementOrSelector === 'string') {
+      targetEl = document.querySelector(targetElementOrSelector);
+    } else {
+      targetEl = targetElementOrSelector;
+    }
+
+    if (targetEl && targetEl.getBoundingClientRect) {
+      const r = targetEl.getBoundingClientRect();
+      rects.push({ x: r.left, y: r.top, width: r.width, height: r.height });
+    }
+
+    const zoomEl = document.querySelector('.testudo-diff-zoom');
+    if (zoomEl && zoomEl.getBoundingClientRect) {
+      const r = zoomEl.getBoundingClientRect();
+      rects.push({ x: r.left, y: r.top, width: r.width, height: r.height });
+    }
+
+    return computeBoundingUnion(rects, padding);
+  }
+}
+
+/**
+ * Computes the minimum bounding box enclosing multiple rectangles with optional margin/padding.
+ */
+export function computeBoundingUnion(
+  rects: Array<{ x: number; y: number; width: number; height: number }>,
+  padding = 16
+): { x: number; y: number; width: number; height: number } {
+  if (!rects || rects.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const r of rects) {
+    if (!r || (r.width <= 0 && r.height <= 0)) continue;
+    minX = Math.min(minX, r.x);
+    minY = Math.min(minY, r.y);
+    maxX = Math.max(maxX, r.x + r.width);
+    maxY = Math.max(maxY, r.y + r.height);
+  }
+
+  if (minX === Infinity) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  const x = Math.max(0, Math.floor(minX - padding));
+  const y = Math.max(0, Math.floor(minY - padding));
+  const width = Math.ceil((maxX - minX) + padding * 2);
+  const height = Math.ceil((maxY - minY) + padding * 2);
+
+  return { x, y, width, height };
 }
 
 export const visual = new TestudoVisual();
+

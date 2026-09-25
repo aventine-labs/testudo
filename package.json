@@ -43,6 +43,10 @@
       "types": "./dist/report.d.ts",
       "import": "./dist/report.js"
     },
+    "./calc": {
+      "types": "./dist/calc.d.ts",
+      "import": "./dist/calc.js"
+    },
     "./playwright": {
       "types": "./dist/adapters/playwright.d.ts",
       "import": "./dist/adapters/playwright.js"

@@ -10,6 +10,7 @@ import { type } from '../type.js';
 import { scan } from '../scan.js';
 import { visual } from '../visual.js';
 import { charDiff } from '../diff.js';
+import { calc } from '../calc.js';
 
 export function createTestudoInstance() {
   const instance: any = function (selectorOrElement: string | HTMLElement) {
@@ -62,6 +63,7 @@ export function createTestudoInstance() {
   instance.explore = (scope?: string) => scan.explore(scope);
   instance.visual = visual;
   instance.diff = charDiff;
+  instance.calc = (expr: string, customValues?: Record<string, number | string>) => calc(expr, customValues);
 
   return instance;
 }
