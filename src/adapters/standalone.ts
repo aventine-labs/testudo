@@ -58,12 +58,36 @@ export function createTestudoInstance() {
 
   instance.math = math;
   instance.format = format;
-  instance.type = type;
-  instance.scan = (scope?: string) => scan.scan(scope);
+
+  const typeFn = Object.assign(
+    async (
+      elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+      text: string,
+      options?: any
+    ) => type.type(elementOrSelector, text, options),
+    {
+      type: (el: any, text: string, options?: any) => type.type(el, text, options),
+      applyMask: (raw: string, maskType: string) => type.applyMask(raw, maskType),
+      mask: (raw: string, maskType: string) => type.applyMask(raw, maskType),
+      setNativeValue: (el: any, val: string) => type.setNativeValue(el, val)
+    }
+  );
+  instance.type = typeFn;
+
+  const scanFn = Object.assign(
+    (scope?: string | HTMLElement) => scan.scan(scope),
+    {
+      scan: (scope?: string | HTMLElement) => scan.scan(scope),
+      explore: (scope?: string) => scan.explore(scope),
+      clearBadges: () => scan.clearBadges()
+    }
+  );
+  instance.scan = scanFn;
   instance.explore = (scope?: string) => scan.explore(scope);
+  instance.clearBadges = () => scan.clearBadges();
   instance.visual = visual;
   instance.diff = charDiff;
-  instance.calc = (expr: string, customValues?: Record<string, number | string>) => calc(expr, customValues);
+  instance.calc = calc;
 
   return instance;
 }

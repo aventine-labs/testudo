@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testudo Site 2: React Controlled State & Synthetic Event Bypass</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.9);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --blue: #2563EB;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+      --amber: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: var(--cyan); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .title { font-size: 20px; font-weight: 700; }
+    .sub { font-size: 12px; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+    input, textarea { width: 100%; background: #030712; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; color: #fff; font-family: "JetBrains Mono", monospace; font-size: 13px; outline: none; transition: border-color 0.15s; }
+    input:focus, textarea:focus { border-color: var(--cyan); }
+    .btn { background: var(--blue); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+    .btn:hover { background: #1D4ED8; }
+    .btn-danger { background: #DC2626; }
+    .btn-danger:hover { background: #B91C1C; }
+    .btn-success { background: #059669; }
+    .btn-success:hover { background: #047857; }
+    .btn-secondary { background: #1E293B; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; }
+    .action-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .state-display { background: #030712; border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 12px; color: #38BDF8; margin-top: 16px; }
+    .log-box { background: #030712; border: 1px solid #1E293B; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto; color: #94A3B8; }
+    .log-pass { color: var(--emerald); }
+    .log-fail { color: var(--crimson); }
+    .tag-react { background: rgba(56, 189, 248, 0.2); color: var(--cyan); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+  </style>
+  <!-- React 18 UMD dependencies -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span class="badge">SITE 2</span>
+      <div>
+        <h1 class="title">React Controlled State & Synthetic Event Bypass</h1>
+        <p class="sub">Proves $T.type() bypasses React 18 _valueTracker vs standard .value assignment failure</p>
+      </div>
+    </div>
+    <div id="testudo-status" class="badge">Loading Testudo...</div>
+  </div>
+
+  <div class="grid">
+    <!-- React Component Container -->
+    <div class="card">
+      <div class="card-title">Live React 18 Controlled Form <span class="tag-react">React 18 Active</span></div>
+      <div id="react-root">Loading React Form...</div>
+    </div>
+
+    <!-- Verification & Assertion Terminal -->
+    <div class="card">
+      <div class="card-title">Testudo Typing Forensics & State Inspector</div>
+      <div class="action-row" style="margin-top: 0; margin-bottom: 16px;">
+        <button id="btn-naive-assign" class="btn btn-danger">1. Test Naive .value = Assignment (Fails)</button>
+        <button id="btn-testudo-type" class="btn btn-success">2. Test $T.type() Bypass (Succeeds)</button>
+      </div>
+      <button id="btn-run-react-suite" class="btn" style="width: 100%; margin-bottom: 16px;">▶ Run Full Automated React 18 Suite</button>
+      <div id="test-results" class="log-box">Awaiting test execution...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { $T } from '../dist/index.js';
+    window.$T = $T;
+    window.testudo = $T;
+
+    const statusEl = document.getElementById('testudo-status');
+    if (statusEl) {
+      statusEl.innerText = 'Testudo v0.2.1 Active';
+      statusEl.style.borderColor = '#34D399';
+      statusEl.style.color = '#34D399';
+    }
+
+    const logBox = document.getElementById('test-results');
+
+    function log(msg, isPass = true) {
+      const cls = isPass ? 'log-pass' : 'log-fail';
+      const mark = isPass ? '✓' : '✖';
+      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Initialize React Component
+    let setReactGlobalState = null;
+    let getReactGlobalState = null;
+
+    function initReactApp() {
+      const { useState, useEffect } = window.React || {};
+      if (!useState) {
+        initFallbackControlledApp();
+        return;
+      }
+
+      function ControlledForm() {
+        const [phone, setPhone] = useState('');
+        const [date, setDate] = useState('');
+        const [amount, setAmount] = useState('');
+        const [renderCount, setRenderCount] = useState(1);
+
+        useEffect(() => {
+          setRenderCount(c => c + 1);
+        }, [phone, date, amount]);
+
+        getReactGlobalState = () => ({ phone, date, amount, renderCount });
+        setReactGlobalState = { setPhone, setDate, setAmount };
+
+        return window.React.createElement('div', null,
+          window.React.createElement('div', { className: 'form-group' },
+            window.React.createElement('label', null, 'Institutional Phone (Controlled state)'),
+            window.React.createElement('input', {
+              id: 'react-phone',
+              'data-testid': 'input-phone',
+              placeholder: '(###) ###-####',
+              value: phone,
+              onChange: (e) => setPhone(e.target.value)
+            })
+          ),
+          window.React.createElement('div', { className: 'form-group' },
+            window.React.createElement('label', null, 'Settlement Date (Controlled state)'),
+            window.React.createElement('input', {
+              id: 'react-date',
+              'data-testid': 'input-date',
+              placeholder: 'YYYY-MM-DD',
+              value: date,
+              onChange: (e) => setDate(e.target.value)
+            })
+          ),
+          window.React.createElement('div', { className: 'form-group' },
+            window.React.createElement('label', null, 'Trade Capital Amount (Controlled state)'),
+            window.React.createElement('input', {
+              id: 'react-amount',
+              'data-testid': 'input-amount',
+              placeholder: '$1,249,500.00',
+              value: amount,
+              onChange: (e) => setAmount(e.target.value)
+            })
+          ),
+          window.React.createElement('div', { className: 'state-display' },
+            window.React.createElement('strong', null, 'Active Component State:'),
+            window.React.createElement('div', { id: 'state-phone' }, `state.phone: "${phone}"`),
+            window.React.createElement('div', { id: 'state-date' }, `state.date: "${date}"`),
+            window.React.createElement('div', { id: 'state-amount' }, `state.amount: "${amount}"`),
+            window.React.createElement('div', { id: 'state-renders' }, `renderCount: ${renderCount}`)
+          )
+        );
+      }
+
+      const root = window.ReactDOM.createRoot(document.getElementById('react-root'));
+      root.render(window.React.createElement(ControlledForm));
+    }
+
+    // Fallback if CDN blocked: exact simulation of React _valueTracker
+    function initFallbackControlledApp() {
+      const root = document.getElementById('react-root');
+      root.innerHTML = `
+        <div class="form-group">
+          <label>Institutional Phone (Simulated _valueTracker)</label>
+          <input id="react-phone" data-testid="input-phone" placeholder="(###) ###-####" value="" />
+        </div>
+        <div class="form-group">
+          <label>Settlement Date (Simulated _valueTracker)</label>
+          <input id="react-date" data-testid="input-date" placeholder="YYYY-MM-DD" value="" />
+        </div>
+        <div class="form-group">
+          <label>Trade Capital Amount (Simulated _valueTracker)</label>
+          <input id="react-amount" data-testid="input-amount" placeholder="$1,249,500.00" value="" />
+        </div>
+        <div class="state-display">
+          <strong>Simulated Component State:</strong>
+          <div id="state-phone">state.phone: ""</div>
+          <div id="state-date">state.date: ""</div>
+          <div id="state-amount">state.amount: ""</div>
+          <div id="state-renders">renderCount: 1</div>
+        </div>
+      `;
+
+      let state = { phone: '', date: '', amount: '', renderCount: 1 };
+      getReactGlobalState = () => ({ ...state });
+
+      ['phone', 'date', 'amount'].forEach(key => {
+        const el = document.getElementById(`react-${key}`);
+        if (!el) return;
+
+        // Install React 16-19 style _valueTracker
+        let trackerVal = '';
+        el._valueTracker = {
+          getValue() { return trackerVal; },
+          setValue(val) { trackerVal = String(val); },
+          stopTracking() {}
+        };
+
+        el.addEventListener('input', (e) => {
+          state[key] = e.target.value;
+          state.renderCount++;
+          document.getElementById(`state-${key}`).innerText = `state.${key}: "${state[key]}"`;
+          document.getElementById('state-renders').innerText = `renderCount: ${state.renderCount}`;
+        });
+      });
+    }
+
+    try {
+      initReactApp();
+    } catch {
+      initFallbackControlledApp();
+    }
+
+    // Button 1: Naive DOM Assignment
+    document.getElementById('btn-naive-assign')?.addEventListener('click', () => {
+      const input = document.getElementById('react-phone');
+      if (input) {
+        input.value = '(555) 019-2834'; // Standard DOM assignment
+        // Notice: Did NOT call React prototype setter, state did not update!
+        const state = getReactGlobalState();
+        log(`Naive DOM assigned input.value = '(555) 019-2834'`, true);
+        if (state.phone !== '(555) 019-2834') {
+          log(`Confirmed Flaw: state.phone is still "${state.phone}" (React state desynchronized!)`, true);
+        }
+      }
+    });
+
+    // Button 2: Testudo Safe Type Bypass
+    document.getElementById('btn-testudo-type')?.addEventListener('click', async () => {
+      const input = document.getElementById('react-phone');
+      if (input) {
+        await $T.type(input, '(555) 019-2834');
+        const state = getReactGlobalState();
+        if (state.phone === '(555) 019-2834') {
+          log(`Testudo Success: state.phone updated to "${state.phone}" via prototype descriptor bypass!`, true);
+        } else {
+          log(`Testudo Failure: state.phone did not update!`, false);
+        }
+      }
+    });
+
+    // Automated Suite for Headless Browser verification
+    window.runSite2Tests = async function() {
+      logBox.innerHTML = '';
+      let passes = 0;
+      let total = 0;
+
+      const assert = (name, condition, details = '') => {
+        total++;
+        if (condition) {
+          passes++;
+          log(`${name}: PASS ${details}`, true);
+        } else {
+          log(`${name}: FAIL ${details}`, false);
+        }
+      };
+
+      // 1. Phone input with prototype setter bypass
+      const phoneInput = document.getElementById('react-phone');
+      await $T.type(phoneInput, '(212) 555-0199');
+      let state = getReactGlobalState();
+      assert('TC-07A: $T.type Phone Input updates React state', state.phone === '(212) 555-0199', `(state.phone: ${state.phone})`);
+
+      // 2. Date input
+      const dateInput = document.getElementById('react-date');
+      await $T.type(dateInput, '2026-09-25');
+      state = getReactGlobalState();
+      assert('TC-07B: $T.type Date Input updates React state', state.date === '2026-09-25', `(state.date: ${state.date})`);
+
+      // 3. Trade amount input
+      const amountInput = document.getElementById('react-amount');
+      await $T.type(amountInput, '$1,249,500.00');
+      state = getReactGlobalState();
+      assert('TC-07C: $T.type Amount Input updates React state', state.amount === '$1,249,500.00', `(state.amount: ${state.amount})`);
+
+      // 4. Testudo Input Mask Formatting
+      const maskedPhone = $T.type.mask('2125550199', '(###) ###-####');
+      assert('TC-08A: Phone mask (###) ###-####', maskedPhone === '(212) 555-0199', `(Got: ${maskedPhone})`);
+
+      const maskedDate = $T.type.mask('20260925', '####-##-##');
+      assert('TC-08B: Date mask ####-##-##', maskedDate === '2026-09-25', `(Got: ${maskedDate})`);
+
+      log(`Site 2 Summary: ${passes}/${total} Assertions Passed!`, passes === total);
+      window.__SITE2_TEST_SUMMARY__ = { passes, total, success: passes === total };
+      return window.__SITE2_TEST_SUMMARY__;
+    };
+
+    document.getElementById('btn-run-react-suite')?.addEventListener('click', () => {
+      window.runSite2Tests();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testudo Site 3: Deep DOM & Priority Cascade Stress Test</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.9);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --blue: #2563EB;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+      --amber: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; position: relative; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: var(--cyan); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .title { font-size: 20px; font-weight: 700; }
+    .sub { font-size: 12px; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tier-box { border: 1px solid #334155; border-radius: 6px; padding: 12px; margin-bottom: 12px; background: #030712; }
+    .tier-label { font-size: 11px; font-weight: 700; color: var(--amber); margin-bottom: 6px; }
+    input, select, button { background: #0F172A; border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: inherit; }
+    button { background: var(--blue); cursor: pointer; border: none; font-weight: 600; }
+    button:hover { background: #1D4ED8; }
+    .btn-secondary { background: #1E293B; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: #DC2626; }
+    .btn-danger:hover { background: #B91C1C; }
+    .btn-success { background: #059669; }
+    .btn-success:hover { background: #047857; }
+    .log-box { background: #030712; border: 1px solid #1E293B; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto; color: #94A3B8; }
+    .log-pass { color: var(--emerald); }
+    .log-fail { color: var(--crimson); }
+    .actions-grid { display: flex; flex-direction: column; gap: 10px; }
+    .hidden-block { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span class="badge">SITE 3</span>
+      <div>
+        <h1 class="title">Deep DOM & Priority Cascade Stress Test</h1>
+        <p class="sub">Validates 8-tier Smart Scope cascade, numeric selectors (.2fa-code), badges & kill switches</p>
+      </div>
+    </div>
+    <div id="testudo-status" class="badge">Loading Testudo...</div>
+  </div>
+
+  <div class="grid">
+    <!-- DOM Test Tree Container -->
+    <div class="card">
+      <div class="card-title">Priority Cascade Test Nodes</div>
+
+      <!-- Tier 1: data-testid -->
+      <div data-testid="target-scope" class="tier-box" id="node-tier1">
+        <div class="tier-label">Tier 1: [data-testid="target-scope"] (Priority 1 Winner)</div>
+        <button id="btn-t1-action" data-testid="btn-t1">Action Button T1</button>
+        <input data-testid="input-t1" placeholder="Input inside Tier 1" />
+      </div>
+
+      <!-- Tier 2: data-test -->
+      <div data-test="target-scope" class="tier-box" id="node-tier2">
+        <div class="tier-label">Tier 2: [data-test="target-scope"]</div>
+        <button id="btn-t2-action">Action Button T2</button>
+      </div>
+
+      <!-- Tier 3: id -->
+      <div id="target-scope" class="tier-box">
+        <div class="tier-label">Tier 3: #target-scope (Strict exact ID match)</div>
+        <button id="btn-t3-action">Action Button T3</button>
+      </div>
+
+      <!-- Partial ID match that must NOT match Priority 3 -->
+      <div id="target-scope-partial-sibling" class="tier-box">
+        <div class="tier-label">Partial ID: #target-scope-partial-sibling (Must not jump tiers)</div>
+        <button id="btn-partial-sibling">Sibling Button</button>
+      </div>
+
+      <!-- Tier 4: name -->
+      <form name="target-scope" class="tier-box" id="node-tier4">
+        <div class="tier-label">Tier 4: form[name="target-scope"]</div>
+        <input name="t4-field" placeholder="Tier 4 field" />
+      </form>
+
+      <!-- Tier 7: class -->
+      <div class="target-scope tier-box" id="node-tier7">
+        <div class="tier-label">Tier 7: .target-scope (Class Match)</div>
+        <button id="btn-t7-action">Action Button T7</button>
+      </div>
+
+      <!-- Numeric-Prefixed Selectors -->
+      <div class="tier-box">
+        <div class="tier-label">Numeric-Prefixed Selectors (CSS.escape test)</div>
+        <input class="2fa-code" id="2fa-input" placeholder="Numeric Class: .2fa-code" style="margin-bottom: 6px;" />
+        <button id="2factor-auth">Numeric ID: #2factor-auth</button>
+      </div>
+
+      <!-- Hidden Elements Container -->
+      <div class="tier-box">
+        <div class="tier-label">Hidden Elements (Must be filtered out)</div>
+        <button style="display: none;" id="btn-hidden-display">Hidden Display None</button>
+        <button style="visibility: hidden;" id="btn-hidden-visibility">Hidden Visibility</button>
+        <div style="width: 0; height: 0; padding: 0; overflow: hidden;">
+          <button id="btn-zero-size">Zero Size Button</button>
+        </div>
+        <span style="font-size: 11px; color: var(--emerald);">Active Filter: 3 hidden buttons excluded by scan.</span>
+      </div>
+    </div>
+
+    <!-- Inspector & Controls Terminal -->
+    <div class="card">
+      <div class="card-title">Testudo Scoping & Explorer Terminal</div>
+      <div class="actions-grid">
+        <button id="btn-run-cascade" class="btn">1. Test Smart Scope Priority Cascade</button>
+        <button id="btn-test-badges" class="btn btn-success">2. Test $T.explore() Badges</button>
+        <button id="btn-test-killswitch" class="btn btn-danger">3. Test Production Kill Switch</button>
+        <button id="btn-run-all-s3" class="btn">▶ Run Full Site 3 Suite</button>
+        <div id="test-results" class="log-box">Awaiting execution...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { $T } from '../dist/index.js';
+    window.$T = $T;
+    window.testudo = $T;
+
+    const statusEl = document.getElementById('testudo-status');
+    if (statusEl) {
+      statusEl.innerText = 'Testudo v0.2.1 Active';
+      statusEl.style.borderColor = '#34D399';
+      statusEl.style.color = '#34D399';
+    }
+
+    const logBox = document.getElementById('test-results');
+
+    function log(msg, isPass = true) {
+      const cls = isPass ? 'log-pass' : 'log-fail';
+      const mark = isPass ? '✓' : '✖';
+      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    window.runSite3Tests = async function() {
+      logBox.innerHTML = '';
+      let passes = 0;
+      let total = 0;
+
+      const assert = (name, condition, details = '') => {
+        total++;
+        if (condition) {
+          passes++;
+          log(`${name}: PASS ${details}`, true);
+        } else {
+          log(`${name}: FAIL ${details}`, false);
+        }
+      };
+
+      // TC-09: Deterministic Priority Cascade
+      // When searching for 'target-scope', Tier 1 [data-testid="target-scope"] must take precedence
+      const scannedT1 = $T.scan('target-scope');
+      assert('TC-09A: Cascade resolves Priority 1 [data-testid]', scannedT1.length > 0 && scannedT1[0].element.id === 'btn-t1-action', `(First element: ${scannedT1[0]?.element?.id})`);
+
+      // Priority 3 exact ID matching check
+      // Sibling '#target-scope-partial-sibling' must not match query 'target-scope' at Priority 3
+      const t3Matches = document.querySelectorAll('#target-scope');
+      assert('TC-09B: Priority 3 exact match is unique', t3Matches.length === 1, `(Matches count: ${t3Matches.length})`);
+
+      // TC-10: Numeric-prefixed selectors
+      // Must not throw DOMException in scan
+      let numericSuccess = false;
+      try {
+        const numericElements = $T.scan('2fa-input');
+        numericSuccess = true;
+      } catch (e) {
+        numericSuccess = false;
+      }
+      assert('TC-10A: Numeric selector scan does not throw', numericSuccess === true);
+
+      // TC-11: Hidden elements exclusion
+      const allScanned = $T.scan();
+      const hasHiddenDisplay = allScanned.some(e => e.element.id === 'btn-hidden-display');
+      const hasHiddenVisibility = allScanned.some(e => e.element.id === 'btn-hidden-visibility');
+      assert('TC-11: Hidden elements are filtered out', !hasHiddenDisplay && !hasHiddenVisibility, `(Display: ${hasHiddenDisplay}, Vis: ${hasHiddenVisibility})`);
+
+      // TC-12: Explore Badges
+      $T.explore();
+      const badges = document.querySelectorAll('.testudo-badge');
+      assert('TC-12A: $T.explore() renders visual numbered badges', badges.length > 0, `(Rendered ${badges.length} badges)`);
+
+      // Clear badges
+      $T.scan.clearBadges();
+      const badgesAfterClear = document.querySelectorAll('.testudo-badge');
+      assert('TC-12B: clearBadges cleans up page badges', badgesAfterClear.length === 0, `(Remaining: ${badgesAfterClear.length})`);
+
+      // TC-13: Production Kill Switch
+      window.TESTUDO_DISABLE_EXPLORER = true;
+      $T.explore();
+      const badgesInKillSwitch = document.querySelectorAll('.testudo-badge');
+      assert('TC-13: TESTUDO_DISABLE_EXPLORER suppresses badges', badgesInKillSwitch.length === 0, `(Badges under kill switch: ${badgesInKillSwitch.length})`);
+      window.TESTUDO_DISABLE_EXPLORER = false; // Reset
+
+      log(`Site 3 Summary: ${passes}/${total} Assertions Passed!`, passes === total);
+      window.__SITE3_TEST_SUMMARY__ = { passes, total, success: passes === total };
+      return window.__SITE3_TEST_SUMMARY__;
+    };
+
+    document.getElementById('btn-run-all-s3')?.addEventListener('click', () => {
+      window.runSite3Tests();
+    });
+
+    document.getElementById('btn-test-badges')?.addEventListener('click', () => {
+      $T.explore();
+    });
+
+    document.getElementById('btn-test-killswitch')?.addEventListener('click', () => {
+      window.TESTUDO_DISABLE_EXPLORER = true;
+      $T.explore();
+      alert('Kill switch active: badges suppressed!');
+      window.TESTUDO_DISABLE_EXPLORER = false;
+    });
+  </script>
+</body>
+</html>

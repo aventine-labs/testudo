@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testudo Site 4: Multi-Cell Financial Calculus & Visual Forensics</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.9);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --blue: #2563EB;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+      --amber: #F59E0B;
+      --purple: #C084FC;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; position: relative; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: var(--cyan); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .title { font-size: 20px; font-weight: 700; }
+    .sub { font-size: 12px; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+    th { text-align: left; padding: 10px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+    td { padding: 12px 10px; border-bottom: 1px solid #141E33; font-family: "JetBrains Mono", monospace; }
+    .cell-target { font-weight: 700; color: var(--crimson); background: rgba(244, 63, 94, 0.1); border-radius: 4px; }
+    .cell-operand { font-weight: 600; color: #fff; }
+    .btn { background: var(--blue); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+    .btn:hover { background: #1D4ED8; }
+    .btn-secondary { background: #1E293B; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: #DC2626; }
+    .btn-danger:hover { background: #B91C1C; }
+    .log-box { background: #030712; border: 1px solid #1E293B; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto; color: #94A3B8; }
+    .log-pass { color: var(--emerald); }
+    .log-fail { color: var(--crimson); }
+    .actions-grid { display: flex; flex-direction: column; gap: 10px; }
+    .pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; margin-right: 6px; }
+    .pill-a { background: rgba(56, 189, 248, 0.2); color: var(--cyan); border: 1px solid var(--cyan); }
+    .pill-b { background: rgba(245, 158, 11, 0.2); color: var(--amber); border: 1px solid var(--amber); }
+    .pill-c { background: rgba(192, 132, 252, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+    .pill-d { background: rgba(52, 211, 153, 0.2); color: var(--emerald); border: 1px solid var(--emerald); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span class="badge">SITE 4</span>
+      <div>
+        <h1 class="title">Multi-Cell Financial Calculus & Visual Forensics</h1>
+        <p class="sub">Validates formula AST/RPN calculus, multi-arg arity, SVG HUD callouts & SIEM reporting</p>
+      </div>
+    </div>
+    <div id="testudo-status" class="badge">Loading Testudo...</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Settlement Calculus Spreadsheet Grid</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Cell Identifier</th>
+            <th>DOM Value</th>
+            <th>Calculus Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill pill-a">Operand A</span></td>
+            <td><code>#cell-principal</code></td>
+            <td id="cell-principal" class="cell-operand">$1,200,000.00</td>
+            <td>Principal Balance (+)</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-b">Operand B</span></td>
+            <td><code>#cell-interest</code></td>
+            <td id="cell-interest" class="cell-operand">$52,450.00</td>
+            <td>Accrued Interest (+)</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-c">Operand C</span></td>
+            <td><code>#cell-fee</code></td>
+            <td id="cell-fee" class="cell-operand">$1,200.00</td>
+            <td>Clearing Surcharge (-)</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-d">Operand D</span></td>
+            <td><code>#cell-tax</code></td>
+            <td id="cell-tax" class="cell-operand">$1,750.00</td>
+            <td>Withholding Tax (-)</td>
+          </tr>
+          <tr>
+            <td><strong>Target Cell</strong></td>
+            <td><code>#cell-settlement</code></td>
+            <td id="cell-settlement" class="cell-target">$1,249,499.99</td>
+            <td>Settlement Total (1-Cent Drift!)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="card-title">Multi-Argument Tranche Array</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tranche Identifier</th>
+            <th>DOM Value</th>
+            <th>Aggregation Functions Tested</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>#tranche-sub-1</code></td>
+            <td id="tranche-sub-1">$10,000.00</td>
+            <td><code>sum()</code>, <code>avg()</code>, <code>min()</code>, <code>max()</code></td>
+          </tr>
+          <tr>
+            <td><code>#tranche-sub-2</code></td>
+            <td id="tranche-sub-2">$20,000.00</td>
+            <td><code>sum()</code>, <code>avg()</code>, <code>min()</code>, <code>max()</code></td>
+          </tr>
+          <tr>
+            <td><code>#tranche-sub-3</code></td>
+            <td id="tranche-sub-3">$30,000.00</td>
+            <td><code>sum()</code>, <code>avg()</code>, <code>min()</code>, <code>max()</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Forensic Engine & Report Terminal</div>
+      <div class="actions-grid">
+        <button id="btn-trigger-hud" class="btn btn-danger">1. Trigger Multi-Cell HUD (1-Cent Drift)</button>
+        <button id="btn-test-formulas" class="btn">2. Test Multi-Arg Calculus (sum, avg, min, max)</button>
+        <button id="btn-test-reports" class="btn btn-secondary">3. Test Splunk & GFM Table Reports</button>
+        <button id="btn-run-all-s4" class="btn">▶ Run Full Site 4 Suite</button>
+        <div id="test-results" class="log-box">Awaiting execution...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { $T, calc, reporter } from '../dist/index.js';
+    window.$T = $T;
+    window.testudo = $T;
+    window.calc = calc;
+    window.reporter = reporter;
+
+    const statusEl = document.getElementById('testudo-status');
+    if (statusEl) {
+      statusEl.innerText = 'Testudo v0.2.1 Active';
+      statusEl.style.borderColor = '#34D399';
+      statusEl.style.color = '#34D399';
+    }
+
+    const logBox = document.getElementById('test-results');
+
+    function log(msg, isPass = true) {
+      const cls = isPass ? 'log-pass' : 'log-fail';
+      const mark = isPass ? '✓' : '✖';
+      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    window.runSite4Tests = async function() {
+      logBox.innerHTML = '';
+      let passes = 0;
+      let total = 0;
+
+      const assert = (name, condition, details = '') => {
+        total++;
+        if (condition) {
+          passes++;
+          log(`${name}: PASS ${details}`, true);
+        } else {
+          log(`${name}: FAIL ${details}`, false);
+        }
+      };
+
+      // TC-13: Basic Arithmetic Calculus Precedence
+      const evalResult = calc('#cell-principal + #cell-interest - #cell-fee - #cell-tax').evaluate();
+      assert('TC-13A: Formula expected value', evalResult.expectedValue === 1249500.00, `(Expected: 1249500, Got: ${evalResult.expectedValue})`);
+      assert('TC-13B: Operands extracted count', evalResult.operands.length === 4, `(Extracted: ${evalResult.operands.length})`);
+
+      // TC-14: Multi-Argument Variable Arity (sum, avg, min, max)
+      const sumVal = calc('sum(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      assert('TC-14A: sum() reducer evaluates to 60000', sumVal === 60000, `(Got: ${sumVal})`);
+
+      const avgVal = calc('avg(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      assert('TC-14B: avg() reducer evaluates to 20000', avgVal === 20000, `(Got: ${avgVal})`);
+
+      const minVal = calc('min(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      assert('TC-14C: min() reducer evaluates to 10000', minVal === 10000, `(Got: ${minVal})`);
+
+      const maxVal = calc('max(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      assert('TC-14D: max() reducer evaluates to 30000', maxVal === 30000, `(Got: ${maxVal})`);
+
+      // TC-15: Division by zero trap
+      let divZeroThrown = false;
+      try {
+        calc('100 / 0').evaluate();
+      } catch (e) {
+        divZeroThrown = e.message.includes('Division by zero');
+      }
+      assert('TC-15: Division by zero throws explicit error', divZeroThrown === true);
+
+      // TC-16: Visual Discrepancy Assertion
+      const assertResult = await calc('#cell-principal + #cell-interest - #cell-fee - #cell-tax')
+        .toEqualCurrency('#cell-settlement', { tolerance: 0.005, autoHighlight: true });
+      assert('TC-16A: Discrepancy detected (pass === false)', assertResult.pass === false);
+      assert('TC-16B: Numerical delta is -0.01', assertResult.delta === -0.01, `(Delta: ${assertResult.delta})`);
+
+      // Check if visual HUD and SVG connectors are in DOM
+      const overlay = document.querySelector('[data-testudo-overlay="true"]') || document.querySelector('.testudo-diff-zoom');
+      assert('TC-16C: Visual HUD canvas/overlay injected in DOM', overlay !== null);
+
+      // TC-17: Splunk SIEM & GFM Table Report Escaping
+      const splunkOutput = reporter.formatSplunk({
+        level: 'error',
+        event: 'discrepancy_detected',
+        message: 'Discrepancy of -0.01 on #cell-settlement with quote "1040" and path C:\\vault',
+        selector: 'td[data-col="a|b"]'
+      });
+      assert('TC-17A: Splunk output single line without unescaped newlines', !splunkOutput.includes('\n'));
+      assert('TC-17B: Splunk output properly escapes backslashes and quotes', splunkOutput.includes('C:\\\\vault') && splunkOutput.includes('\\"1040\\"'));
+
+      const gfmOutput = reporter.formatGithubSummary({
+        level: 'error',
+        event: 'discrepancy_detected',
+        message: 'Discrepancy table with pipe | character',
+        selector: 'td[data-col="a|b"]'
+      });
+      assert('TC-17C: GFM Table properly escapes pipe characters', gfmOutput.includes('td[data-col="a\\|b"]'));
+
+      log(`Site 4 Summary: ${passes}/${total} Assertions Passed!`, passes === total);
+      window.__SITE4_TEST_SUMMARY__ = { passes, total, success: passes === total };
+      return window.__SITE4_TEST_SUMMARY__;
+    };
+
+    document.getElementById('btn-run-all-s4')?.addEventListener('click', () => {
+      window.runSite4Tests();
+    });
+
+    document.getElementById('btn-trigger-hud')?.addEventListener('click', async () => {
+      await calc('#cell-principal + #cell-interest - #cell-fee - #cell-tax')
+        .toEqualCurrency('#cell-settlement', { tolerance: 0.005, autoHighlight: true });
+    });
+  </script>
+</body>
+</html>

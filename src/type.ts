@@ -35,7 +35,7 @@ export class TestudoType {
 
     for (let i = 0; i < template.length && digitIdx < digitsOnly.length; i++) {
       const char = template[i];
-      if (char === 'X' || char === 'Y' || char === 'M' || char === 'D' || char === '9') {
+      if (char === 'X' || char === 'Y' || char === 'M' || char === 'D' || char === '9' || char === '#') {
         result += digitsOnly[digitIdx++];
       } else {
         result += char;
@@ -143,4 +143,23 @@ export class TestudoType {
   }
 }
 
-export const type = new TestudoType();
+const defaultInstance = new TestudoType();
+
+export const type = Object.assign(
+  (
+    elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+    text: string,
+    options?: TypeOptions
+  ) => defaultInstance.type(elementOrSelector, text, options),
+  {
+    type: (
+      elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+      text: string,
+      options?: TypeOptions
+    ) => defaultInstance.type(elementOrSelector, text, options),
+    applyMask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
+    mask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
+    setNativeValue: (element: HTMLInputElement | HTMLTextAreaElement, value: string) =>
+      defaultInstance.setNativeValue(element, value)
+  }
+);

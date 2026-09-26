@@ -152,8 +152,12 @@ export class TestudoScan {
     for (const scope of scopes) {
       const elements = scope.querySelectorAll(interactiveQuery);
       for (const el of Array.from(elements) as HTMLElement[]) {
-        // Skip hidden elements
+        // Skip hidden elements (zero dimensions, display: none, or visibility: hidden)
         if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+        if (typeof window !== 'undefined' && window.getComputedStyle) {
+          const style = window.getComputedStyle(el);
+          if (style.visibility === 'hidden' || style.display === 'none') continue;
+        }
 
         const tag = el.tagName.toLowerCase();
         const type = (el as HTMLInputElement).type;
@@ -235,6 +239,7 @@ export class TestudoScan {
     for (const item of items) {
       const rect = item.element.getBoundingClientRect();
       const badge = document.createElement('div');
+      badge.className = 'testudo-badge';
       badge.setAttribute('data-testudo-badge', 'true');
       badge.style.cssText = `
         position: absolute;

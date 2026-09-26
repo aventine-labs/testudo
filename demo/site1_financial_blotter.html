@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testudo Site 1: Multi-Currency Sovereign Blotter</title>
+  <style>
+    :root {
+      --bg: #070A11;
+      --card-bg: rgba(14, 20, 36, 0.9);
+      --border: #1E293B;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --cyan: #38BDF8;
+      --blue: #2563EB;
+      --emerald: #34D399;
+      --crimson: #F43F5E;
+      --amber: #F59E0B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: var(--cyan); padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .title { font-size: 20px; font-weight: 700; }
+    .sub { font-size: 12px; color: var(--text-muted); }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--cyan); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; }
+    td { padding: 12px 10px; border-bottom: 1px solid #141E33; font-family: "JetBrains Mono", monospace; }
+    .tag-neg { color: var(--crimson); font-weight: 700; }
+    .tag-pos { color: var(--emerald); font-weight: 700; }
+    .test-panel { display: flex; flex-direction: column; gap: 12px; }
+    .btn { background: var(--blue); color: #fff; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+    .btn:hover { background: #1D4ED8; }
+    .btn-secondary { background: #1E293B; border: 1px solid #334155; }
+    .btn-secondary:hover { background: #334155; }
+    .log-box { background: #030712; border: 1px solid #1E293B; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; max-height: 400px; overflow-y: auto; color: #94A3B8; }
+    .log-pass { color: var(--emerald); }
+    .log-fail { color: var(--crimson); }
+    .status-pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .status-pass { background: rgba(52, 211, 153, 0.2); color: var(--emerald); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span class="badge">SITE 1</span>
+      <div>
+        <h1 class="title">Multi-Currency Sovereign Blotter</h1>
+        <p class="sub">Validates SAP Trailing Minus, Indian Numbering, Space Delimiters, Disambiguation & NBSP Cleaning</p>
+      </div>
+    </div>
+    <div id="testudo-status" class="badge">Loading Testudo...</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Live Settlement Blotter Positions</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Security / Tag</th>
+            <th>Raw Input Format</th>
+            <th>Standard Tested</th>
+            <th>DOM Element ID</th>
+            <th>Parsed Expected</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DAX Hedge Short</td>
+            <td id="sap-trailing-minus" class="tag-neg">1.249,50- EUR</td>
+            <td>SAP Trailing Minus</td>
+            <td><code>#sap-trailing-minus</code></td>
+            <td>-1249.50</td>
+          </tr>
+          <tr>
+            <td>US Crude Swap</td>
+            <td id="sap-trailing-usd" class="tag-neg">500.00- USD</td>
+            <td>SAP USD Trailing Minus</td>
+            <td><code>#sap-trailing-usd</code></td>
+            <td>-500.00</td>
+          </tr>
+          <tr>
+            <td>French OAT Bond</td>
+            <td id="french-spaces" class="tag-pos">1 249 500,00 €</td>
+            <td>French Space Separator</td>
+            <td><code>#french-spaces</code></td>
+            <td>1249500.00</td>
+          </tr>
+          <tr>
+            <td>T-Bill Collateral Call</td>
+            <td id="accounting-parens" class="tag-neg">($1,249.50)</td>
+            <td>Accounting Negative</td>
+            <td><code>#accounting-parens</code></td>
+            <td>-1249.50</td>
+          </tr>
+          <tr>
+            <td>RBI Clearing Settlement</td>
+            <td id="indian-lakhs" class="tag-pos">₹12,34,567.89</td>
+            <td>Indian Lakhs / Crores</td>
+            <td><code>#indian-lakhs</code></td>
+            <td>1234567.89</td>
+          </tr>
+          <tr>
+            <td>India Sovereign Reserve</td>
+            <td id="indian-crores" class="tag-pos">₹1,00,00,000.00</td>
+            <td>1 Crore Grouping</td>
+            <td><code>#indian-crores</code></td>
+            <td>10000000.00</td>
+          </tr>
+          <tr>
+            <td>Euro Clearing Integer</td>
+            <td id="ambiguous-german" class="tag-pos">1.250</td>
+            <td>de-DE Thousands Int</td>
+            <td><code>#ambiguous-german</code></td>
+            <td>1250 (de-DE) / 1.25 (en-US)</td>
+          </tr>
+          <tr>
+            <td>Messy FX Feed</td>
+            <td id="messy-nbsp" class="tag-pos">EUR&nbsp;1.249,50&#xFEFF;</td>
+            <td>Invisible NBSP & ZWNBSP</td>
+            <td><code>#messy-nbsp</code></td>
+            <td>1249.50</td>
+          </tr>
+          <tr>
+            <td>Sovereign Vault Reserve A</td>
+            <td id="vault-reserve-a" class="tag-pos">$1,000,000,000.00</td>
+            <td>$1B Ledger Magnitude</td>
+            <td><code>#vault-reserve-a</code></td>
+            <td>1000000000.00</td>
+          </tr>
+          <tr>
+            <td>Sovereign Vault Reserve B</td>
+            <td id="vault-reserve-b" class="tag-pos">$1,000,000,000.00005</td>
+            <td>Float Drift Delta</td>
+            <td><code>#vault-reserve-b</code></td>
+            <td>Equal under relative tol</td>
+          </tr>
+          <tr>
+            <td>Fee Rounding Half-Up A</td>
+            <td id="rounding-halfup-a">1.005</td>
+            <td>Decimal Half-Up (2 dec)</td>
+            <td><code>#rounding-halfup-a</code></td>
+            <td>1.01</td>
+          </tr>
+          <tr>
+            <td>Fee Rounding Half-Up B</td>
+            <td id="rounding-halfup-b">2.555</td>
+            <td>Decimal Half-Up (2 dec)</td>
+            <td><code>#rounding-halfup-b</code></td>
+            <td>2.56</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Automated Validation Terminal</div>
+      <div class="test-panel">
+        <button id="btn-run-all" class="btn">▶ Run All Live Site 1 Assertions</button>
+        <button id="btn-clear-logs" class="btn btn-secondary">Clear Console Logs</button>
+        <div id="test-results" class="log-box">Awaiting execution...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { $T } from '../dist/index.js';
+    window.$T = $T;
+    window.testudo = $T;
+
+    const statusEl = document.getElementById('testudo-status');
+    if (statusEl) {
+      statusEl.innerText = 'Testudo v0.2.1 Active';
+      statusEl.style.borderColor = '#34D399';
+      statusEl.style.color = '#34D399';
+    }
+
+    const logBox = document.getElementById('test-results');
+
+    function log(msg, isPass = true) {
+      const cls = isPass ? 'log-pass' : 'log-fail';
+      const mark = isPass ? '✓' : '✖';
+      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    window.runSite1Tests = async function() {
+      logBox.innerHTML = '';
+      let passes = 0;
+      let total = 0;
+
+      const assert = (name, condition, details = '') => {
+        total++;
+        if (condition) {
+          passes++;
+          log(`${name}: PASS ${details}`, true);
+        } else {
+          log(`${name}: FAIL ${details}`, false);
+        }
+      };
+
+      // TC-01: SAP Trailing Minus
+      const sapEur = $T.format.parse(document.getElementById('sap-trailing-minus').innerText);
+      assert('TC-01A: SAP 1.249,50- EUR', sapEur === -1249.50, `(Got: ${sapEur})`);
+
+      const sapUsd = $T.format.parse(document.getElementById('sap-trailing-usd').innerText);
+      assert('TC-01B: SAP 500.00- USD', sapUsd === -500.00, `(Got: ${sapUsd})`);
+
+      // TC-02: French Space Separator
+      const french = $T.format.parse(document.getElementById('french-spaces').innerText);
+      assert('TC-02: French 1 249 500,00 €', french === 1249500.00, `(Got: ${french})`);
+
+      // TC-03: Accounting Negative Parentheses
+      const parens = $T.format.parse(document.getElementById('accounting-parens').innerText);
+      assert('TC-03: Accounting ($1,249.50)', parens === -1249.50, `(Got: ${parens})`);
+
+      // TC-04: Indian Numbering System
+      const lakhs = $T.format.parse(document.getElementById('indian-lakhs').innerText);
+      assert('TC-04A: Indian ₹12,34,567.89', lakhs === 1234567.89, `(Got: ${lakhs})`);
+
+      const crores = $T.format.parse(document.getElementById('indian-crores').innerText);
+      assert('TC-04B: Indian ₹1,00,00,000.00', crores === 10000000.00, `(Got: ${crores})`);
+
+      // TC-05: Disambiguation with Locale
+      const rawAmbiguous = document.getElementById('ambiguous-german').innerText;
+      const deVal = $T.format.parse(rawAmbiguous, { locale: 'de-DE' });
+      const enVal = $T.format.parse(rawAmbiguous, { locale: 'en-US' });
+      assert('TC-05A: 1.250 in de-DE is 1250', deVal === 1250, `(Got: ${deVal})`);
+      assert('TC-05B: 1.250 in en-US is 1.25', enVal === 1.25, `(Got: ${enVal})`);
+
+      // TC-06: Invisible Whitespace Cleaning
+      const messyRaw = document.getElementById('messy-nbsp').innerText;
+      const messyClean = $T.format.normalizeWhitespace(messyRaw);
+      const messyVal = $T.format.parse(messyRaw);
+      assert('TC-06A: NBSP Normalization', !messyClean.includes('\u00A0') && !messyClean.includes('\uFEFF'), `(Clean: "${messyClean}")`);
+      assert('TC-06B: Messy Currency Parsed', messyVal === 1249.50, `(Got: ${messyVal})`);
+
+      // TC-07: $1B+ Balance Equality
+      const b1 = $T.format.parse(document.getElementById('vault-reserve-a').innerText);
+      const b2 = $T.format.parse(document.getElementById('vault-reserve-b').innerText);
+      const eqScale = $T.math.eq(b1, b2);
+      assert('TC-07: $1B Relative Epsilon Tolerance', eqScale === true, `(Delta: ${Math.abs(b1 - b2)})`);
+
+      // TC-08: Exponential Half-Up Decimal Rounding
+      const rA = $T.math.round(1.005, 2, 'HALF_UP');
+      const rB = $T.math.round(2.555, 2, 'HALF_UP');
+      assert('TC-08A: round(1.005, 2) === 1.01', rA === 1.01, `(Got: ${rA})`);
+      assert('TC-08B: round(2.555, 2) === 2.56', rB === 2.56, `(Got: ${rB})`);
+
+      log(`Summary: ${passes}/${total} Assertions Passed!`, passes === total);
+      window.__SITE1_TEST_SUMMARY__ = { passes, total, success: passes === total };
+      return window.__SITE1_TEST_SUMMARY__;
+    };
+
+    document.getElementById('btn-run-all')?.addEventListener('click', () => {
+      window.runSite1Tests();
+    });
+
+    document.getElementById('btn-clear-logs')?.addEventListener('click', () => {
+      logBox.innerHTML = 'Awaiting execution...';
+    });
+  </script>
+</body>
+</html>
