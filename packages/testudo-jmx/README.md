@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/testudo_transparent_master.png" alt="Testudo Mascot - The Armored Tuxedo Tortoise" width="180" />
+</p>
+
 # Testudo-JMX™
 ### Free Single-Binary Apache JMeter Native Execution Engine & Web Flight Deck
 

@@ -1,6 +1,26 @@
-# 🛡️ Testudo™ Testing Suite
-### Unified Defensive Software Testing: Front-End Synthetic Verification & Native Protocol Load Testing
-**Parent Organization:** Aventine Labs LLC • **Open-Source License:** Apache-2.0 (Testudo-JS & Testudo-JMX only)
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/testudo_transparent_master.png">
+    <img src="./assets/testudo_mascot_master.png" alt="Testudo Mascot - The Armored Tuxedo Tortoise" width="240" />
+  </picture>
+</p>
+
+<h1 align="center">🛡️ Testudo™ Testing Suite</h1>
+<p align="center">
+  <strong>The Armored Tuxedo Tortoise: Unified Defensive Software Verification</strong><br>
+  <em>High-Precision Synthetic Verification & Native Single-Binary JMeter Protocol Load Engine</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/github/actions/workflow/status/aventine-labs/testudo/ci.yml?branch=main&label=CI%20Pipeline&logo=github" alt="CI Status"></a>
+  <a href="https://www.npmjs.com/package/@aventine/testudo-jmx"><img src="https://img.shields.io/npm/v/@aventine/testudo-jmx?color=blue&label=%40aventine%2Ftestudo-jmx" alt="npm testudo-jmx"></a>
+  <a href="https://www.npmjs.com/package/@aventine/testudo"><img src="https://img.shields.io/npm/v/@aventine/testudo?color=green&label=%40aventine%2Ftestudo" alt="npm testudo"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
+</p>
+
+<p align="center">
+  <strong>Parent Organization:</strong> Aventine Labs LLC • <strong>Open-Source Core:</strong> Apache-2.0 (Testudo-JS & Testudo-JMX)
+</p>
 
 Testudo is an open-source testing ecosystem engineered to deliver zero-dependency, mathematically rigorous software verification. The open-source suite comprises Testudo-JS (in-browser DOM exploration and float-precision accounting math) and Testudo-JMX (high-concurrency native Apache JMeter protocol execution), licensed under the Apache License 2.0. Advanced enterprise tools (Testudo LoadForge™ and Testudo LoadTest™) are developed separately as closed-source proprietary software by Aventine Labs LLC.
 

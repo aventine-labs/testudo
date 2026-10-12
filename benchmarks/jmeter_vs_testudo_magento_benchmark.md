@@ -140,3 +140,51 @@ Detailed transaction breakdown showing mean, p50, p90, p95, and p99 response tim
 1. **Saturation Knee Boundary**: Concurrency scaling remains linear up to approximately 25 to 30 Virtual Users. Beyond 30 VUs, response times diverge exponentially due to PHP-FPM worker pool contention and MariaDB connection pool serialization.
 2. **Degradation at 50 VUs**: At 50 concurrent virtual users, server queue lengths saturate, causing elevated response times (>1,000ms on catalog search) and non-200 HTTP response codes (502 Bad Gateway / 504 Gateway Timeout) under load.
 3. **Engine Measurement Fidelity**: Testudo-JMX captures identical per-URL response time distributions as Apache JMeter without introducing client-side JVM Stop-the-World garbage collection pauses.
+
+---
+
+### 5. How to Replicate This Benchmark
+
+The exact `.jmx` test plan used in this study is bundled in this repository under [benchmarks/scenarios/magento_ecommerce_flow.jmx](./scenarios/magento_ecommerce_flow.jmx).
+
+Because Testudo-JMX is a clean-room drop-in execution engine, the exact same `.jmx` file executes in both Apache JMeter and Testudo-JMX with zero modifications.
+
+#### 1. Running Apache JMeter
+```bash
+jmeter -n -t benchmarks/scenarios/magento_ecommerce_flow.jmx \
+  -JVUS=50 \
+  -JDURATION=300 \
+  -JRAMP=30 \
+  -JTARGET_HOST=127.0.0.1 \
+  -JTARGET_PORT=8080 \
+  -l jmeter_results.jtl
+```
+
+#### 2. Running Testudo-JMX
+```bash
+testudo-jmx -n -t benchmarks/scenarios/magento_ecommerce_flow.jmx \
+  -JVUS=50 \
+  -JDURATION=300 \
+  -JRAMP=30 \
+  -JTARGET_HOST=127.0.0.1 \
+  -JTARGET_PORT=8080 \
+  -l testudo_results.jtl
+```
+
+Or execute on-demand via `npx` with zero local binary installation:
+```bash
+npx @aventine/testudo-jmx -n -t benchmarks/scenarios/magento_ecommerce_flow.jmx \
+  -JVUS=50 \
+  -JDURATION=300 \
+  -l testudo_results.jtl
+```
+
+#### 3. Automated Side-by-Side Replication Script
+A self-contained Python script is provided to run both tools, monitor process resident memory (VmRSS) via `/proc/$PID/status`, and output the comparison matrix:
+```bash
+python3 benchmarks/replicate_benchmark.py --vus 50 --duration 300 --host 127.0.0.1 --port 8080
+```
+
+> **Note on LoadForge™ vs Community Replication:**  
+> The official research publication was instrumented using Aventine Labs' internal enterprise LoadForge™ saturation engine (`scripts/AventineBenchmarkOrchestrator.py`), which monitors Linux TCP socket buffers, hardware context switches, and microsecond-precision latency distributions. While LoadForge™ remains a proprietary enterprise tool, the test plan (`.jmx`), the native Go engine (`testudo-jmx`), and the replication runner (`benchmarks/replicate_benchmark.py`) are 100% free and open-source so any engineer can verify these results.
+

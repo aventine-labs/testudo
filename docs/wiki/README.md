@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/testudo_transparent_master.png" alt="Testudo Mascot - The Armored Tuxedo Tortoise" width="160" />
+</p>
+
 # 🛡️ Testudo-JMX™ Official Wiki & Documentation
 
 Welcome to the official technical documentation for **Testudo-JMX™**, the free, open-source native Go execution engine, Web Flight Deck, and auto-correlation enclave for Apache JMeter (`.jmx`) workloads.
