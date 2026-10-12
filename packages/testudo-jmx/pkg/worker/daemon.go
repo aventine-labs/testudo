@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 // RunRequest encapsulates an incoming test execution directive from an orchestrator.
 type RunRequest struct {
 	JMXContent         string `json:"jmx_content"`
-	JMXFilePath        string `json:"jmx_file_path"`
 	OverrideVUs        int    `json:"override_vus"`
 	DurationSec        int    `json:"duration_sec"`
 	RampRate           int    `json:"ramp_rate"`
@@ -38,7 +38,9 @@ type WorkerStatus struct {
 
 // WorkerDaemon manages the HTTP control interface for headless leaf execution.
 type WorkerDaemon struct {
+	host       string
 	port       int
+	authToken  string
 	server     *http.Server
 	mu         sync.Mutex
 	status     string
@@ -48,16 +50,26 @@ type WorkerDaemon struct {
 	streamer   *UdpStreamer
 }
 
-// NewWorkerDaemon creates a worker daemon bound to the specified port.
+// NewWorkerDaemon creates a worker daemon bound to loopback (127.0.0.1) on the specified port.
 func NewWorkerDaemon(port int) *WorkerDaemon {
+	return NewWorkerDaemonWithConfig("127.0.0.1", port, "")
+}
+
+// NewWorkerDaemonWithConfig creates a worker daemon with explicit host, port, and bearer token.
+func NewWorkerDaemonWithConfig(host string, port int, authToken string) *WorkerDaemon {
+	if host == "" {
+		host = "127.0.0.1"
+	}
 	if port <= 0 {
 		port = 9091
 	}
 
 	d := &WorkerDaemon{
-		port:     port,
-		status:   "IDLE",
-		workerID: fmt.Sprintf("testudo-leaf-%d", port),
+		host:      host,
+		port:      port,
+		authToken: authToken,
+		status:    "IDLE",
+		workerID:  fmt.Sprintf("testudo-leaf-%d", port),
 	}
 
 	mux := http.NewServeMux()
@@ -69,11 +81,26 @@ func NewWorkerDaemon(port int) *WorkerDaemon {
 	mux.HandleFunc("/api/worker/metrics", d.handleMetrics)
 
 	d.server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf("%s:%d", host, port),
 		Handler: mux,
 	}
 
 	return d
+}
+
+func (d *WorkerDaemon) checkAuth(r *http.Request) bool {
+	if d.authToken == "" {
+		if d.host == "127.0.0.1" || d.host == "localhost" || d.host == "::1" {
+			return true
+		}
+		return false
+	}
+	auth := r.Header.Get("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		token := strings.TrimPrefix(auth, "Bearer ")
+		return token == d.authToken
+	}
+	return false
 }
 
 // Start launches the daemon HTTP listener.
@@ -124,9 +151,19 @@ func (d *WorkerDaemon) handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !d.checkAuth(r) {
+		http.Error(w, "Unauthorized: Valid Bearer token required", http.StatusUnauthorized)
+		return
+	}
+
 	var req RunRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("invalid request payload: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.JMXContent == "" {
+		http.Error(w, "must provide jmx_content (XML string payload)", http.StatusBadRequest)
 		return
 	}
 
@@ -137,19 +174,7 @@ func (d *WorkerDaemon) handleRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var plan *jmx.TestPlan
-	var err error
-
-	if req.JMXContent != "" {
-		plan, err = jmx.ParseJMXBytes([]byte(req.JMXContent))
-	} else if req.JMXFilePath != "" {
-		plan, err = jmx.ParseJMXFile(req.JMXFilePath)
-	} else {
-		d.mu.Unlock()
-		http.Error(w, "must provide jmx_content or jmx_file_path", http.StatusBadRequest)
-		return
-	}
-
+	plan, err := jmx.ParseJMXBytes([]byte(req.JMXContent))
 	if err != nil {
 		d.mu.Unlock()
 		http.Error(w, fmt.Sprintf("failed to parse JMX plan: %v", err), http.StatusBadRequest)
@@ -205,6 +230,11 @@ func (d *WorkerDaemon) handleRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *WorkerDaemon) handleStop(w http.ResponseWriter, r *http.Request) {
+	if !d.checkAuth(r) {
+		http.Error(w, "Unauthorized: Valid Bearer token required", http.StatusUnauthorized)
+		return
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 

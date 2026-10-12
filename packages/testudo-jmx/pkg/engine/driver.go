@@ -35,22 +35,53 @@ type Driver struct {
 	activeCount   int64
 	shards        [numWorkerShards]*workerShard
 	nextID        int64
+	enabledTGs    []*jmx.ThreadGroup
+	tgSchedule    []*jmx.ThreadGroup
 }
 
 // NewDriver creates an execution orchestrator.
 func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
-	initialVUs := int64(1)
+	var enabledTGs []*jmx.ThreadGroup
+	for _, tg := range plan.ThreadGroups {
+		if tg.Enabled {
+			enabledTGs = append(enabledTGs, tg)
+		}
+	}
+	if len(enabledTGs) == 0 && len(plan.ThreadGroups) > 0 {
+		enabledTGs = plan.ThreadGroups
+	}
+
+	totalPlanVUs := int64(0)
+	maxRampSec := 0
+	var tgSchedule []*jmx.ThreadGroup
+
+	for _, tg := range enabledTGs {
+		threads := tg.NumThreads
+		if threads <= 0 {
+			threads = 1
+		}
+		totalPlanVUs += int64(threads)
+		if tg.RampTimeSec > maxRampSec {
+			maxRampSec = tg.RampTimeSec
+		}
+		for i := 0; i < threads; i++ {
+			tgSchedule = append(tgSchedule, tg)
+		}
+	}
+
+	if totalPlanVUs == 0 {
+		totalPlanVUs = 1
+	}
+
+	initialVUs := totalPlanVUs
 	if opts.OverrideVUs > 0 {
 		initialVUs = int64(opts.OverrideVUs)
-	} else if len(plan.ThreadGroups) > 0 && plan.ThreadGroups[0].NumThreads > 0 {
-		initialVUs = int64(plan.ThreadGroups[0].NumThreads)
 	}
 
 	rampRate := opts.RampRate
 	if rampRate <= 0 {
-		if len(plan.ThreadGroups) > 0 && plan.ThreadGroups[0].RampTimeSec > 0 {
-			rampSec := plan.ThreadGroups[0].RampTimeSec
-			rate := int(float64(initialVUs)/float64(rampSec) + 0.5)
+		if maxRampSec > 0 {
+			rate := int(float64(initialVUs)/float64(maxRampSec) + 0.5)
 			if rate < 1 {
 				rate = 1
 			}
@@ -83,7 +114,26 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 		TransportPool: tpool,
 		ResultChan:    make(chan *transport.SampleResult, 10000),
 		shards:        shards,
+		enabledTGs:    enabledTGs,
+		tgSchedule:    tgSchedule,
 	}
+}
+
+func (d *Driver) selectThreadGroup(id int) *jmx.ThreadGroup {
+	if len(d.enabledTGs) == 0 {
+		if len(d.Plan.ThreadGroups) > 0 {
+			return d.Plan.ThreadGroups[0]
+		}
+		return nil
+	}
+	if len(d.tgSchedule) > 0 {
+		idx := (id - 1) % len(d.tgSchedule)
+		if idx < 0 {
+			idx = 0
+		}
+		return d.tgSchedule[idx]
+	}
+	return d.enabledTGs[(id-1)%len(d.enabledTGs)]
 }
 
 // Run launches the test execution loop until duration expires or context cancels.
@@ -165,7 +215,10 @@ func (d *Driver) spawnWorker(parentCtx context.Context, wg *sync.WaitGroup) {
 			wg.Done()
 		}()
 
-		tg := d.Plan.ThreadGroups[0]
+		tg := d.selectThreadGroup(id)
+		if tg == nil {
+			return
+		}
 		tr := d.TransportPool.Next()
 		session := NewUserSessionWithTransport(id, tg, d.Plan, d.Collector, d.ResultChan, d.TransportCfg, tr)
 		session.DecomposeRedirects = d.Options.DecomposeRedirects

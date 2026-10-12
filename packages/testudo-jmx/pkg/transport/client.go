@@ -2,6 +2,8 @@ package transport
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -123,9 +125,26 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	result.LatencyMs = JtlMillis(ttfbDur)
 	result.LatencyUs = ttfbDur.Microseconds()
 
+	// Handle transparent response decompression when gzip or deflate is returned
+	var respReader io.Reader = resp.Body
+	contentEncoding := resp.Header.Get("Content-Encoding")
+	if strings.EqualFold(contentEncoding, "gzip") {
+		gzReader, gzErr := gzip.NewReader(resp.Body)
+		if gzErr == nil {
+			defer gzReader.Close()
+			respReader = gzReader
+		}
+	} else if strings.EqualFold(contentEncoding, "deflate") {
+		flateReader := flate.NewReader(resp.Body)
+		defer flateReader.Close()
+		respReader = flateReader
+	}
+
 	// Read full response body inside the timer
-	maxBody := int64(2 * 1024 * 1024)
-	bodyBytes, readErr := io.ReadAll(io.LimitReader(resp.Body, maxBody))
+	bodyBytes, readErr := io.ReadAll(respReader)
+	// Drain any remaining bytes from underlying socket to allow keep-alive recycling
+	_, _ = io.Copy(io.Discard, resp.Body)
+
 	elapsedDur := time.Since(startTime)
 	result.ElapsedMs = JtlMillis(elapsedDur)
 	result.ElapsedUs = elapsedDur.Microseconds()

@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -17,8 +16,9 @@ const (
 )
 
 var (
-	regexCacheMu sync.RWMutex
-	regexCache   = make(map[string]*regexp.Regexp)
+	regexCacheMu    sync.RWMutex
+	regexCache      = make(map[string]*regexp.Regexp)
+	templateTokenRe = regexp.MustCompile(`\$(\d+)\$?`)
 )
 
 // compileSafeRegex enforces bounds checking, bounds state compilation,
@@ -68,63 +68,97 @@ func ExtractRegex(text, pattern, template string, matchNo int, defaultValue stri
 		return defaultValue
 	}
 
-	targetMatch := []string{}
+	var targetMatch []string
 	if matchNo == 1 {
 		targetMatch = allMatches[0]
 	} else if matchNo > 1 && matchNo <= len(allMatches) {
 		targetMatch = allMatches[matchNo-1]
-	} else if matchNo <= 0 {
+	} else if matchNo == 0 {
+		// In JMeter, matchNo 0 means select randomly
 		targetMatch = allMatches[rand.Intn(len(allMatches))]
+	} else if matchNo < 0 {
+		// When called directly without Multi, pick first
+		targetMatch = allMatches[0]
 	} else {
 		return defaultValue
 	}
 
 	if template == "" {
-		template = "$1$"
+		if len(targetMatch) > 1 {
+			return targetMatch[1]
+		}
+		return targetMatch[0]
 	}
 
-	// Substitute template: $0$ is full match, $1$ is group 1, etc.
-	// Supports both $1$ and $1 formats
-	result := template
-	for i, groupVal := range targetMatch {
-		tokenWithDollar := fmt.Sprintf("$%d$", i)
-		result = strings.ReplaceAll(result, tokenWithDollar, groupVal)
-		tokenSingle := fmt.Sprintf("$%d", i)
-		result = strings.ReplaceAll(result, tokenSingle, groupVal)
+	// Substitute tokens ($0$, $1$, $1, etc.) specifically within the template string.
+	// We do not perform sweeping string replacements on the final output to preserve
+	// currency symbols or literal $n text contained in extracted values.
+	hasTokens := templateTokenRe.MatchString(template)
+	if !hasTokens {
+		// Literal template (e.g. "fixed") returns the literal template string matching JMeter
+		return template
 	}
 
-	// Clean any unresolved tokens like $2$ or $2
-	for i := len(targetMatch); i < 10; i++ {
-		tokenWithDollar := fmt.Sprintf("$%d$", i)
-		result = strings.ReplaceAll(result, tokenWithDollar, "")
-		tokenSingle := fmt.Sprintf("$%d", i)
-		result = strings.ReplaceAll(result, tokenSingle, "")
-	}
-
-	// If no replacement occurred, return group 1 if present
-	if result == template && len(targetMatch) > 1 {
-		return targetMatch[1]
-	}
+	result := templateTokenRe.ReplaceAllStringFunc(template, func(token string) string {
+		sub := templateTokenRe.FindStringSubmatch(token)
+		if len(sub) < 2 {
+			return ""
+		}
+		grpIdx, err := strconv.Atoi(sub[1])
+		if err != nil {
+			return ""
+		}
+		if grpIdx < len(targetMatch) {
+			return targetMatch[grpIdx]
+		}
+		return ""
+	})
 
 	return result
 }
 
 // ExtractMultiRegex extracts all matches and populates ref_1, ref_2, ref_matchNr in variables map.
 func ExtractMultiRegex(text, pattern, template, refName string, vars map[string]string) {
+	if text == "" || pattern == "" || vars == nil {
+		return
+	}
+
 	re, err := compileSafeRegex(pattern)
 	if err != nil {
+		vars[refName+"_matchNr"] = "0"
 		return
 	}
 
 	allMatches := re.FindAllStringSubmatch(text, -1)
 	vars[refName+"_matchNr"] = strconv.Itoa(len(allMatches))
 
+	effectiveTemplate := template
+	if effectiveTemplate == "" {
+		effectiveTemplate = "$1$"
+	}
+
 	for i, match := range allMatches {
 		idx := i + 1
-		res := template
-		for g, gVal := range match {
-			res = strings.ReplaceAll(res, fmt.Sprintf("$%d$", g), gVal)
+		hasTokens := templateTokenRe.MatchString(effectiveTemplate)
+		var val string
+		if !hasTokens {
+			val = effectiveTemplate
+		} else {
+			val = templateTokenRe.ReplaceAllStringFunc(effectiveTemplate, func(token string) string {
+				sub := templateTokenRe.FindStringSubmatch(token)
+				if len(sub) < 2 {
+					return ""
+				}
+				grpIdx, err := strconv.Atoi(sub[1])
+				if err != nil {
+					return ""
+				}
+				if grpIdx < len(match) {
+					return match[grpIdx]
+				}
+				return ""
+			})
 		}
-		vars[fmt.Sprintf("%s_%d", refName, idx)] = res
+		vars[fmt.Sprintf("%s_%d", refName, idx)] = val
 	}
 }

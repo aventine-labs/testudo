@@ -21,6 +21,7 @@ type TransportConfig struct {
 	ResponseTimeout   time.Duration
 	DisableCompression bool
 	InsecureSkipTLS    bool
+	EnableHTTP2        bool
 }
 
 // DefaultTransportConfig returns balanced high-concurrency settings.
@@ -36,6 +37,7 @@ func DefaultTransportConfig() TransportConfig {
 		ResponseTimeout:    30 * time.Second,
 		DisableCompression: true, // Parity with JMeter default
 		InsecureSkipTLS:    true,
+		EnableHTTP2:        false, // Parity with JMeter HTTP/1.1 default
 	}
 }
 
@@ -54,7 +56,7 @@ func BuildRoundTripper(cfg TransportConfig, forceClose bool) *http.Transport {
 	return &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
-		ForceAttemptHTTP2:     true,
+		ForceAttemptHTTP2:     cfg.EnableHTTP2,
 		MaxIdleConns:          cfg.MaxIdleConns,
 		MaxIdleConnsPerHost:   cfg.MaxIdlePerHost,
 		MaxConnsPerHost:       cfg.MaxConnsPerHost,

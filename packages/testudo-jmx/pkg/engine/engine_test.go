@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -373,6 +374,93 @@ func TestSingleSessionFlowExecution(t *testing.T) {
 	}
 	if pageBreaks != 2 {
 		t.Errorf("Expected exactly 2 page break composite samples, got %d", pageBreaks)
+	}
+}
+
+func TestEngineMultiThreadGroupExecution(t *testing.T) {
+	var tg1Hits int64
+	var tg2Hits int64
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/tg1":
+			atomic.AddInt64(&tg1Hits, 1)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("tg1_ok"))
+		case "/tg2":
+			atomic.AddInt64(&tg2Hits, 1)
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("tg2_ok"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+	port := u.Port()
+
+	plan := &jmx.TestPlan{
+		Name: "Multi-TG Test Plan",
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "Readers",
+				Enabled:    true,
+				NumThreads: 2,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{
+						Name:     "TG1 Sampler",
+						Enabled:  true,
+						Domain:   u.Hostname(),
+						Port:     port,
+						Protocol: "http",
+						Path:     "/tg1",
+						Method:   "GET",
+					},
+				},
+			},
+			{
+				Name:       "Writers",
+				Enabled:    true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{
+						Name:     "TG2 Sampler",
+						Enabled:  true,
+						Domain:   u.Hostname(),
+						Port:     port,
+						Protocol: "http",
+						Path:     "/tg2",
+						Method:   "POST",
+					},
+				},
+			},
+		},
+	}
+
+	opts := jmx.ExecutionOptions{
+		Duration:   2 * time.Second,
+		IsHeadless: true,
+	}
+
+	driver := engine.NewDriver(plan, opts)
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	_ = driver.Run(ctx)
+
+	if atomic.LoadInt64(&tg1Hits) == 0 {
+		t.Errorf("Expected tg1Hits > 0 from Readers thread group, got %d", atomic.LoadInt64(&tg1Hits))
+	}
+	if atomic.LoadInt64(&tg2Hits) == 0 {
+		t.Errorf("Expected tg2Hits > 0 from Writers thread group, got %d", atomic.LoadInt64(&tg2Hits))
 	}
 }
 

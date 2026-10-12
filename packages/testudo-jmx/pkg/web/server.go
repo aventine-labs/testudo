@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ var staticFS embed.FS
 // Server hosts the local Web Flight Deck GUI, Plan Studio, and Run History API.
 type Server struct {
 	Driver       *engine.Driver
+	Host         string
 	Port         int
 	server       *http.Server
 	mu           sync.RWMutex
@@ -34,13 +36,22 @@ type Server struct {
 	registry     *reporting.RunRegistry
 }
 
-// NewServer instantiates an embedded web server.
+// NewServer instantiates an embedded web server bound to 127.0.0.1 by default.
 func NewServer(driver *engine.Driver, port int) *Server {
+	return NewServerWithHost(driver, "127.0.0.1", port)
+}
+
+// NewServerWithHost instantiates an embedded web server bound to a specific host and port.
+func NewServerWithHost(driver *engine.Driver, host string, port int) *Server {
+	if host == "" {
+		host = "127.0.0.1"
+	}
 	if port <= 0 {
 		port = 3014
 	}
 	return &Server{
 		Driver:   driver,
+		Host:     host,
 		Port:     port,
 		status:   "IDLE",
 		registry: reporting.GetRunRegistry(""),
@@ -87,8 +98,8 @@ func (s *Server) Start() error {
 	mux.Handle("/", http.FileServer(http.FS(subFS)))
 
 	s.server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.Port),
-		Handler: mux,
+		Addr:    fmt.Sprintf("%s:%d", s.Host, s.Port),
+		Handler: s.securityMiddleware(mux),
 	}
 
 	go func() {
@@ -96,6 +107,44 @@ func (s *Server) Start() error {
 	}()
 
 	return nil
+}
+
+func (s *Server) securityMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// DNS rebinding protection: validate Host header
+		reqHost := r.Host
+		if colonIdx := strings.LastIndex(reqHost, ":"); colonIdx != -1 {
+			reqHost = reqHost[:colonIdx]
+		}
+		if reqHost != "localhost" && reqHost != "127.0.0.1" && reqHost != "[::1]" && reqHost != "::1" && reqHost != s.Host {
+			http.Error(w, "Forbidden: Invalid Host Header", http.StatusForbidden)
+			return
+		}
+
+		// Cross-Origin mutating request protection
+		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete || r.Method == http.MethodPatch {
+			origin := r.Header.Get("Origin")
+			if origin != "" && !s.isAllowedOrigin(origin) {
+				http.Error(w, "Forbidden: Cross-Origin Request Blocked", http.StatusForbidden)
+				return
+			}
+			if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+				http.Error(w, "Forbidden: Cross-Site Request Blocked", http.StatusForbidden)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) isAllowedOrigin(originStr string) bool {
+	u, err := url.Parse(originStr)
+	if err != nil {
+		return false
+	}
+	h := u.Hostname()
+	return h == "localhost" || h == "127.0.0.1" || h == "::1" || h == s.Host
 }
 
 // Stop gracefully shuts down the web server.

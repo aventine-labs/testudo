@@ -27,7 +27,8 @@ func main() {
 	headless := flag.Bool("n", false, "Run in non-GUI (headless CLI) mode")
 	generateReport := flag.Bool("e", false, "Generate HTML dashboard report after load test")
 	reportDir := flag.String("o", "", "Output directory for HTML dashboard report")
-	forceGUI := flag.Bool("g", false, "Launch Web Flight Deck GUI (localhost:3014)")
+	forceGUI := flag.Bool("g", false, "Launch Web Flight Deck GUI (default: 127.0.0.1:3014)")
+	guiHost := flag.String("gui-host", "127.0.0.1", "Host address for Web Flight Deck GUI (default: 127.0.0.1)")
 	guiPort := flag.Int("p", 3014, "Port for Web Flight Deck GUI")
 	overrideVUs := flag.Int("u", 0, "Override virtual user count (0 = use JMX plan)")
 	durationStr := flag.String("d", "", "Override test duration (e.g. 30s, 5m, 1h)")
@@ -38,7 +39,9 @@ func main() {
 	correlateOnly := flag.Bool("correlate", false, "Run 1-click RegexForge auto-correlation on plan and exit")
 	promPort := flag.Int("prometheus-port", 0, "Port to serve Prometheus /metrics (e.g. 9090)")
 	workerMode := flag.Bool("worker", false, "Launch as a headless worker daemon for distributed load execution")
+	workerHost := flag.String("worker-host", "127.0.0.1", "Host address for headless worker daemon (default: 127.0.0.1)")
 	workerPort := flag.Int("worker-port", 9091, "Port for headless worker daemon (default: 9091)")
+	workerToken := flag.String("worker-token", "", "Shared authentication bearer token for worker daemon")
 	meshTelemetry := flag.String("mesh-telemetry", "", "UDP target endpoint for streaming telemetry (e.g. 127.0.0.1:8210)")
 	showVersion := flag.Bool("version", false, "Display Testudo-JMX version")
 	showVersionShort := flag.Bool("v", false, "Display Testudo-JMX version")
@@ -53,12 +56,17 @@ func main() {
 
 	if *workerMode {
 		printBanner()
-		fmt.Printf("[WORKER] Launching Testudo-JMX Headless Mesh Leaf Daemon on port :%d...\n", *workerPort)
+		fmt.Printf("[WORKER] Launching Testudo-JMX Headless Mesh Leaf Daemon on %s:%d...\n", *workerHost, *workerPort)
 		fmt.Println("[WORKER] Role: MESH_LEAF | Awaiting directives from Testudo LoadTest / SovereignLoad")
 		if *meshTelemetry != "" {
 			fmt.Printf("[WORKER] Off-TCP UDP Telemetry Streaming Target: %s\n", *meshTelemetry)
 		}
-		daemon := worker.NewWorkerDaemon(*workerPort)
+		if *workerToken != "" {
+			fmt.Println("[WORKER] Authentication: Bearer token security enforced")
+		} else if *workerHost != "127.0.0.1" && *workerHost != "localhost" {
+			fmt.Println("[WARN] Non-loopback binding without -worker-token will reject mutating run directives")
+		}
+		daemon := worker.NewWorkerDaemonWithConfig(*workerHost, *workerPort, *workerToken)
 		if err := daemon.Start(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("[ERROR] Worker daemon failure: %v\n", err)
 			os.Exit(1)
@@ -151,11 +159,11 @@ func main() {
 	// Setup Web Flight Deck GUI if requested or non-headless
 	var webServer *web.Server
 	if *forceGUI || !*headless {
-		webServer = web.NewServer(driver, *guiPort)
+		webServer = web.NewServerWithHost(driver, *guiHost, *guiPort)
 		if err := webServer.Start(); err != nil {
 			fmt.Printf("[WARN] Failed to start Web Flight Deck: %v\n", err)
 		} else {
-			fmt.Printf("[COCKPIT] Web Flight Deck V2 active at: http://localhost:%d\n", *guiPort)
+			fmt.Printf("[COCKPIT] Web Flight Deck V2 active at: http://%s:%d\n", *guiHost, *guiPort)
 		}
 	}
 

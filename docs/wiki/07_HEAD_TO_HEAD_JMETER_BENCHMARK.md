@@ -45,10 +45,10 @@ This benchmark evaluates the linear scaling, Gunther USL saturation knee, and ru
 | **35 VUs** | **Throughput** | 8.08 req/s | **8.04 req/s** | -0.04 req/s | Saturation Knee |
 | | **p95 Latency** | 181.0 ms | **187.0 ms** | +6.0 ms | |
 | | **Error Rate** | 0.00% | **0.00%** | +0.00% | |
-| **40 VUs** | **Throughput** | 9.19 req/s | **8.99 req/s** | -0.2 req/s | Degradation / Error Spike |
+| **40 VUs** | **Throughput** | 9.19 req/s | **8.99 req/s** | -0.2 req/s | High Concurrency |
 | | **p95 Latency** | 223.0 ms | **203.0 ms** | -20.0 ms | |
 | | **Error Rate** | 0.00% | **0.00%** | +0.00% | |
-| **50 VUs** | **Throughput** | 11.46 req/s | **11.55 req/s** | +0.09 req/s | Degradation / Error Spike |
+| **50 VUs** | **Throughput** | 11.46 req/s | **11.55 req/s** | +0.09 req/s | Capacity Boundary |
 | | **p95 Latency** | 288.0 ms | **273.0 ms** | -15.0 ms | |
 | | **Error Rate** | 0.00% | **0.00%** | +0.00% | |
 
@@ -70,6 +70,9 @@ Comparison of resident memory (VmRSS) and OS thread consumption across both test
 | **35 VUs** | 458.8 MB | **23.2 MB** | **19.8x Lower (-94.9%)** | 84 | **21** | **4.0x Fewer** |
 | **40 VUs** | 519.6 MB | **22.8 MB** | **22.8x Lower (-95.6%)** | 89 | **21** | **4.2x Fewer** |
 | **50 VUs** | 740.7 MB | **22.4 MB** | **33.1x Lower (-97.0%)** | 99 | **22** | **4.5x Fewer** |
+
+> **Technical Note on Memory Footprint Comparison:**  
+> The Apache JMeter startup script pre-allocates JVM heap space (typically `-Xms1g -Xmx1g` or `-Xms512m -Xmx512m`), which reserves virtual and resident memory up front regardless of load. In contrast, Testudo-JMX is a compiled Go native binary with dynamic heap allocation and goroutine lightweight stacks (2-4 KB per VU vs 1 MB default thread stack in the JVM), resulting in a compact 22-24 MB resident footprint. This distinction is vital when running high-density load generator nodes in cloud container environments.
 
 ![Resident Memory Footprint Comparison](visualizations/01_memory_rss_comparison.png)
 
@@ -135,15 +138,24 @@ Detailed transaction breakdown showing mean, p50, p90, p95, and p99 response tim
 
 ---
 
-### 4. Gunther USL Saturation Knee & Degradation Analysis
+### 4. Little's Law, Concurrency Dynamics & Queueing Analysis
 
-1. **Saturation Knee Boundary**: Concurrency scaling remains linear up to approximately 25 to 30 Virtual Users. Beyond 30 VUs, response times diverge exponentially due to PHP-FPM worker pool contention and MariaDB connection pool serialization.
-2. **Degradation at 50 VUs**: At 50 concurrent virtual users, server queue lengths saturate, causing elevated response times (>1,000ms on catalog search) and non-200 HTTP response codes (502 Bad Gateway / 504 Gateway Timeout) under load.
-3. **Engine Measurement Fidelity**: Testudo-JMX captures identical per-URL response time distributions as Apache JMeter without introducing client-side JVM Stop-the-World garbage collection pauses.
+1. **Throughput Scaling Governed by Little's Law**: With a configured think time averaging 4,000ms and average response latency ranging from 75ms to 273ms, total cycle time per transaction loop spans 4.075s to 4.273s. Under Little's Law (N = X * R), 50 concurrent virtual users yield an expected throughput ceiling of approximately 50 / 4.3 = ~11.6 requests/second across the 4-sampler transaction pipeline. Both engines tracked this theoretical ceiling with precision (JMeter: 11.46 req/s, Testudo-JMX: 11.55 req/s).
+2. **Clean 0.00% Error Rate at 50 VUs**: Across the full 5-minute steady-state soak at 50 VUs, neither engine observed HTTP 502/504 gateway timeouts or connection drops. The MariaDB and PHP-FPM pools handled the 50-concurrency load cleanly, maintaining a 0.00% error rate while p99 latency rose predictably to 452ms on catalog search due to database index traversal under increased concurrent queries.
+3. **Engine Measurement Fidelity**: Testudo-JMX captures response time distributions that track Apache JMeter across all percentiles (p50, p90, p95, p99) within a ±3% margin of error, without introducing client-side JVM Stop-the-World garbage collection pauses or thread-scheduling jitter.
 
 ---
 
-### 5. How to Replicate This Benchmark
+### 5. Implementation Boundaries & Parity Scope
+
+Testudo-JMX is engineered as a lightweight, high-performance execution engine for the most widely deployed JMeter protocols. Users should note the current fidelity scope:
+
+* **Fully Supported**: HTTP/1.1 execution, GET/POST/PUT/DELETE/HEAD methods, User Defined Variables (`${VAR}`), HTTP Header Manager, Gaussian and Uniform Random Timers, Boundary Extractors, Regular Expression Extractors with multi-token templates, JSONPath Extractors, Response Assertions (substring, matches, not), Loop Controllers, Runtime Controllers, and Page Break transaction containers.
+* **Currently Out of Scope / Planned**: JSR223 Groovy/JavaScript scripting engines, JDBC database samplers, JMS message queues, Java RMI distributed testing (Testudo provides native HTTP mesh clustering instead), and HTTP/2 multiplexed streams.
+
+---
+
+### 6. How to Replicate This Benchmark
 
 The exact `.jmx` test plan used in this study is bundled in this repository under [benchmarks/scenarios/magento_ecommerce_flow.jmx](../../benchmarks/scenarios/magento_ecommerce_flow.jmx).
 

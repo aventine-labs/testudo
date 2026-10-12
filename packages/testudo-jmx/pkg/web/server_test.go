@@ -124,3 +124,50 @@ func TestServerAPIEndpoints(t *testing.T) {
 		t.Errorf("expected pre-seeded runs in list runs response")
 	}
 }
+
+func TestServerSecurityMiddleware(t *testing.T) {
+	srv := createTestServer()
+	handler := srv.securityMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+
+	// 1. Valid local request should succeed
+	req := httptest.NewRequest("POST", "/api/v1/control/start", nil)
+	req.Host = "localhost:3014"
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for local host, got %d", w.Code)
+	}
+
+	// 2. DNS rebinding attack with untrusted host should be blocked (403)
+	req = httptest.NewRequest("POST", "/api/v1/control/start", nil)
+	req.Host = "attacker-domain.com:3014"
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for untrusted Host header, got %d", w.Code)
+	}
+
+	// 3. Cross-origin POST with untrusted Origin should be blocked (403)
+	req = httptest.NewRequest("POST", "/api/v1/control/start", nil)
+	req.Host = "localhost:3014"
+	req.Header.Set("Origin", "http://evil.com")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for evil Origin, got %d", w.Code)
+	}
+
+	// 4. Cross-site Sec-Fetch-Site should be blocked (403)
+	req = httptest.NewRequest("POST", "/api/v1/control/start", nil)
+	req.Host = "localhost:3014"
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for cross-site Sec-Fetch-Site, got %d", w.Code)
+	}
+}
+

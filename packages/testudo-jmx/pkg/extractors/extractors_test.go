@@ -34,6 +34,30 @@ func TestRegexExtractor(t *testing.T) {
 	if resMulti != "mark_is_admin" {
 		t.Errorf("Expected mark_is_admin, got %s", resMulti)
 	}
+
+	// Test literal dollar sign in extracted content (e.g. $5.99 must not strip $5)
+	priceText := `The total price is $5.99 USD`
+	priceRes := extractors.ExtractRegex(priceText, `is (\$5\.\d+)`, "$1$", 1, "FAIL")
+	if priceRes != "$5.99" {
+		t.Errorf("Expected $5.99 preserved without stripping, got %s", priceRes)
+	}
+
+	// Test literal template (e.g. "fixed" returns "fixed")
+	literalRes := extractors.ExtractRegex(priceText, `is (\$5\.\d+)`, "fixed", 1, "FAIL")
+	if literalRes != "fixed" {
+		t.Errorf("Expected fixed for literal template, got %s", literalRes)
+	}
+
+	// Test ExtractMultiRegex populating ref_1, ref_2, and ref_matchNr
+	multiText := `token=TOKEN1; token=TOKEN2; token=TOKEN3;`
+	vars := make(map[string]string)
+	extractors.ExtractMultiRegex(multiText, `token=([A-Z0-9]+);`, "$1$", "auth_tok", vars)
+	if vars["auth_tok_matchNr"] != "3" {
+		t.Errorf("Expected matchNr 3, got %s", vars["auth_tok_matchNr"])
+	}
+	if vars["auth_tok_1"] != "TOKEN1" || vars["auth_tok_2"] != "TOKEN2" || vars["auth_tok_3"] != "TOKEN3" {
+		t.Errorf("Expected TOKEN1, TOKEN2, TOKEN3, got %s, %s, %s", vars["auth_tok_1"], vars["auth_tok_2"], vars["auth_tok_3"])
+	}
 }
 
 func TestJSONExtractor(t *testing.T) {

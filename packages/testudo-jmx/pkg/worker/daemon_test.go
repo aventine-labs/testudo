@@ -157,3 +157,46 @@ func TestUdpTelemetryStreamer(t *testing.T) {
 
 	streamer.Stop()
 }
+
+func TestWorkerDaemonAuthenticationAndLoopbackSecurity(t *testing.T) {
+	// 1. Non-loopback daemon without token should reject mutating actions
+	remoteDaemon := NewWorkerDaemonWithConfig("0.0.0.0", 9092, "")
+	runBody := RunRequest{
+		JMXContent: sampleJMX,
+	}
+	bodyBytes, _ := json.Marshal(runBody)
+	req := httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	w := httptest.NewRecorder()
+	remoteDaemon.handleRun(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized for non-loopback worker without token, got %d", w.Code)
+	}
+
+	// 2. Token-secured daemon rejects request without Authorization header
+	securedDaemon := NewWorkerDaemonWithConfig("0.0.0.0", 9093, "super-secret-worker-key")
+	req = httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	w = httptest.NewRecorder()
+	securedDaemon.handleRun(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized for missing token, got %d", w.Code)
+	}
+
+	// 3. Token-secured daemon accepts request with valid Bearer token
+	req = httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	req.Header.Set("Authorization", "Bearer super-secret-worker-key")
+	w = httptest.NewRecorder()
+	securedDaemon.handleRun(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 OK with valid bearer token, got %d", w.Code)
+	}
+
+	// Stop the secured daemon
+	stopReq := httptest.NewRequest("POST", "/api/worker/stop", nil)
+	stopReq.Header.Set("Authorization", "Bearer super-secret-worker-key")
+	stopW := httptest.NewRecorder()
+	securedDaemon.handleStop(stopW, stopReq)
+	if stopW.Code != http.StatusOK {
+		t.Errorf("expected 200 OK from authorized stop, got %d", stopW.Code)
+	}
+}
+

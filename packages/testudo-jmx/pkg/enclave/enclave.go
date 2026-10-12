@@ -1,6 +1,7 @@
 package enclave
 
 import (
+	"regexp"
 	"strings"
 
 	"aventinelabs.com/testudo-jmx/pkg/extractors"
@@ -174,6 +175,60 @@ var defaultRules = []TokenRule{
 	},
 }
 
+func hasParamMatch(s, paramName string) bool {
+	if s == "" || paramName == "" {
+		return false
+	}
+	reForm := regexp.MustCompile(`(?i)(^|[&?;\s])` + regexp.QuoteMeta(paramName) + `=`)
+	if reForm.MatchString(s) {
+		return true
+	}
+	reJSON := regexp.MustCompile(`(?i)"` + regexp.QuoteMeta(paramName) + `"\s*:\s*`)
+	return reJSON.MatchString(s)
+}
+
+func replaceParamValue(s, paramName, varName string) (string, bool) {
+	if s == "" || paramName == "" {
+		return s, false
+	}
+	targetVar := "${" + varName + "}"
+	changed := false
+
+	// Form-urlencoded, query string, cookie: param=value
+	reForm := regexp.MustCompile(`(?i)(^|[&?;\s])(` + regexp.QuoteMeta(paramName) + `=)([^&;\s\r\n"']*)`)
+	if reForm.MatchString(s) {
+		s = reForm.ReplaceAllStringFunc(s, func(match string) string {
+			sub := reForm.FindStringSubmatch(match)
+			if len(sub) == 4 {
+				if sub[3] == targetVar {
+					return match // already correlated
+				}
+				changed = true
+				return sub[1] + sub[2] + targetVar
+			}
+			return match
+		})
+	}
+
+	// JSON: "param": "value"
+	reJSON := regexp.MustCompile(`(?i)("` + regexp.QuoteMeta(paramName) + `"\s*:\s*")([^"]*)(")`)
+	if reJSON.MatchString(s) {
+		s = reJSON.ReplaceAllStringFunc(s, func(match string) string {
+			sub := reJSON.FindStringSubmatch(match)
+			if len(sub) == 4 {
+				if sub[2] == targetVar {
+					return match
+				}
+				changed = true
+				return sub[1] + targetVar + sub[3]
+			}
+			return match
+		})
+	}
+
+	return s, changed
+}
+
 // ScanTokenCandidates identifies dynamic tokens requiring correlation across samplers.
 func ScanTokenCandidates(plan *jmx.TestPlan) []TokenCandidate {
 	var candidates []TokenCandidate
@@ -203,9 +258,9 @@ func ScanTokenCandidates(plan *jmx.TestPlan) []TokenCandidate {
 							break
 						}
 					}
-					if !matched && strings.Contains(subSampler.Body, r.ParamName) {
+					if !matched && (hasParamMatch(subSampler.Body, r.ParamName) || hasParamMatch(subSampler.Path, r.ParamName)) {
 						status := "DETECTED"
-						if strings.Contains(subSampler.Body, "${"+r.VarName+"}") {
+						if strings.Contains(subSampler.Body, "${"+r.VarName+"}") || strings.Contains(subSampler.Path, "${"+r.VarName+"}") {
 							status = "CORRELATED"
 						}
 						candidates = append(candidates, TokenCandidate{
@@ -251,8 +306,13 @@ func AutoCorrelatePlan(plan *jmx.TestPlan) int {
 							correlationsApplied++
 						}
 					}
-					if strings.Contains(subSampler.Body, r.ParamName) && !strings.Contains(subSampler.Body, "${"+r.VarName+"}") {
-						subSampler.Body = strings.ReplaceAll(subSampler.Body, r.ParamName+"=", r.ParamName+"=${"+r.VarName+"}")
+					if newBody, changed := replaceParamValue(subSampler.Body, r.ParamName, r.VarName); changed {
+						subSampler.Body = newBody
+						foundInSubsequent = true
+						correlationsApplied++
+					}
+					if newPath, changed := replaceParamValue(subSampler.Path, r.ParamName, r.VarName); changed {
+						subSampler.Path = newPath
 						foundInSubsequent = true
 						correlationsApplied++
 					}

@@ -228,14 +228,20 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 		return 0, true, nil
 	}
 
-	// Apply timer think time if configured
+	// Apply timer think time if configured with context-cancellation awareness
 	if sampler.TimerDelayMs > 0 || sampler.TimerRangeMs > 0 {
 		delay := sampler.TimerDelayMs
 		if sampler.TimerRangeMs > 0 {
 			delay += rand.Intn(sampler.TimerRangeMs)
 		}
 		if delay > 0 {
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			timer := time.NewTimer(time.Duration(delay) * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return 0, false, ctx.Err()
+			case <-timer.C:
+			}
 		}
 	}
 
@@ -277,6 +283,24 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 		res, err = transport.ExecuteRequest(ctx, s.Client, sampler.Method, targetURL, evaluatedBody, mergedHeaders)
 	}
 	if err != nil {
+		errSample := &transport.SampleResult{
+			Label:           sampler.Name,
+			URL:             targetURL,
+			Method:          sampler.Method,
+			StatusCode:      0,
+			ResponseMessage: "Non HTTP response message: " + err.Error(),
+			Success:         false,
+			TimestampMs:     time.Now().UnixMilli(),
+			ErrorMessage:    err.Error(),
+		}
+		s.Collector.RecordSample(errSample)
+		if s.ResultChan != nil {
+			select {
+			case s.ResultChan <- errSample:
+			default:
+				s.Collector.RecordDroppedSample()
+			}
+		}
 		return 0, false, nil
 	}
 	if ctx.Err() != nil {
@@ -334,6 +358,10 @@ func (s *UserSession) applyExtractors(rules []*jmx.ExtractorRule, res *transport
 		case jmx.ExtractorBoundary:
 			extracted = extractors.ExtractBoundary(targetText, rule.LeftBoundary, rule.RightBoundary, rule.MatchNo, rule.DefaultValue)
 		case jmx.ExtractorRegex:
+			if rule.MatchNo == -1 {
+				extractors.ExtractMultiRegex(targetText, rule.Regex, rule.Template, rule.RefName, s.Variables)
+				continue
+			}
 			extracted = extractors.ExtractRegex(targetText, rule.Regex, rule.Template, rule.MatchNo, rule.DefaultValue)
 		case jmx.ExtractorJSON:
 			extracted = extractors.ExtractJSON(targetText, rule.JSONPath, rule.MatchNo, rule.DefaultValue)
