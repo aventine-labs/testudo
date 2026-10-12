@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -461,6 +462,196 @@ func TestEngineMultiThreadGroupExecution(t *testing.T) {
 	}
 	if atomic.LoadInt64(&tg2Hits) == 0 {
 		t.Errorf("Expected tg2Hits > 0 from Writers thread group, got %d", atomic.LoadInt64(&tg2Hits))
+	}
+}
+
+func TestFiniteLoopCountHonored(t *testing.T) {
+	// Finding B: With NumThreads=2 and LoopCount=1, exactly 2 requests must be made, zero respawns
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+	port := u.Port()
+
+	plan := &jmx.TestPlan{
+		Name:    "Finite Loop Count Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "FiniteTG",
+				Enabled:    true,
+				NumThreads: 2,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{
+						Name:     "Sampler 1",
+						Enabled:  true,
+						Domain:   u.Hostname(),
+						Port:     port,
+						Protocol: "http",
+						Path:     "/finite",
+						Method:   "GET",
+					},
+				},
+			},
+		},
+	}
+
+	opts := jmx.ExecutionOptions{
+		Duration:   5 * time.Second, // Long duration; finite plan must complete on its own!
+		IsHeadless: true,
+	}
+
+	driver := engine.NewDriver(plan, opts)
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	err := driver.Run(ctx)
+	if err != nil {
+		t.Fatalf("Driver run error: %v", err)
+	}
+
+	elapsed := time.Since(start)
+	totalReqs := atomic.LoadInt64(&requestCount)
+
+	if totalReqs != 2 {
+		t.Fatalf("Expected EXACTLY 2 requests for NumThreads=2, LoopCount=1, but got %d", totalReqs)
+	}
+	if elapsed >= 4*time.Second {
+		t.Errorf("Finite loop plan should exit as soon as loops finish, but took %v", elapsed)
+	}
+}
+
+func TestDisabledThreadGroupsNotExecuted(t *testing.T) {
+	var requestCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&requestCount, 1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "Disabled Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "DisabledTG",
+				Enabled:    false, // All disabled
+				NumThreads: 5,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{
+						Name:     "DisabledSampler",
+						Enabled:  true,
+						Domain:   u.Hostname(),
+						Port:     u.Port(),
+						Protocol: "http",
+						Path:     "/disabled",
+						Method:   "GET",
+					},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{IsHeadless: true})
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	err := driver.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+
+	if atomic.LoadInt64(&requestCount) != 0 {
+		t.Fatalf("Expected 0 requests from disabled thread group, got %d", atomic.LoadInt64(&requestCount))
+	}
+}
+
+func TestSetUpAndTearDownExecutionOrder(t *testing.T) {
+	var order []string
+	var mu sync.Mutex
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		order = append(order, r.URL.Path)
+		mu.Unlock()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "Lifecycle Order Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "TearDownTG",
+				Enabled:    true,
+				IsTearDown: true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "TearDownSampler", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/teardown", Method: "GET"},
+				},
+			},
+			{
+				Name:       "NormalTG",
+				Enabled:    true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "NormalSampler", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/normal", Method: "GET"},
+				},
+			},
+			{
+				Name:       "SetUpTG",
+				Enabled:    true,
+				IsSetUp:    true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "SetUpSampler", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/setup", Method: "GET"},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{IsHeadless: true})
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	err := driver.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run returned error: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if len(order) != 3 {
+		t.Fatalf("Expected 3 requests, got %d: %v", len(order), order)
+	}
+	if order[0] != "/setup" || order[1] != "/normal" || order[2] != "/teardown" {
+		t.Fatalf("Expected order [/setup, /normal, /teardown], got %v", order)
 	}
 }
 

@@ -77,6 +77,7 @@ func TestWorkerDaemonLifecycle(t *testing.T) {
 	}
 	bodyBytes, _ := json.Marshal(runBody)
 	runReq := httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	runReq.Header.Set("Authorization", "Bearer "+daemon.GetAuthToken())
 	runW := httptest.NewRecorder()
 	daemon.handleRun(runW, runReq)
 
@@ -97,6 +98,7 @@ func TestWorkerDaemonLifecycle(t *testing.T) {
 
 	// Test 3: Stop Request
 	stopReq := httptest.NewRequest("POST", "/api/worker/stop", nil)
+	stopReq.Header.Set("Authorization", "Bearer "+daemon.GetAuthToken())
 	stopW := httptest.NewRecorder()
 	daemon.handleStop(stopW, stopReq)
 
@@ -197,6 +199,39 @@ func TestWorkerDaemonAuthenticationAndLoopbackSecurity(t *testing.T) {
 	securedDaemon.handleStop(stopW, stopReq)
 	if stopW.Code != http.StatusOK {
 		t.Errorf("expected 200 OK from authorized stop, got %d", stopW.Code)
+	}
+
+	// 4. DNS rebinding attack on worker daemon must be blocked with 403 Forbidden
+	workerHandler := securedDaemon.securityMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	rebindReq := httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	rebindReq.Host = "attacker-controlled.com:9093"
+	rebindW := httptest.NewRecorder()
+	workerHandler.ServeHTTP(rebindW, rebindReq)
+	if rebindW.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for DNS rebinding Host on worker daemon, got %d", rebindW.Code)
+	}
+
+	// 5. Cross-Origin request on worker daemon must be blocked with 403 Forbidden
+	crossOriginReq := httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	crossOriginReq.Host = "127.0.0.1:9093"
+	crossOriginReq.Header.Set("Origin", "http://evil-site.com")
+	crossW := httptest.NewRecorder()
+	workerHandler.ServeHTTP(crossW, crossOriginReq)
+	if crossW.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for cross-origin POST on worker daemon, got %d", crossW.Code)
+	}
+
+	// 6. Cross-Site Sec-Fetch-Site must be blocked with 403 Forbidden
+	fetchReq := httptest.NewRequest("POST", "/api/worker/run", bytes.NewReader(bodyBytes))
+	fetchReq.Host = "127.0.0.1:9093"
+	fetchReq.Header.Set("Sec-Fetch-Site", "cross-site")
+	fetchW := httptest.NewRecorder()
+	workerHandler.ServeHTTP(fetchW, fetchReq)
+	if fetchW.Code != http.StatusForbidden {
+		t.Errorf("expected 403 Forbidden for Sec-Fetch-Site: cross-site on worker daemon, got %d", fetchW.Code)
 	}
 }
 

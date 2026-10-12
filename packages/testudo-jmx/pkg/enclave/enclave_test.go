@@ -87,7 +87,11 @@ func TestEnclaveBodyDelimitersAndNoConcatenation(t *testing.T) {
 					},
 					{
 						Name: "Sampler 4 - OAuth Code in Query String",
-						Path: "/oauth/callback?code=AUTH999&postcode=12401",
+						Path: "/oauth/callback?authorization_code=AUTH999&postcode=12401",
+					},
+					{
+						Name: "Sampler 5 - Generic State and Promo Code",
+						Path: "/checkout?state=NY&code=SUMMER10",
 					},
 				},
 			},
@@ -113,11 +117,18 @@ func TestEnclaveBodyDelimitersAndNoConcatenation(t *testing.T) {
 		t.Errorf("Sampler 3 body mismatch:\nGot:  %s\nWant: %s", s3.Body, expectedS3)
 	}
 
-	// Verify Sampler 4: code replaced in query path, postcode untouched
+	// Verify Sampler 4: authorization_code replaced in query path, postcode untouched
 	s4 := plan.ThreadGroups[0].Samplers[3]
-	expectedS4 := "/oauth/callback?code=${oauth_auth_code}&postcode=12401"
+	expectedS4 := "/oauth/callback?authorization_code=${oauth_auth_code}&postcode=12401"
 	if s4.Path != expectedS4 {
 		t.Errorf("Sampler 4 path mismatch:\nGot:  %s\nWant: %s", s4.Path, expectedS4)
+	}
+
+	// Verify Sampler 5: state=NY and code=SUMMER10 are NOT corrupted into oauth tokens
+	s5 := plan.ThreadGroups[0].Samplers[4]
+	expectedS5 := "/checkout?state=NY&code=SUMMER10"
+	if s5.Path != expectedS5 {
+		t.Errorf("Sampler 5 path mismatch: expected state=NY and code=SUMMER10 to remain untouched, got: %s", s5.Path)
 	}
 }
 

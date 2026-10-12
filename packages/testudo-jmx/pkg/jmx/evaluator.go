@@ -6,11 +6,42 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
 
-var globalCounter uint64
+var (
+	globalCounter    uint64
+	propMu           sync.RWMutex
+	globalProperties = make(map[string]string)
+)
+
+// SetProperty sets a runtime property (e.g. from -J, -G, -D flags).
+func SetProperty(key, value string) {
+	propMu.Lock()
+	defer propMu.Unlock()
+	globalProperties[key] = value
+}
+
+// GetProperty retrieves a runtime property.
+func GetProperty(key string) (string, bool) {
+	propMu.RLock()
+	defer propMu.RUnlock()
+	v, ok := globalProperties[key]
+	return v, ok
+}
+
+// GetAllProperties returns a copy of all active runtime properties.
+func GetAllProperties() map[string]string {
+	propMu.RLock()
+	defer propMu.RUnlock()
+	res := make(map[string]string, len(globalProperties))
+	for k, v := range globalProperties {
+		res[k] = v
+	}
+	return res
+}
 
 // EvaluateString resolves ${var_name} and built-in functions from session variables.
 func EvaluateString(template string, vars map[string]string, threadID int) string {
@@ -110,6 +141,19 @@ func evaluateBuiltinFunction(fnExpr string, threadID int) string {
 				n, _ := rand.Int(rand.Reader, big.NewInt(diff))
 				return strconv.FormatInt(min+n.Int64(), 10)
 			}
+		}
+		return "1"
+
+	case "__p", "__property":
+		if len(args) == 0 {
+			return "1"
+		}
+		propName := args[0]
+		if val, exists := GetProperty(propName); exists {
+			return val
+		}
+		if len(args) >= 2 {
+			return args[1]
 		}
 		return "1"
 

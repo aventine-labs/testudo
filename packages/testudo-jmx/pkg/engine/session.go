@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -391,13 +392,39 @@ func (s *UserSession) applyAssertions(assertions []*jmx.ResponseAssertion, res *
 		}
 
 		for _, pat := range a.Patterns {
-			matches := strings.Contains(textToTest, pat)
-			if a.InvertRule {
+			var matches bool
+			isLiteral := (a.TestType&jmx.AssertionSubstring != 0) || (a.TestType&jmx.AssertionEquals != 0)
+			isWhole := (a.TestType&jmx.AssertionMatches != 0) || (a.TestType&jmx.AssertionEquals != 0)
+
+			if isLiteral {
+				if isWhole {
+					matches = (textToTest == pat)
+				} else {
+					matches = strings.Contains(textToTest, pat)
+				}
+			} else if (a.TestType&jmx.AssertionMatches != 0) || (a.TestType&jmx.AssertionContains != 0) {
+				rePattern := pat
+				if isWhole {
+					rePattern = "^(?:" + pat + ")$"
+				}
+				re, err := regexp.Compile(rePattern)
+				if err == nil {
+					matches = re.MatchString(textToTest)
+				} else {
+					matches = strings.Contains(textToTest, pat)
+				}
+			} else {
+				matches = strings.Contains(textToTest, pat)
+			}
+
+			invert := a.InvertRule || ((a.TestType & jmx.AssertionNot) != 0)
+			if invert {
 				matches = !matches
 			}
+
 			if !matches {
 				res.Success = false
-				if a.InvertRule {
+				if invert {
 					res.ErrorMessage = "Assertion failed (NOT): response matched " + pat
 				} else {
 					res.ErrorMessage = "Assertion failed: response did not match " + pat

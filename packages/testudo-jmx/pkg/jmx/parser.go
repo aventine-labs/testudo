@@ -102,10 +102,12 @@ func ParseJMXBytes(data []byte) (*TestPlan, error) {
 				}
 				parseTestPlanProperties(decoder, plan)
 
-			case "ThreadGroup":
+			case "ThreadGroup", "SetupThreadGroup", "PostThreadGroup":
 				tg := &ThreadGroup{
 					Name:                "Thread Group",
 					Enabled:             true,
+					IsSetUp:             (elem.Name.Local == "SetupThreadGroup"),
+					IsTearDown:          (elem.Name.Local == "PostThreadGroup"),
 					NumThreads:          1,
 					RampTimeSec:         1,
 					DurationSec:         60,
@@ -402,6 +404,10 @@ func parseThreadGroupProperties(decoder *xml.Decoder, tg *ThreadGroup) {
 				case "ThreadGroup.duration":
 					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {
 						tg.DurationSec = n
+					}
+				case "ThreadGroup.delay":
+					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {
+						tg.StartupDelaySec = n
 					}
 				case "LoopController.loops":
 					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {
@@ -895,12 +901,14 @@ func resolvePropertyDefault(val string) string {
 		if start != -1 && end > start {
 			inner := clean[start+1 : end]
 			parts := strings.Split(inner, ",")
+			propName := strings.TrimSpace(parts[0])
+			if propVal, exists := GetProperty(propName); exists {
+				return propVal
+			}
 			if len(parts) > 1 {
 				return strings.TrimSpace(parts[1])
 			}
-			if len(parts) == 1 {
-				return strings.TrimSpace(parts[0])
-			}
+			return "1" // JMeter default for single-argument ${__P(NAME)} is 1
 		}
 	}
 	return clean

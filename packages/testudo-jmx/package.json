@@ -7,13 +7,13 @@
   "homepage": "https://aventinelabs.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/aventine-labs/testudo.git",
+    "url": "git+https://github.com/aventine-labs/testudo.git",
     "directory": "packages/testudo-jmx"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "testudo-jmx": "./bin/testudo-jmx.js"
+    "testudo-jmx": "bin/testudo-jmx.js"
   },
   "files": [
     "bin/",

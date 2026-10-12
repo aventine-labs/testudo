@@ -18,7 +18,7 @@ const (
 var (
 	regexCacheMu    sync.RWMutex
 	regexCache      = make(map[string]*regexp.Regexp)
-	templateTokenRe = regexp.MustCompile(`\$(\d+)\$?`)
+	templateTokenRe = regexp.MustCompile(`\$([0-9]+)\$`)
 )
 
 // compileSafeRegex enforces bounds checking, bounds state compilation,
@@ -130,6 +130,23 @@ func ExtractMultiRegex(text, pattern, template, refName string, vars map[string]
 	}
 
 	allMatches := re.FindAllStringSubmatch(text, -1)
+
+	// Clean up stale ref_N variables from any prior extractions with more matches
+	if prevStr, ok := vars[refName+"_matchNr"]; ok {
+		if prevNr, err := strconv.Atoi(prevStr); err == nil {
+			for k := len(allMatches) + 1; k <= prevNr; k++ {
+				delete(vars, fmt.Sprintf("%s_%d", refName, k))
+			}
+		}
+	}
+	for k := len(allMatches) + 1; ; k++ {
+		key := fmt.Sprintf("%s_%d", refName, k)
+		if _, exists := vars[key]; !exists {
+			break
+		}
+		delete(vars, key)
+	}
+
 	vars[refName+"_matchNr"] = strconv.Itoa(len(allMatches))
 
 	effectiveTemplate := template

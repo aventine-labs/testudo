@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"crypto/subtle"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +29,7 @@ type Server struct {
 	Driver       *engine.Driver
 	Host         string
 	Port         int
+	AuthToken    string
 	server       *http.Server
 	mu           sync.RWMutex
 	status       string // "IDLE", "RUNNING", "DRAINING", "STOPPED"
@@ -38,11 +41,16 @@ type Server struct {
 
 // NewServer instantiates an embedded web server bound to 127.0.0.1 by default.
 func NewServer(driver *engine.Driver, port int) *Server {
-	return NewServerWithHost(driver, "127.0.0.1", port)
+	return NewServerWithConfig(driver, "127.0.0.1", port, "")
 }
 
 // NewServerWithHost instantiates an embedded web server bound to a specific host and port.
 func NewServerWithHost(driver *engine.Driver, host string, port int) *Server {
+	return NewServerWithConfig(driver, host, port, "")
+}
+
+// NewServerWithConfig instantiates an embedded web server with host, port, and bearer auth token.
+func NewServerWithConfig(driver *engine.Driver, host string, port int, authToken string) *Server {
 	if host == "" {
 		host = "127.0.0.1"
 	}
@@ -50,11 +58,12 @@ func NewServerWithHost(driver *engine.Driver, host string, port int) *Server {
 		port = 3014
 	}
 	return &Server{
-		Driver:   driver,
-		Host:     host,
-		Port:     port,
-		status:   "IDLE",
-		registry: reporting.GetRunRegistry(""),
+		Driver:    driver,
+		Host:      host,
+		Port:      port,
+		AuthToken: authToken,
+		status:    "IDLE",
+		registry:  reporting.GetRunRegistry(""),
 	}
 }
 
@@ -132,10 +141,30 @@ func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Forbidden: Cross-Site Request Blocked", http.StatusForbidden)
 				return
 			}
+
+			// If token authentication is configured or non-loopback binding is active, require bearer auth
+			if s.AuthToken != "" || (s.Host != "127.0.0.1" && s.Host != "localhost" && s.Host != "::1") {
+				if !s.checkAuth(r) {
+					http.Error(w, "Unauthorized: Valid Bearer token required for mutating operations", http.StatusUnauthorized)
+					return
+				}
+			}
 		}
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) checkAuth(r *http.Request) bool {
+	if s.AuthToken == "" {
+		return false
+	}
+	auth := r.Header.Get("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		token := strings.TrimPrefix(auth, "Bearer ")
+		return subtle.ConstantTimeCompare([]byte(token), []byte(s.AuthToken)) == 1
+	}
+	return false
 }
 
 func (s *Server) isAllowedOrigin(originStr string) bool {
@@ -144,6 +173,18 @@ func (s *Server) isAllowedOrigin(originStr string) bool {
 		return false
 	}
 	h := u.Hostname()
+	port := u.Port()
+	if port == "" {
+		if u.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	expectedPort := strconv.Itoa(s.Port)
+	if port != expectedPort {
+		return false
+	}
 	return h == "localhost" || h == "127.0.0.1" || h == "::1" || h == s.Host
 }
 

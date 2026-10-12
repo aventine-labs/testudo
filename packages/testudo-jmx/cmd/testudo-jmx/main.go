@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +22,29 @@ import (
 const Version = "1.0.0"
 
 func main() {
+	// Intercept JMeter CLI property injection: -J<prop>=<val>, -J <prop>=<val>, -G..., -D...
+	cleanArgs := []string{os.Args[0]}
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if strings.HasPrefix(arg, "-J") || strings.HasPrefix(arg, "-G") || strings.HasPrefix(arg, "-D") {
+			propContent := arg[2:]
+			if propContent == "" && i+1 < len(os.Args) && !strings.HasPrefix(os.Args[i+1], "-") {
+				i++
+				propContent = os.Args[i]
+			}
+			if eqIdx := strings.Index(propContent, "="); eqIdx != -1 {
+				k := strings.TrimSpace(propContent[:eqIdx])
+				v := strings.TrimSpace(propContent[eqIdx+1:])
+				jmx.SetProperty(k, v)
+			} else if propContent != "" {
+				jmx.SetProperty(propContent, "true")
+			}
+		} else {
+			cleanArgs = append(cleanArgs, arg)
+		}
+	}
+	os.Args = cleanArgs
+
 	// JMeter-compatible CLI Flags
 	testPlanFile := flag.String("t", "", "Path to JMeter test plan (.jmx or .tjmx)")
 	jtlFile := flag.String("l", "", "Path to output JTL execution log (.jtl or .csv)")
@@ -30,6 +54,7 @@ func main() {
 	forceGUI := flag.Bool("g", false, "Launch Web Flight Deck GUI (default: 127.0.0.1:3014)")
 	guiHost := flag.String("gui-host", "127.0.0.1", "Host address for Web Flight Deck GUI (default: 127.0.0.1)")
 	guiPort := flag.Int("p", 3014, "Port for Web Flight Deck GUI")
+	guiToken := flag.String("gui-token", "", "Shared authentication bearer token for Web Flight Deck GUI")
 	overrideVUs := flag.Int("u", 0, "Override virtual user count (0 = use JMX plan)")
 	durationStr := flag.String("d", "", "Override test duration (e.g. 30s, 5m, 1h)")
 	keepAliveStr := flag.String("k", "DEFAULT", "Keep-Alive Mode: DEFAULT | FORCE_ON | FORCE_OFF")
@@ -37,6 +62,7 @@ func main() {
 	autoHunter := flag.Bool("autohunt", false, "Enable automated step-up saturation knee hunter")
 	decomposeRedirects := flag.Bool("subsamples", false, "Decompose redirect chains into discrete sub-samples (-0, -1)")
 	correlateOnly := flag.Bool("correlate", false, "Run 1-click RegexForge auto-correlation on plan and exit")
+	promHost := flag.String("prometheus-host", "127.0.0.1", "Host address for Prometheus /metrics (default: 127.0.0.1)")
 	promPort := flag.Int("prometheus-port", 0, "Port to serve Prometheus /metrics (e.g. 9090)")
 	workerMode := flag.Bool("worker", false, "Launch as a headless worker daemon for distributed load execution")
 	workerHost := flag.String("worker-host", "127.0.0.1", "Host address for headless worker daemon (default: 127.0.0.1)")
@@ -61,12 +87,14 @@ func main() {
 		if *meshTelemetry != "" {
 			fmt.Printf("[WORKER] Off-TCP UDP Telemetry Streaming Target: %s\n", *meshTelemetry)
 		}
-		if *workerToken != "" {
-			fmt.Println("[WORKER] Authentication: Bearer token security enforced")
-		} else if *workerHost != "127.0.0.1" && *workerHost != "localhost" {
-			fmt.Println("[WARN] Non-loopback binding without -worker-token will reject mutating run directives")
+		effWorkerToken := *workerToken
+		if effWorkerToken == "" {
+			effWorkerToken = os.Getenv("TESTUDO_WORKER_TOKEN")
 		}
-		daemon := worker.NewWorkerDaemonWithConfig(*workerHost, *workerPort, *workerToken)
+		daemon := worker.NewWorkerDaemonWithConfig(*workerHost, *workerPort, effWorkerToken)
+		if daemon.GetAuthToken() != "" {
+			fmt.Printf("[WORKER] Authentication: Bearer token security enforced (token: %s...)\n", daemon.GetAuthToken()[:min(len(daemon.GetAuthToken()), 8)])
+		}
 		if err := daemon.Start(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("[ERROR] Worker daemon failure: %v\n", err)
 			os.Exit(1)
@@ -133,9 +161,14 @@ func main() {
 	// Setup Prometheus Endpoint if configured
 	if *promPort > 0 {
 		go func() {
-			http.HandleFunc("/metrics", reporting.PrometheusHandler(driver.Collector))
-			fmt.Printf("[TELEMETRY] Prometheus /metrics listening on http://0.0.0.0:%d/metrics\n", *promPort)
-			_ = http.ListenAndServe(fmt.Sprintf(":%d", *promPort), nil)
+			promMux := http.NewServeMux()
+			promMux.HandleFunc("/metrics", reporting.PrometheusHandler(driver.Collector))
+			fmt.Printf("[TELEMETRY] Prometheus /metrics listening on http://%s:%d/metrics\n", *promHost, *promPort)
+			promServer := &http.Server{
+				Addr:    fmt.Sprintf("%s:%d", *promHost, *promPort),
+				Handler: promMux,
+			}
+			_ = promServer.ListenAndServe()
 		}()
 	}
 
@@ -159,7 +192,11 @@ func main() {
 	// Setup Web Flight Deck GUI if requested or non-headless
 	var webServer *web.Server
 	if *forceGUI || !*headless {
-		webServer = web.NewServerWithHost(driver, *guiHost, *guiPort)
+		effGuiToken := *guiToken
+		if effGuiToken == "" {
+			effGuiToken = os.Getenv("TESTUDO_GUI_TOKEN")
+		}
+		webServer = web.NewServerWithConfig(driver, *guiHost, *guiPort, effGuiToken)
 		if err := webServer.Start(); err != nil {
 			fmt.Printf("[WARN] Failed to start Web Flight Deck: %v\n", err)
 		} else {

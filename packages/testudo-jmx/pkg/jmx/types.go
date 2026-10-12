@@ -47,9 +47,12 @@ type FlowElement struct {
 type ThreadGroup struct {
 	Name                string            `json:"name"`
 	Enabled             bool              `json:"enabled"`
+	IsSetUp             bool              `json:"is_setup,omitempty"`
+	IsTearDown          bool              `json:"is_teardown,omitempty"`
 	NumThreads          int               `json:"num_threads"`
 	RampTimeSec         int               `json:"ramp_time_sec"`
 	DurationSec         int               `json:"duration_sec"`
+	StartupDelaySec     int               `json:"startup_delay_sec,omitempty"`
 	LoopCount           int               `json:"loop_count"` // -1 for forever / duration bound
 	SameUserOnIteration bool              `json:"same_user_on_iteration"`
 	DefaultTimerDelayMs int               `json:"default_timer_delay_ms"`

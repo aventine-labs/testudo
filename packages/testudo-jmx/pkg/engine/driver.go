@@ -35,25 +35,30 @@ type Driver struct {
 	activeCount   int64
 	shards        [numWorkerShards]*workerShard
 	nextID        int64
+	setupTGs      []*jmx.ThreadGroup
+	normalTGs     []*jmx.ThreadGroup
+	teardownTGs   []*jmx.ThreadGroup
 	enabledTGs    []*jmx.ThreadGroup
-	tgSchedule    []*jmx.ThreadGroup
 }
 
 // NewDriver creates an execution orchestrator.
 func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
-	var enabledTGs []*jmx.ThreadGroup
+	var setupTGs, normalTGs, teardownTGs, enabledTGs []*jmx.ThreadGroup
 	for _, tg := range plan.ThreadGroups {
 		if tg.Enabled {
 			enabledTGs = append(enabledTGs, tg)
+			if tg.IsSetUp {
+				setupTGs = append(setupTGs, tg)
+			} else if tg.IsTearDown {
+				teardownTGs = append(teardownTGs, tg)
+			} else {
+				normalTGs = append(normalTGs, tg)
+			}
 		}
-	}
-	if len(enabledTGs) == 0 && len(plan.ThreadGroups) > 0 {
-		enabledTGs = plan.ThreadGroups
 	}
 
 	totalPlanVUs := int64(0)
 	maxRampSec := 0
-	var tgSchedule []*jmx.ThreadGroup
 
 	for _, tg := range enabledTGs {
 		threads := tg.NumThreads
@@ -64,12 +69,9 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 		if tg.RampTimeSec > maxRampSec {
 			maxRampSec = tg.RampTimeSec
 		}
-		for i := 0; i < threads; i++ {
-			tgSchedule = append(tgSchedule, tg)
-		}
 	}
 
-	if totalPlanVUs == 0 {
+	if totalPlanVUs == 0 && len(enabledTGs) > 0 {
 		totalPlanVUs = 1
 	}
 
@@ -80,7 +82,7 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 
 	rampRate := opts.RampRate
 	if rampRate <= 0 {
-		if maxRampSec > 0 {
+		if maxRampSec > 0 && initialVUs > 0 {
 			rate := int(float64(initialVUs)/float64(maxRampSec) + 0.5)
 			if rate < 1 {
 				rate = 1
@@ -114,86 +116,158 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 		TransportPool: tpool,
 		ResultChan:    make(chan *transport.SampleResult, 10000),
 		shards:        shards,
+		setupTGs:      setupTGs,
+		normalTGs:     normalTGs,
+		teardownTGs:   teardownTGs,
 		enabledTGs:    enabledTGs,
-		tgSchedule:    tgSchedule,
 	}
 }
 
-func (d *Driver) selectThreadGroup(id int) *jmx.ThreadGroup {
+// Run launches the test execution loop according to JMeter lifecycle:
+// 1. setUp thread groups execute sequentially to completion
+// 2. Standard thread groups execute concurrently respecting per-group ramp, delay, duration, loops
+// 3. tearDown thread groups execute sequentially after standard thread groups complete
+func (d *Driver) Run(ctx context.Context) error {
+	// If no thread groups are enabled, exit immediately without executing any requests
 	if len(d.enabledTGs) == 0 {
-		if len(d.Plan.ThreadGroups) > 0 {
-			return d.Plan.ThreadGroups[0]
+		close(d.ResultChan)
+		if d.TransportPool != nil {
+			d.TransportPool.CloseIdleConnections()
 		}
 		return nil
 	}
-	if len(d.tgSchedule) > 0 {
-		idx := (id - 1) % len(d.tgSchedule)
-		if idx < 0 {
-			idx = 0
-		}
-		return d.tgSchedule[idx]
-	}
-	return d.enabledTGs[(id-1)%len(d.enabledTGs)]
-}
 
-// Run launches the test execution loop until duration expires or context cancels.
-func (d *Driver) Run(ctx context.Context) error {
 	var cancel context.CancelFunc
 	if d.Options.Duration > 0 {
 		ctx, cancel = context.WithTimeout(ctx, d.Options.Duration)
 		defer cancel()
 	}
 
-	// Dynamic concurrency reconciliation loop (1-second tick matching rampRateVUsSec)
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	// Snapshot telemetry periodic loop
+	// Telemetry background updater
 	snapTicker := time.NewTicker(500 * time.Millisecond)
 	defer snapTicker.Stop()
+	snapCtx, snapCancel := context.WithCancel(context.Background())
+	defer snapCancel()
 
-	var wg sync.WaitGroup
+	go func() {
+		for {
+			select {
+			case <-snapCtx.Done():
+				return
+			case <-snapTicker.C:
+				snap := d.Collector.Snapshot()
+				d.Throttle.CheckAutoHunter(snap, d.Collector)
+			}
+		}
+	}()
 
-	for {
+	// 1. Execute setUp Thread Groups sequentially to completion
+	for _, tg := range d.setupTGs {
+		select {
+		case <-ctx.Done():
+			break
+		default:
+			d.runSingleThreadGroup(ctx, tg)
+		}
+	}
+
+	// 2. Execute Normal Thread Groups concurrently
+	if len(d.normalTGs) > 0 {
+		var normalWG sync.WaitGroup
+		for _, tg := range d.normalTGs {
+			normalWG.Add(1)
+			go func(t *jmx.ThreadGroup) {
+				defer normalWG.Done()
+				d.runSingleThreadGroup(ctx, t)
+			}(tg)
+		}
+
+		// Wait for all normal thread groups to complete, or context cancellation
+		normalDone := make(chan struct{})
+		go func() {
+			normalWG.Wait()
+			close(normalDone)
+		}()
+
 		select {
 		case <-ctx.Done():
 			d.drainWorkers()
-			wg.Wait()
-			close(d.ResultChan)
-			if d.TransportPool != nil {
-				d.TransportPool.CloseIdleConnections()
-			}
-			return nil
+			<-normalDone
+		case <-normalDone:
+		}
+	}
 
-		case <-snapTicker.C:
-			snap := d.Collector.Snapshot()
-			d.Throttle.CheckAutoHunter(snap, d.Collector)
+	// 3. Execute tearDown Thread Groups sequentially after normal thread groups
+	tearDownCtx := context.Background()
+	for _, tg := range d.teardownTGs {
+		d.runSingleThreadGroup(tearDownCtx, tg)
+	}
 
-		case <-ticker.C:
-			target := d.Throttle.GetTargetVUs()
-			d.Collector.SetTargetVUs(target)
-			curr := atomic.LoadInt64(&d.activeCount)
+	snapCancel()
+	d.drainWorkers()
+	close(d.ResultChan)
+	if d.TransportPool != nil {
+		d.TransportPool.CloseIdleConnections()
+	}
+	return nil
+}
 
-			if curr < target {
-				// Ramp up by batch
-				batch := int(target - curr)
-				if batch > d.Throttle.rampRateVUsSec {
-					batch = d.Throttle.rampRateVUsSec
-				}
-				for i := 0; i < batch; i++ {
-					wg.Add(1)
-					d.spawnWorker(ctx, &wg)
-				}
-			} else if curr > target {
-				// Prune excess workers
-				excess := int(curr - target)
-				d.pruneWorkers(excess)
+func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) {
+	// 1. Startup Delay
+	if tg.StartupDelaySec > 0 {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Duration(tg.StartupDelaySec) * time.Second):
+		}
+	}
+
+	// 2. Per-thread-group duration timeout
+	tgCtx := ctx
+	if tg.DurationSec > 0 {
+		var cancel context.CancelFunc
+		tgCtx, cancel = context.WithTimeout(ctx, time.Duration(tg.DurationSec)*time.Second)
+		defer cancel()
+	}
+
+	threads := tg.NumThreads
+	if threads <= 0 {
+		threads = 1
+	}
+	if d.Options.OverrideVUs > 0 && len(d.enabledTGs) == 1 {
+		threads = d.Options.OverrideVUs
+	}
+
+	var rampInterval time.Duration
+	if tg.RampTimeSec > 0 && threads > 1 {
+		rampInterval = time.Duration(float64(tg.RampTimeSec) / float64(threads) * float64(time.Second))
+	}
+
+	var tgWG sync.WaitGroup
+
+	for i := 0; i < threads; i++ {
+		select {
+		case <-tgCtx.Done():
+			break
+		default:
+		}
+
+		tgWG.Add(1)
+		d.spawnWorkerForTG(tgCtx, tg, &tgWG)
+
+		if rampInterval > 0 && i < threads-1 {
+			select {
+			case <-tgCtx.Done():
+				break
+			case <-time.After(rampInterval):
 			}
 		}
 	}
+
+	tgWG.Wait()
 }
 
-func (d *Driver) spawnWorker(parentCtx context.Context, wg *sync.WaitGroup) {
+func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup, wg *sync.WaitGroup) {
 	id := int(atomic.AddInt64(&d.nextID, 1))
 	ctx, cancel := context.WithCancel(parentCtx)
 
@@ -215,10 +289,6 @@ func (d *Driver) spawnWorker(parentCtx context.Context, wg *sync.WaitGroup) {
 			wg.Done()
 		}()
 
-		tg := d.selectThreadGroup(id)
-		if tg == nil {
-			return
-		}
 		tr := d.TransportPool.Next()
 		session := NewUserSessionWithTransport(id, tg, d.Plan, d.Collector, d.ResultChan, d.TransportCfg, tr)
 		session.DecomposeRedirects = d.Options.DecomposeRedirects
@@ -244,23 +314,6 @@ func (d *Driver) spawnWorker(parentCtx context.Context, wg *sync.WaitGroup) {
 			currentLoop++
 		}
 	}()
-}
-
-func (d *Driver) pruneWorkers(count int) {
-	pruned := 0
-	for i := 0; i < numWorkerShards && pruned < count; i++ {
-		shard := d.shards[i]
-		shard.Lock()
-		for id, cancel := range shard.cancels {
-			cancel()
-			delete(shard.cancels, id)
-			pruned++
-			if pruned >= count {
-				break
-			}
-		}
-		shard.Unlock()
-	}
 }
 
 func (d *Driver) drainWorkers() {

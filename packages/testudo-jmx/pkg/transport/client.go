@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"fmt"
 	"io"
@@ -12,7 +13,24 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/andybalholm/brotli"
 )
+
+// MaxStoredResponseBodyBytes caps the stored response body per sample (default 2 MB)
+// to prevent decompression bombs from exhausting heap memory.
+var MaxStoredResponseBodyBytes int64 = 2 * 1024 * 1024
+
+type countingReader struct {
+	reader io.Reader
+	count  int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.reader.Read(p)
+	c.count += int64(n)
+	return n, err
+}
 
 // SampleResult captures detailed performance metrics for a single HTTP execution.
 type SampleResult struct {
@@ -125,44 +143,89 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	result.LatencyMs = JtlMillis(ttfbDur)
 	result.LatencyUs = ttfbDur.Microseconds()
 
-	// Handle transparent response decompression when gzip or deflate is returned
-	var respReader io.Reader = resp.Body
+	// Wrap response body with wireReader to capture exact on-wire bytes read from the socket
+	wireReader := &countingReader{reader: resp.Body}
 	contentEncoding := resp.Header.Get("Content-Encoding")
+	var respReader io.Reader = wireReader
+	var closer io.Closer
+
 	if strings.EqualFold(contentEncoding, "gzip") {
-		gzReader, gzErr := gzip.NewReader(resp.Body)
+		gzReader, gzErr := gzip.NewReader(wireReader)
 		if gzErr == nil {
-			defer gzReader.Close()
+			closer = gzReader
 			respReader = gzReader
 		}
 	} else if strings.EqualFold(contentEncoding, "deflate") {
-		flateReader := flate.NewReader(resp.Body)
-		defer flateReader.Close()
-		respReader = flateReader
+		// HTTP deflate (RFC 9110) standardly uses zlib framing (RFC 1950), though some legacy
+		// servers omit the wrapper (raw RFC 1951). Peek first 2 bytes to distinguish zlib from raw flate.
+		headerBuf := make([]byte, 2)
+		n, _ := io.ReadFull(wireReader, headerBuf)
+		header := headerBuf[:n]
+		var combined io.Reader
+		if len(header) > 0 {
+			combined = io.MultiReader(bytes.NewReader(header), wireReader)
+		} else {
+			combined = wireReader
+		}
+
+		isZlib := len(header) >= 2 && (header[0]&0x0f == 8) && ((uint16(header[0])<<8|uint16(header[1]))%31 == 0)
+		if isZlib {
+			zReader, zErr := zlib.NewReader(combined)
+			if zErr == nil {
+				closer = zReader
+				respReader = zReader
+			} else {
+				respReader = combined
+			}
+		} else {
+			flateReader := flate.NewReader(combined)
+			closer = flateReader
+			respReader = flateReader
+		}
+	} else if strings.EqualFold(contentEncoding, "br") {
+		brotliReader := brotli.NewReader(wireReader)
+		respReader = brotliReader
 	}
 
-	// Read full response body inside the timer
-	bodyBytes, readErr := io.ReadAll(respReader)
-	// Drain any remaining bytes from underlying socket to allow keep-alive recycling
-	_, _ = io.Copy(io.Discard, resp.Body)
+	// Read up to MaxStoredResponseBodyBytes into memory to prevent decompression bombs.
+	// If body exceeds cap, storing stops, while remaining bytes are drained over the wire.
+	limitReader := io.LimitReader(respReader, MaxStoredResponseBodyBytes)
+	bodyBytes, readErr := io.ReadAll(limitReader)
+	if closer != nil {
+		_ = closer.Close()
+	}
+
+	// Drain any remaining bytes from the underlying socket to allow keep-alive connection reuse
+	// and ensure total on-wire byte metrics are completely accurate.
+	_, _ = io.Copy(io.Discard, wireReader)
 
 	elapsedDur := time.Since(startTime)
 	result.ElapsedMs = JtlMillis(elapsedDur)
 	result.ElapsedUs = elapsedDur.Microseconds()
 
-	if readErr != nil {
-		result.Success = false
-		result.ErrorMessage = "Failed to read response body: " + readErr.Error()
-		return result, nil
+	// Calculate total on-wire bytes: HTTP status line + headers + wire body
+	// matching Apache JMeter's getBytesAsLong() wire accounting.
+	var headerBytes int64
+	if resp.Proto != "" && resp.Status != "" {
+		headerBytes += int64(len(resp.Proto) + 1 + len(resp.Status) + 2)
 	}
+	for k, vv := range resp.Header {
+		for _, v := range vv {
+			headerBytes += int64(len(k) + 2 + len(v) + 2)
+		}
+	}
+	headerBytes += 2 // trailing CRLF
 
-	result.BytesReceived = int64(len(bodyBytes))
+	result.BytesReceived = wireReader.count + headerBytes
 	result.StatusCode = resp.StatusCode
 	result.ResponseMessage = resp.Status
 	result.Success = (resp.StatusCode >= 200 && resp.StatusCode < 400)
 	result.ResponseBody = string(bodyBytes)
 	result.ResponseHeaders = resp.Header
 
-	if !result.Success {
+	if readErr != nil && len(bodyBytes) == 0 && !result.Success {
+		result.ErrorMessage = "Failed to read response body: " + readErr.Error()
+	} else if !result.Success {
 		result.ErrorMessage = fmt.Sprintf("HTTP %d received", resp.StatusCode)
 	}
 

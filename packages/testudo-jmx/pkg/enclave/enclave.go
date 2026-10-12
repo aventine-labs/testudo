@@ -162,15 +162,15 @@ var defaultRules = []TokenRule{
 		RightBoundary: `"`,
 	},
 	{
-		ParamName:     "code",
+		ParamName:     "authorization_code",
 		VarName:       "oauth_auth_code",
-		LeftBoundary:  `code=`,
+		LeftBoundary:  `authorization_code=`,
 		RightBoundary: `&`,
 	},
 	{
-		ParamName:     "state",
-		VarName:       "oauth_state",
-		LeftBoundary:  `state=`,
+		ParamName:     "oauth_token",
+		VarName:       "oauth_token",
+		LeftBoundary:  `oauth_token=`,
 		RightBoundary: `&`,
 	},
 }

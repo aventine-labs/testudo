@@ -2,10 +2,16 @@ package worker
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -56,12 +62,22 @@ func NewWorkerDaemon(port int) *WorkerDaemon {
 }
 
 // NewWorkerDaemonWithConfig creates a worker daemon with explicit host, port, and bearer token.
+// If authToken is empty, it checks TESTUDO_WORKER_TOKEN or generates an ephemeral cryptographically secure token.
 func NewWorkerDaemonWithConfig(host string, port int, authToken string) *WorkerDaemon {
 	if host == "" {
 		host = "127.0.0.1"
 	}
 	if port <= 0 {
 		port = 9091
+	}
+
+	if authToken == "" {
+		authToken = os.Getenv("TESTUDO_WORKER_TOKEN")
+	}
+	if authToken == "" {
+		b := make([]byte, 16)
+		_, _ = rand.Read(b)
+		authToken = hex.EncodeToString(b)
 	}
 
 	d := &WorkerDaemon{
@@ -82,23 +98,72 @@ func NewWorkerDaemonWithConfig(host string, port int, authToken string) *WorkerD
 
 	d.server = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", host, port),
-		Handler: mux,
+		Handler: d.securityMiddleware(mux),
 	}
 
 	return d
 }
 
-func (d *WorkerDaemon) checkAuth(r *http.Request) bool {
-	if d.authToken == "" {
-		if d.host == "127.0.0.1" || d.host == "localhost" || d.host == "::1" {
-			return true
+// GetAuthToken returns the configured or generated bearer token.
+func (d *WorkerDaemon) GetAuthToken() string {
+	return d.authToken
+}
+
+func (d *WorkerDaemon) securityMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// DNS rebinding protection: validate Host header
+		reqHost := r.Host
+		if colonIdx := strings.LastIndex(reqHost, ":"); colonIdx != -1 {
+			reqHost = reqHost[:colonIdx]
 		}
+		if reqHost != "localhost" && reqHost != "127.0.0.1" && reqHost != "[::1]" && reqHost != "::1" && reqHost != d.host {
+			http.Error(w, "Forbidden: Invalid Host Header", http.StatusForbidden)
+			return
+		}
+
+		// Cross-Origin mutating request protection
+		if r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodDelete || r.Method == http.MethodPatch {
+			origin := r.Header.Get("Origin")
+			if origin != "" && !d.isAllowedOrigin(origin) {
+				http.Error(w, "Forbidden: Cross-Origin Request Blocked", http.StatusForbidden)
+				return
+			}
+			if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+				http.Error(w, "Forbidden: Cross-Site Request Blocked", http.StatusForbidden)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (d *WorkerDaemon) isAllowedOrigin(originStr string) bool {
+	u, err := url.Parse(originStr)
+	if err != nil {
 		return false
 	}
+	h := u.Hostname()
+	port := u.Port()
+	if port == "" {
+		if u.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	expectedPort := strconv.Itoa(d.port)
+	if port != expectedPort {
+		return false
+	}
+	return h == "localhost" || h == "127.0.0.1" || h == "::1" || h == d.host
+}
+
+func (d *WorkerDaemon) checkAuth(r *http.Request) bool {
 	auth := r.Header.Get("Authorization")
 	if strings.HasPrefix(auth, "Bearer ") {
 		token := strings.TrimPrefix(auth, "Bearer ")
-		return token == d.authToken
+		return subtle.ConstantTimeCompare([]byte(token), []byte(d.authToken)) == 1
 	}
 	return false
 }

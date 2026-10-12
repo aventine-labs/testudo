@@ -214,3 +214,38 @@ func TestParsePageBreaksAndLoops(t *testing.T) {
 	}
 }
 
+func TestPropertyInjectionAndEvaluator(t *testing.T) {
+	jmx.SetProperty("VUS", "50")
+	jmx.SetProperty("TARGET_HOST", "127.0.0.1")
+
+	// 1. Defined property with default fallback
+	s1 := jmx.EvaluateString("${__P(VUS, 10)}", nil, 1)
+	if s1 != "50" {
+		t.Errorf("Expected 50, got %s", s1)
+	}
+
+	// 2. Defined property without default
+	s2 := jmx.EvaluateString("${__P(TARGET_HOST)}", nil, 1)
+	if s2 != "127.0.0.1" {
+		t.Errorf("Expected 127.0.0.1, got %s", s2)
+	}
+
+	// 3. Undefined property with default fallback
+	s3 := jmx.EvaluateString("${__P(UNKNOWN_KEY, fallback_val)}", nil, 1)
+	if s3 != "fallback_val" {
+		t.Errorf("Expected fallback_val, got %s", s3)
+	}
+
+	// 4. Undefined property with single argument (JMeter specification defaults to 1)
+	s4 := jmx.EvaluateString("${__P(NON_EXISTENT)}", nil, 1)
+	if s4 != "1" {
+		t.Errorf("Expected 1, got %s", s4)
+	}
+
+	// 5. Alternate alias __property
+	s5 := jmx.EvaluateString("${__property(VUS)}", nil, 1)
+	if s5 != "50" {
+		t.Errorf("Expected 50, got %s", s5)
+	}
+}
+

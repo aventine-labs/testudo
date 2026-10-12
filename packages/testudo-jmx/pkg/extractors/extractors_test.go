@@ -28,9 +28,9 @@ func TestRegexExtractor(t *testing.T) {
 		t.Errorf("Expected abc123xyz, got %s", res)
 	}
 
-	// Multi-group template
+	// Multi-group template ($1$, $2$)
 	csv := `user:mark,role:admin,id:42`
-	resMulti := extractors.ExtractRegex(csv, `user:([^,]+),role:([^,]+)`, "$1_is_$2", 1, "")
+	resMulti := extractors.ExtractRegex(csv, `user:([^,]+),role:([^,]+)`, "$1$_is_$2$", 1, "")
 	if resMulti != "mark_is_admin" {
 		t.Errorf("Expected mark_is_admin, got %s", resMulti)
 	}
@@ -48,6 +48,13 @@ func TestRegexExtractor(t *testing.T) {
 		t.Errorf("Expected fixed for literal template, got %s", literalRes)
 	}
 
+	// Test template with literal dollar amounts (must not consume $10.00 as token)
+	costText := `item_id:42`
+	costRes := extractors.ExtractRegex(costText, `item_id:(\d+)`, "$1$ costs $10.00", 1, "FAIL")
+	if costRes != "42 costs $10.00" {
+		t.Errorf("Expected '42 costs $10.00', got %q", costRes)
+	}
+
 	// Test ExtractMultiRegex populating ref_1, ref_2, and ref_matchNr
 	multiText := `token=TOKEN1; token=TOKEN2; token=TOKEN3;`
 	vars := make(map[string]string)
@@ -57,6 +64,22 @@ func TestRegexExtractor(t *testing.T) {
 	}
 	if vars["auth_tok_1"] != "TOKEN1" || vars["auth_tok_2"] != "TOKEN2" || vars["auth_tok_3"] != "TOKEN3" {
 		t.Errorf("Expected TOKEN1, TOKEN2, TOKEN3, got %s, %s, %s", vars["auth_tok_1"], vars["auth_tok_2"], vars["auth_tok_3"])
+	}
+
+	// Test stale variable cleanup on subsequent extraction with fewer matches (3 matches -> 1 match)
+	singleText := `token=ONLY_ONE;`
+	extractors.ExtractMultiRegex(singleText, `token=([A-Z0-9_]+);`, "$1$", "auth_tok", vars)
+	if vars["auth_tok_matchNr"] != "1" {
+		t.Errorf("Expected matchNr 1 after second extraction, got %s", vars["auth_tok_matchNr"])
+	}
+	if vars["auth_tok_1"] != "ONLY_ONE" {
+		t.Errorf("Expected auth_tok_1=ONLY_ONE, got %s", vars["auth_tok_1"])
+	}
+	if _, exists := vars["auth_tok_2"]; exists {
+		t.Errorf("Expected auth_tok_2 to be deleted, but still exists: %s", vars["auth_tok_2"])
+	}
+	if _, exists := vars["auth_tok_3"]; exists {
+		t.Errorf("Expected auth_tok_3 to be deleted, but still exists: %s", vars["auth_tok_3"])
 	}
 }
 
