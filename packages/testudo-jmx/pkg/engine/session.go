@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
@@ -233,7 +234,13 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 	if sampler.TimerDelayMs > 0 || sampler.TimerRangeMs > 0 {
 		delay := sampler.TimerDelayMs
 		if sampler.TimerRangeMs > 0 {
-			delay += rand.Intn(sampler.TimerRangeMs)
+			if sampler.TimerIsGaussian {
+				// JMeter GaussianRandomTimer formula: Math.abs((random.nextGaussian() * range) + delay)
+				g := math.Abs(rand.NormFloat64()*float64(sampler.TimerRangeMs)) + float64(sampler.TimerDelayMs)
+				delay = int(g)
+			} else {
+				delay += rand.Intn(sampler.TimerRangeMs)
+			}
 		}
 		if delay > 0 {
 			timer := time.NewTimer(time.Duration(delay) * time.Millisecond)

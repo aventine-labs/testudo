@@ -110,7 +110,7 @@ func ParseJMXBytes(data []byte) (*TestPlan, error) {
 					IsTearDown:          (elem.Name.Local == "PostThreadGroup"),
 					NumThreads:          1,
 					RampTimeSec:         1,
-					DurationSec:         60,
+					DurationSec:         0,
 					LoopCount:           1,
 					SameUserOnIteration: true,
 					Samplers:            make([]*HTTPSampler, 0),
@@ -284,14 +284,28 @@ func ParseJMXBytes(data []byte) (*TestPlan, error) {
 					currentTG.DefaultTimerDelayMs = delay
 				}
 
-			case "UniformRandomTimer", "GaussianRandomTimer":
+			case "UniformRandomTimer":
 				delay, rng := parseUniformRandomTimer(decoder)
 				if currentSampler != nil {
 					currentSampler.TimerDelayMs = delay
 					currentSampler.TimerRangeMs = rng
+					currentSampler.TimerIsGaussian = false
 				} else if currentTG != nil {
 					currentTG.DefaultTimerDelayMs = delay
 					currentTG.DefaultTimerRangeMs = rng
+					currentTG.DefaultTimerIsGaussian = false
+				}
+
+			case "GaussianRandomTimer":
+				delay, rng := parseUniformRandomTimer(decoder)
+				if currentSampler != nil {
+					currentSampler.TimerDelayMs = delay
+					currentSampler.TimerRangeMs = rng
+					currentSampler.TimerIsGaussian = true
+				} else if currentTG != nil {
+					currentTG.DefaultTimerDelayMs = delay
+					currentTG.DefaultTimerRangeMs = rng
+					currentTG.DefaultTimerIsGaussian = true
 				}
 			}
 
@@ -401,9 +415,15 @@ func parseThreadGroupProperties(decoder *xml.Decoder, tg *ThreadGroup) {
 					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {
 						tg.RampTimeSec = n
 					}
+				case "ThreadGroup.scheduler":
+					v := strings.ToLower(strings.TrimSpace(val))
+					tg.Scheduler = (v == "true" || v == "1")
 				case "ThreadGroup.duration":
-					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {
-						tg.DurationSec = n
+					trimmed := strings.TrimSpace(val)
+					if trimmed != "" {
+						if n, err := strconv.Atoi(resolvePropertyDefault(trimmed)); err == nil {
+							tg.DurationSec = n
+						}
 					}
 				case "ThreadGroup.delay":
 					if n, err := strconv.Atoi(resolvePropertyDefault(val)); err == nil {

@@ -2,4 +2,4 @@ module aventinelabs.com/testudo-jmx
 
 go 1.27.1
 
-require github.com/andybalholm/brotli v1.2.6 // indirect
+require github.com/andybalholm/brotli v1.2.6

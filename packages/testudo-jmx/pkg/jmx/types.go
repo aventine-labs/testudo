@@ -53,10 +53,12 @@ type ThreadGroup struct {
 	RampTimeSec         int               `json:"ramp_time_sec"`
 	DurationSec         int               `json:"duration_sec"`
 	StartupDelaySec     int               `json:"startup_delay_sec,omitempty"`
+	Scheduler           bool              `json:"scheduler,omitempty"`
 	LoopCount           int               `json:"loop_count"` // -1 for forever / duration bound
 	SameUserOnIteration bool              `json:"same_user_on_iteration"`
 	DefaultTimerDelayMs int               `json:"default_timer_delay_ms"`
 	DefaultTimerRangeMs int               `json:"default_timer_range_ms"`
+	DefaultTimerIsGaussian bool           `json:"default_timer_is_gaussian,omitempty"`
 	Samplers            []*HTTPSampler    `json:"samplers"` // Flat projection for backwards compatibility
 	FlowElements        []*FlowElement    `json:"flow_elements,omitempty"` // Hierarchical tree
 	Variables           map[string]string `json:"variables"`
@@ -82,6 +84,7 @@ type HTTPSampler struct {
 	Assertions       []*ResponseAssertion `json:"assertions"`
 	TimerDelayMs     int                  `json:"timer_delay_ms"`
 	TimerRangeMs     int                  `json:"timer_range_ms"`
+	TimerIsGaussian  bool                 `json:"timer_is_gaussian,omitempty"`
 }
 
 // HTTPArgument represents a query parameter or form field.

@@ -214,5 +214,23 @@ func TestServerSecurityMiddleware(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200 OK for valid bearer token on non-loopback, got %d", w.Code)
 	}
+
+	// 8. Non-loopback host requires Bearer auth for GET /api/ endpoints as well (preventing data leaks)
+	req = httptest.NewRequest("GET", "/api/v1/plan", nil)
+	req.Host = "0.0.0.0:3014"
+	w = httptest.NewRecorder()
+	extHandler.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 Unauthorized for GET /api/v1/plan on non-loopback without token, got %d", w.Code)
+	}
+
+	req = httptest.NewRequest("GET", "/api/v1/plan", nil)
+	req.Host = "0.0.0.0:3014"
+	req.Header.Set("Authorization", "Bearer SECURE_GUI_TOKEN_77")
+	w = httptest.NewRecorder()
+	extHandler.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for GET /api/v1/plan on non-loopback with valid token, got %d", w.Code)
+	}
 }
 

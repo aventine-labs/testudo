@@ -141,11 +141,14 @@ func (s *Server) securityMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Forbidden: Cross-Site Request Blocked", http.StatusForbidden)
 				return
 			}
+		}
 
-			// If token authentication is configured or non-loopback binding is active, require bearer auth
+		// If token authentication is configured or non-loopback binding is active,
+		// require bearer auth for all /api/ endpoints (both reads and mutations)
+		if strings.HasPrefix(r.URL.Path, "/api/") {
 			if s.AuthToken != "" || (s.Host != "127.0.0.1" && s.Host != "localhost" && s.Host != "::1") {
 				if !s.checkAuth(r) {
-					http.Error(w, "Unauthorized: Valid Bearer token required for mutating operations", http.StatusUnauthorized)
+					http.Error(w, "Unauthorized: Valid Bearer token required", http.StatusUnauthorized)
 					return
 				}
 			}

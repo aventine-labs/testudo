@@ -191,13 +191,17 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	// If body exceeds cap, storing stops, while remaining bytes are drained over the wire.
 	limitReader := io.LimitReader(respReader, MaxStoredResponseBodyBytes)
 	bodyBytes, readErr := io.ReadAll(limitReader)
+	var closeErr error
 	if closer != nil {
-		_ = closer.Close()
+		closeErr = closer.Close()
+	}
+	if readErr == nil && closeErr != nil {
+		readErr = closeErr
 	}
 
 	// Drain any remaining bytes from the underlying socket to allow keep-alive connection reuse
 	// and ensure total on-wire byte metrics are completely accurate.
-	_, _ = io.Copy(io.Discard, wireReader)
+	_, drainErr := io.Copy(io.Discard, wireReader)
 
 	elapsedDur := time.Since(startTime)
 	result.ElapsedMs = JtlMillis(elapsedDur)
@@ -223,8 +227,12 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	result.ResponseBody = string(bodyBytes)
 	result.ResponseHeaders = resp.Header
 
-	if readErr != nil && len(bodyBytes) == 0 && !result.Success {
+	if readErr != nil && readErr != io.EOF {
+		result.Success = false
 		result.ErrorMessage = "Failed to read response body: " + readErr.Error()
+	} else if drainErr != nil && drainErr != io.EOF {
+		result.Success = false
+		result.ErrorMessage = "Failed to drain response stream: " + drainErr.Error()
 	} else if !result.Success {
 		result.ErrorMessage = fmt.Sprintf("HTTP %d received", resp.StatusCode)
 	}

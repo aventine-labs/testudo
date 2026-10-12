@@ -16,6 +16,7 @@ import shutil
 import random
 import csv
 import math
+import re
 
 def get_descendant_pids(pid):
     """Find all descendant child PIDs recursively."""
@@ -105,10 +106,17 @@ def parse_jtl_metrics(jtl_path):
             elapsed_idx = col_map.get("elapsed", 1)
             ts_idx = col_map.get("timestamp", 0)
             success_idx = col_map.get("success", 7)
+            label_idx = col_map.get("label", 2)
 
             for row in reader:
                 if len(row) <= max(elapsed_idx, ts_idx):
                     continue
+                # Skip JMeter redirect subresults (e.g. "Checkout Cart-0", "Checkout Cart-1")
+                # so transaction metrics represent parent transaction samples only
+                if label_idx < len(row):
+                    label = row[label_idx].strip()
+                    if re.search(r'-\d+$', label):
+                        continue
                 try:
                     ts = int(row[ts_idx])
                     elapsed = float(row[elapsed_idx])

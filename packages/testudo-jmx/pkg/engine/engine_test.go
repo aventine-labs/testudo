@@ -655,3 +655,157 @@ func TestSetUpAndTearDownExecutionOrder(t *testing.T) {
 	}
 }
 
+func TestLiveVUScalingDynamicReconciliation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(20 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "Scaling Test Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "ContinuousTG",
+				Enabled:    true,
+				NumThreads: 2,
+				LoopCount:  -1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "Sampler", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/", Method: "GET"},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{IsHeadless: true})
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	runErr := make(chan error, 1)
+	go func() {
+		runErr <- driver.Run(ctx)
+	}()
+
+	// Wait for initial workers to start
+	time.Sleep(200 * time.Millisecond)
+	snap1 := driver.Collector.Snapshot()
+	if snap1.ActiveVUs < 1 {
+		t.Errorf("Expected active VUs >= 1, got %d", snap1.ActiveVUs)
+	}
+
+	// Dynamically scale up to 6 VUs
+	driver.Throttle.SetTargetVUs(6)
+	time.Sleep(300 * time.Millisecond)
+	snap2 := driver.Collector.Snapshot()
+	if snap2.ActiveVUs < 5 {
+		t.Errorf("Expected active VUs to scale up to ~6, got %d", snap2.ActiveVUs)
+	}
+
+	// Dynamically scale down to 2 VUs
+	driver.Throttle.SetTargetVUs(2)
+	time.Sleep(300 * time.Millisecond)
+	snap3 := driver.Collector.Snapshot()
+	if snap3.ActiveVUs > 3 {
+		t.Errorf("Expected active VUs to scale down to <= 3, got %d", snap3.ActiveVUs)
+	}
+
+	cancel()
+	<-runErr
+}
+
+func TestOverrideVUsWithSetUpAndTearDown(t *testing.T) {
+	var maxActive int64
+	var mu sync.Mutex
+	var currentActive int64
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		currentActive++
+		if currentActive > maxActive {
+			maxActive = currentActive
+		}
+		mu.Unlock()
+
+		time.Sleep(30 * time.Millisecond)
+
+		mu.Lock()
+		currentActive--
+		mu.Unlock()
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "SetUp Normal TearDown Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "SetUpTG",
+				Enabled:    true,
+				IsSetUp:    true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "SetUp", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/setup", Method: "GET"},
+				},
+			},
+			{
+				Name:       "MainTG",
+				Enabled:    true,
+				NumThreads: 1, // Will be overridden to 5 by -u 5
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "Main", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/main", Method: "GET"},
+				},
+			},
+			{
+				Name:       "TearDownTG",
+				Enabled:    true,
+				IsTearDown: true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "TearDown", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/teardown", Method: "GET"},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{
+		IsHeadless:  true,
+		OverrideVUs: 5,
+	})
+
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	err := driver.Run(context.Background())
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	mu.Lock()
+	peak := maxActive
+	mu.Unlock()
+
+	if peak < 3 {
+		t.Errorf("Expected peak active VUs to reflect overridden threads (5), but peak was %d", peak)
+	}
+}
+
+

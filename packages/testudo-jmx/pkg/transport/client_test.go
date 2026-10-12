@@ -158,3 +158,39 @@ func TestExecuteRequest_DecompressionBombCap(t *testing.T) {
 		t.Errorf("BytesReceived should reflect wire size (~%d bytes), but was %d", len(wireBytes), res.BytesReceived)
 	}
 }
+
+func TestExecuteRequest_TruncatedOrCorruptBodyFailsSample(t *testing.T) {
+	// 1. Truncated Content-Length
+	tsTruncated := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "1000")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("short"))
+		// Connection terminates before 1000 bytes
+		hj, ok := w.(http.Hijacker)
+		if ok {
+			conn, _, _ := hj.Hijack()
+			_ = conn.Close()
+		}
+	}))
+	defer tsTruncated.Close()
+
+	res1, _ := transport.ExecuteRequest(context.Background(), tsTruncated.Client(), "GET", tsTruncated.URL, "", nil)
+	if res1 != nil && res1.Success {
+		t.Errorf("Expected sample to fail for truncated Content-Length, got Success=true")
+	}
+
+	// 2. Corrupt gzip payload
+	tsCorrupt := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Encoding", "gzip")
+		w.WriteHeader(http.StatusOK)
+		// Send gzip header followed by garbage
+		_, _ = w.Write([]byte{0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x01, 0x02, 0x03, 0x04})
+	}))
+	defer tsCorrupt.Close()
+
+	res2, _ := transport.ExecuteRequest(context.Background(), tsCorrupt.Client(), "GET", tsCorrupt.URL, "", map[string]string{"Accept-Encoding": "gzip"})
+	if res2 != nil && res2.Success {
+		t.Errorf("Expected sample to fail for corrupt gzip stream, got Success=true")
+	}
+}
+

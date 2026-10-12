@@ -65,6 +65,9 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 		if threads <= 0 {
 			threads = 1
 		}
+		if opts.OverrideVUs > 0 && !tg.IsSetUp && !tg.IsTearDown && len(normalTGs) == 1 {
+			threads = opts.OverrideVUs
+		}
 		totalPlanVUs += int64(threads)
 		if tg.RampTimeSec > maxRampSec {
 			maxRampSec = tg.RampTimeSec
@@ -76,7 +79,7 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 	}
 
 	initialVUs := totalPlanVUs
-	if opts.OverrideVUs > 0 {
+	if opts.OverrideVUs > 0 && len(normalTGs) != 1 {
 		initialVUs = int64(opts.OverrideVUs)
 	}
 
@@ -174,11 +177,14 @@ func (d *Driver) Run(ctx context.Context) error {
 	// 2. Execute Normal Thread Groups concurrently
 	if len(d.normalTGs) > 0 {
 		var normalWG sync.WaitGroup
+		normalCtx, normalCancel := context.WithCancel(ctx)
+		defer normalCancel()
+
 		for _, tg := range d.normalTGs {
 			normalWG.Add(1)
 			go func(t *jmx.ThreadGroup) {
 				defer normalWG.Done()
-				d.runSingleThreadGroup(ctx, t)
+				d.runSingleThreadGroup(normalCtx, t)
 			}(tg)
 		}
 
@@ -195,6 +201,7 @@ func (d *Driver) Run(ctx context.Context) error {
 			<-normalDone
 		case <-normalDone:
 		}
+		normalCancel()
 	}
 
 	// 3. Execute tearDown Thread Groups sequentially after normal thread groups
@@ -212,6 +219,23 @@ func (d *Driver) Run(ctx context.Context) error {
 	return nil
 }
 
+func (d *Driver) cancelWorkers(n int) {
+	cancelled := 0
+	for i := 0; i < numWorkerShards && cancelled < n; i++ {
+		shard := d.shards[i]
+		shard.Lock()
+		for id, cancel := range shard.cancels {
+			cancel()
+			delete(shard.cancels, id)
+			cancelled++
+			if cancelled >= n {
+				break
+			}
+		}
+		shard.Unlock()
+	}
+}
+
 func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) {
 	// 1. Startup Delay
 	if tg.StartupDelaySec > 0 {
@@ -222,9 +246,9 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 		}
 	}
 
-	// 2. Per-thread-group duration timeout
+	// 2. Per-thread-group duration timeout if scheduler enabled
 	tgCtx := ctx
-	if tg.DurationSec > 0 {
+	if tg.Scheduler && tg.DurationSec > 0 {
 		var cancel context.CancelFunc
 		tgCtx, cancel = context.WithTimeout(ctx, time.Duration(tg.DurationSec)*time.Second)
 		defer cancel()
@@ -234,7 +258,7 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 	if threads <= 0 {
 		threads = 1
 	}
-	if d.Options.OverrideVUs > 0 && len(d.enabledTGs) == 1 {
+	if d.Options.OverrideVUs > 0 && !tg.IsSetUp && !tg.IsTearDown && len(d.normalTGs) == 1 {
 		threads = d.Options.OverrideVUs
 	}
 
@@ -243,31 +267,98 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 		rampInterval = time.Duration(float64(tg.RampTimeSec) / float64(threads) * float64(time.Second))
 	}
 
+	// Case A: Finite loop count execution (JMeter loop count honored, no respawning)
+	if tg.LoopCount > 0 {
+		var tgWG sync.WaitGroup
+		tgWG.Add(threads)
+		for i := 0; i < threads; i++ {
+			select {
+			case <-tgCtx.Done():
+				for j := i; j < threads; j++ {
+					tgWG.Done()
+				}
+				return
+			default:
+			}
+
+			d.spawnWorkerForTG(tgCtx, tg, tgWG.Done)
+
+			if rampInterval > 0 && i < threads-1 {
+				select {
+				case <-tgCtx.Done():
+					for j := i + 1; j < threads; j++ {
+						tgWG.Done()
+					}
+					return
+				case <-time.After(rampInterval):
+				}
+			}
+		}
+		tgWG.Wait()
+		return
+	}
+
+	// Case B: Continuous execution with dynamic live VU scaling (Flight Deck & Knee Hunter)
 	var tgWG sync.WaitGroup
+	var tgActive int64
+
+	spawnWorker := func() {
+		tgWG.Add(1)
+		atomic.AddInt64(&tgActive, 1)
+		d.spawnWorkerForTG(tgCtx, tg, func() {
+			atomic.AddInt64(&tgActive, -1)
+			tgWG.Done()
+		})
+	}
 
 	for i := 0; i < threads; i++ {
 		select {
 		case <-tgCtx.Done():
-			break
+			goto WAIT
 		default:
 		}
-
-		tgWG.Add(1)
-		d.spawnWorkerForTG(tgCtx, tg, &tgWG)
-
+		spawnWorker()
 		if rampInterval > 0 && i < threads-1 {
 			select {
 			case <-tgCtx.Done():
-				break
+				goto WAIT
 			case <-time.After(rampInterval):
 			}
 		}
 	}
 
+	{
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-tgCtx.Done():
+				goto WAIT
+			case <-ticker.C:
+				target := d.Throttle.GetTargetVUs()
+				d.Collector.SetTargetVUs(target)
+				curr := atomic.LoadInt64(&tgActive)
+				if curr < target {
+					diff := int(target - curr)
+					if diff > d.Throttle.rampRateVUsSec && d.Throttle.rampRateVUsSec > 0 {
+						diff = d.Throttle.rampRateVUsSec
+					}
+					for i := 0; i < diff; i++ {
+						spawnWorker()
+					}
+				} else if curr > target {
+					excess := int(curr - target)
+					d.cancelWorkers(excess)
+				}
+			}
+		}
+	}
+
+WAIT:
 	tgWG.Wait()
 }
 
-func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup, wg *sync.WaitGroup) {
+func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup, onDone func()) {
 	id := int(atomic.AddInt64(&d.nextID, 1))
 	ctx, cancel := context.WithCancel(parentCtx)
 
@@ -286,7 +377,9 @@ func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup
 			shard.Unlock()
 			atomic.AddInt64(&d.activeCount, -1)
 			d.Collector.SetActiveVUs(atomic.LoadInt64(&d.activeCount))
-			wg.Done()
+			if onDone != nil {
+				onDone()
+			}
 		}()
 
 		tr := d.TransportPool.Next()

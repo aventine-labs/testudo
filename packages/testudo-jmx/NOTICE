@@ -14,3 +14,8 @@ endorsed by, sponsored by, or connected to the Apache Software Foundation.
 All references to JMeter and the .jmx file format are made under nominative
 fair use solely for the purpose of identifying technical format compatibility
 and execution interoperability.
+
+THIRD-PARTY OPEN SOURCE ATTRIBUTIONS:
+- brotli (github.com/andybalholm/brotli):
+  Licensed under the MIT License. Copyright (c) 2013-2016 Google Inc.
+  Portions Copyright (c) 2017 Andy Balholm.

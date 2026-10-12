@@ -1,6 +1,7 @@
 package jmx_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -248,4 +249,95 @@ func TestPropertyInjectionAndEvaluator(t *testing.T) {
 		t.Errorf("Expected 50, got %s", s5)
 	}
 }
+
+func TestSchedulerAndGaussianTimerParsing(t *testing.T) {
+	xmlContent := `<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2">
+  <hashTree>
+    <TestPlan testname="Scheduler and Timer Plan" enabled="true">
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+    </TestPlan>
+    <hashTree>
+      <!-- TG 1: scheduler=false, empty duration, loops=-1 -->
+      <ThreadGroup testname="UnscheduledTG" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">2</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">5</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="LoopController.loops">-1</stringProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy testname="Sampler1" enabled="true">
+          <stringProp name="HTTPSampler.domain">127.0.0.1</stringProp>
+          <stringProp name="HTTPSampler.path">/test</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <GaussianRandomTimer testname="Gaussian Think Time" enabled="true">
+            <stringProp name="ConstantTimer.delay">1000</stringProp>
+            <stringProp name="RandomTimer.range">500</stringProp>
+          </GaussianRandomTimer>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <!-- TG 2: scheduler=true, duration=120 -->
+      <ThreadGroup testname="ScheduledTG" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">5</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">120</stringProp>
+      </ThreadGroup>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>`
+
+	tmpFile, err := os.CreateTemp("", "test_sched_*.jmx")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	_, _ = tmpFile.WriteString(xmlContent)
+	_ = tmpFile.Close()
+
+	plan, err := jmx.ParseJMXFile(tmpFile.Name())
+	if err != nil {
+		t.Fatalf("ParseJMXFile failed: %v", err)
+	}
+
+	if len(plan.ThreadGroups) != 2 {
+		t.Fatalf("Expected 2 thread groups, got %d", len(plan.ThreadGroups))
+	}
+
+	tg1 := plan.ThreadGroups[0]
+	if tg1.Scheduler {
+		t.Errorf("Expected tg1.Scheduler=false, got true")
+	}
+	if tg1.DurationSec != 0 {
+		t.Errorf("Expected tg1.DurationSec=0 for unscheduled plan, got %d", tg1.DurationSec)
+	}
+	if tg1.LoopCount != -1 {
+		t.Errorf("Expected tg1.LoopCount=-1, got %d", tg1.LoopCount)
+	}
+	if len(tg1.Samplers) != 1 {
+		t.Fatalf("Expected 1 sampler in tg1, got %d", len(tg1.Samplers))
+	}
+	s := tg1.Samplers[0]
+	if !s.TimerIsGaussian {
+		t.Errorf("Expected TimerIsGaussian=true for GaussianRandomTimer")
+	}
+	if s.TimerDelayMs != 1000 {
+		t.Errorf("Expected TimerDelayMs=1000, got %d", s.TimerDelayMs)
+	}
+	if s.TimerRangeMs != 500 {
+		t.Errorf("Expected TimerRangeMs=500, got %d", s.TimerRangeMs)
+	}
+
+	tg2 := plan.ThreadGroups[1]
+	if !tg2.Scheduler {
+		t.Errorf("Expected tg2.Scheduler=true, got false")
+	}
+	if tg2.DurationSec != 120 {
+		t.Errorf("Expected tg2.DurationSec=120, got %d", tg2.DurationSec)
+	}
+}
+
 

@@ -93,7 +93,7 @@ func main() {
 		}
 		daemon := worker.NewWorkerDaemonWithConfig(*workerHost, *workerPort, effWorkerToken)
 		if daemon.GetAuthToken() != "" {
-			fmt.Printf("[WORKER] Authentication: Bearer token security enforced (token: %s...)\n", daemon.GetAuthToken()[:min(len(daemon.GetAuthToken()), 8)])
+			fmt.Printf("[WORKER] Authentication: Bearer token security enforced (token: %s)\n", daemon.GetAuthToken())
 		}
 		if err := daemon.Start(); err != nil && err != http.ErrServerClosed {
 			fmt.Printf("[ERROR] Worker daemon failure: %v\n", err)
