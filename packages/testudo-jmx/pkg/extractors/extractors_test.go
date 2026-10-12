@@ -82,3 +82,29 @@ func TestJSONExtractor(t *testing.T) {
 		t.Errorf("Expected DEFAULT_VAL, got %s", t5)
 	}
 }
+
+func TestRegexExtractorSecurityBounds(t *testing.T) {
+	// 1. Oversized pattern (exceeding 8192 bytes) must fail closed safely
+	oversizedPattern := `user_(` + string(make([]byte, 8200)) + `)`
+	res := extractors.ExtractRegex("user_test", oversizedPattern, "$1$", 1, "FALLBACK_SAFE")
+	if res != "FALLBACK_SAFE" {
+		t.Errorf("Expected fallback on oversized regex, got %s", res)
+	}
+
+	// 2. High-quantifier / potential integer overflow pattern must compile or reject cleanly without crash
+	overflowPattern := `a{999999999999999999999999999999}`
+	resOverflow := extractors.ExtractRegex("aaaaa", overflowPattern, "$0$", 1, "OVERFLOW_BLOCKED")
+	if resOverflow != "OVERFLOW_BLOCKED" {
+		t.Errorf("Expected fallback on integer overflow quantifier, got %s", resOverflow)
+	}
+
+	// 3. Repeated compilation of same pattern hits cache correctly
+	pattern := `id=(\d+)`
+	text := `item id=42; name=test`
+	for i := 0; i < 50; i++ {
+		cachedRes := extractors.ExtractRegex(text, pattern, "$1$", 1, "FAIL")
+		if cachedRes != "42" {
+			t.Fatalf("Iteration %d: expected 42, got %s", i, cachedRes)
+		}
+	}
+}
