@@ -636,14 +636,24 @@
 
         <!-- RegexForge Auto-Correlation Bay -->
         <div class="correlation-box">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-              <div style="font-weight:800; font-size:13px; color:var(--accent);">⚡ REGEXFORGE WASM AUTO-CORRELATOR</div>
-              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Thompson NFA Linear-Time Dynamic Token Detection</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="font-weight:800; font-size:13px; color:var(--accent);">⚡ REGEXFORGE WASM AUTO-CORRELATOR</div>
+                <a href="https://aventinelabs.com/forges/regex" target="_blank" rel="noopener noreferrer" style="font-size:10px; font-weight:700; color:#00D2FF; text-decoration:none; background:rgba(0, 210, 255, 0.12); border:1px solid rgba(0, 210, 255, 0.3); padding:2px 8px; border-radius:12px; transition:all 0.2s ease;">
+                  Powered by RegexForge™ Visual Studio ↗
+                </a>
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Thompson NFA Linear-Time Dynamic Token Detection (CSRF, ASP.NET ViewState, Session IDs, OAuth2)</div>
             </div>
-            <button class="btn-launch" style="padding:6px 14px; font-size:12px;" onclick="applyAutoCorrelation()">
-              ⚡ Auto-Correlate Plan
-            </button>
+            <div style="display:flex; gap:8px;">
+              <a href="https://aventinelabs.com/forges/regex" target="_blank" rel="noopener noreferrer" class="btn-ctrl" style="padding:6px 12px; font-size:11px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                🔬 Open RegexForge Studio
+              </a>
+              <button class="btn-launch" style="padding:6px 14px; font-size:12px;" onclick="applyAutoCorrelation()">
+                ⚡ Auto-Correlate Plan
+              </button>
+            </div>
           </div>
 
           <table class="token-table">

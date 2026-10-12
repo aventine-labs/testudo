@@ -27,6 +27,7 @@ type TokenRule struct {
 }
 
 var defaultRules = []TokenRule{
+	// 1. Anti-CSRF & Cross-Site Request Forgery Tokens
 	{
 		ParamName:     "csrf_token",
 		VarName:       "csrf_token",
@@ -40,10 +41,92 @@ var defaultRules = []TokenRule{
 		RightBoundary: `"`,
 	},
 	{
+		ParamName:     "csrfmiddlewaretoken",
+		VarName:       "django_csrf",
+		LeftBoundary:  `name="csrfmiddlewaretoken" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "authenticity_token",
+		VarName:       "rails_csrf",
+		LeftBoundary:  `name="authenticity_token" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "form_key",
+		VarName:       "magento_form_key",
+		LeftBoundary:  `name="form_key" type="hidden" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "_token",
+		VarName:       "laravel_token",
+		LeftBoundary:  `name="_token" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "__RequestVerificationToken",
+		VarName:       "aspnet_verification_token",
+		LeftBoundary:  `name="__RequestVerificationToken" type="hidden" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "XSRF-TOKEN",
+		VarName:       "xsrf_token",
+		LeftBoundary:  `XSRF-TOKEN=`,
+		RightBoundary: `;`,
+	},
+	{
+		ParamName:     "nonce",
+		VarName:       "nonce",
+		LeftBoundary:  `"nonce":"`,
+		RightBoundary: `"`,
+	},
+
+	// 2. ASP.NET State Engine Parameters
+	{
 		ParamName:     "__VIEWSTATE",
 		VarName:       "viewstate",
 		LeftBoundary:  `id="__VIEWSTATE" value="`,
 		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "__VIEWSTATEGENERATOR",
+		VarName:       "viewstate_generator",
+		LeftBoundary:  `id="__VIEWSTATEGENERATOR" value="`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "__EVENTVALIDATION",
+		VarName:       "event_validation",
+		LeftBoundary:  `id="__EVENTVALIDATION" value="`,
+		RightBoundary: `"`,
+	},
+
+	// 3. Web Application Session Cookies & Identifiers
+	{
+		ParamName:     "JSESSIONID",
+		VarName:       "jsessionid",
+		LeftBoundary:  `JSESSIONID=`,
+		RightBoundary: `;`,
+	},
+	{
+		ParamName:     "PHPSESSID",
+		VarName:       "phpsessid",
+		LeftBoundary:  `PHPSESSID=`,
+		RightBoundary: `;`,
+	},
+	{
+		ParamName:     "ASP.NET_SessionId",
+		VarName:       "aspnet_session_id",
+		LeftBoundary:  `ASP.NET_SessionId=`,
+		RightBoundary: `;`,
+	},
+	{
+		ParamName:     "connect.sid",
+		VarName:       "express_sid",
+		LeftBoundary:  `connect.sid=`,
+		RightBoundary: `;`,
 	},
 	{
 		ParamName:     "session_id",
@@ -52,10 +135,42 @@ var defaultRules = []TokenRule{
 		RightBoundary: `"`,
 	},
 	{
+		ParamName:     "session_token",
+		VarName:       "session_token",
+		LeftBoundary:  `"session_token":"`,
+		RightBoundary: `"`,
+	},
+
+	// 4. OAuth2, OpenID Connect & Modern API Tokens
+	{
 		ParamName:     "access_token",
 		VarName:       "access_token",
 		LeftBoundary:  `"access_token":"`,
 		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "refresh_token",
+		VarName:       "refresh_token",
+		LeftBoundary:  `"refresh_token":"`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "id_token",
+		VarName:       "id_token",
+		LeftBoundary:  `"id_token":"`,
+		RightBoundary: `"`,
+	},
+	{
+		ParamName:     "code",
+		VarName:       "oauth_auth_code",
+		LeftBoundary:  `code=`,
+		RightBoundary: `&`,
+	},
+	{
+		ParamName:     "state",
+		VarName:       "oauth_state",
+		LeftBoundary:  `state=`,
+		RightBoundary: `&`,
 	},
 }
 
