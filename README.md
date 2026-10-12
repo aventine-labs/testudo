@@ -86,15 +86,22 @@ make test
 
 ---
 
-## Architectural Roadmap (Upcoming Shields)
+## Dual-Track Architecture & Licensing Boundaries
 
-* **Shield 3: Testudo LoadForge™ (`@aventine/load-forge`)**: In-process zero-allocation C++ telemetry kernel with Linux hardware PMUs and Gunther Universal Scalability Law saturation knee detection.
-* **Shield 4: Testudo LoadTest™ / SovereignLoad™ (`@aventine/sovereign-load`)**: 4-Tier Hierarchical Cascade Tree (Root -> Region -> Zone -> Leaf) with $O(K)$ log-linear DDSketch histogram merging for planetary multi-cloud traffic generation.
+The Testudo Testing Suite enforces a strict separation between open-source developer tooling and enterprise proprietary software:
+
+### 1. Free & Open-Source (Apache License 2.0)
+* **Testudo-JS™ (`packages/testudo-js`)**: 100% free and open-source software licensed under the **Apache License, Version 2.0**. Zero-dependency browser and Node.js testing.
+* **Testudo-JMX™ (`packages/testudo-jmx`)**: 100% free and open-source software licensed under the **Apache License, Version 2.0**. Single-binary native Go execution engine for Apache JMeter with local Web Flight Deck.
+
+### 2. Proprietary & Closed-Source Enterprise Tools (Commercial License)
+* **Testudo LoadForge™ (`@aventine/load-forge`)**: Closed-source proprietary software. Deep in-process C++ runtime diagnostics, Linux hardware PMU counters, and Gunther Universal Scalability Law saturation knee detection.
+* **Testudo LoadTest™ / SovereignLoad™ (`@aventine/sovereign-load`)**: Closed-source proprietary software. 4-Tier Hierarchical Cascade Tree (Root -> Region -> Zone -> Leaf) with $O(K)$ log-linear DDSketch histogram merging for planetary multi-cloud traffic generation.
 
 ---
 
 ## License & Trademark Notice
 
-The Testudo Testing Suite is open-source software licensed under the **Apache License, Version 2.0**. See the [LICENSE](./LICENSE) and package-specific notices for details.
-
-*Apache, Apache JMeter, JMeter, and the Apache feather logo are trademarks or registered trademarks of the Apache Software Foundation. Testudo-JMX is an independent clean-room native implementation developed by Aventine Labs LLC and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.*
+* **Open-Source Components**: Testudo-JS and Testudo-JMX are licensed under the [Apache License, Version 2.0](./LICENSE).
+* **Proprietary Components**: Testudo LoadForge™ and Testudo LoadTest™ / SovereignLoad™ are closed-source commercial products owned exclusively by Aventine Labs LLC. All rights reserved.
+* **Trademarks**: Apache, Apache JMeter, JMeter, and the Apache feather logo are trademarks or registered trademarks of the Apache Software Foundation. Testudo-JMX is an independent clean-room native implementation developed by Aventine Labs LLC and is not affiliated with, endorsed by, or sponsored by the Apache Software Foundation.
