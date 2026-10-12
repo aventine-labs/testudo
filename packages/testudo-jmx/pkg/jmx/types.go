@@ -2,16 +2,23 @@ package jmx
 
 import "time"
 
+// Argument represents a user-defined variable or property in declaration order.
+type Argument struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // TestPlan represents a normalized, parsed JMeter execution plan.
 type TestPlan struct {
-	Name            string                 `json:"name"`
-	Enabled         bool                   `json:"enabled"`
-	UserVariables   map[string]string      `json:"user_variables"`
-	ThreadGroups    []*ThreadGroup         `json:"thread_groups"`
-	GlobalHeaders   map[string]string      `json:"global_headers"`
-	CSVDataSets     []*CSVDataSetConfig    `json:"csv_datasets"`
-	KeepAliveMode   KeepAliveGlobalMode    `json:"keep_alive_mode"`
-	RawProperties   map[string]string      `json:"raw_properties"`
+	Name             string              `json:"name"`
+	Enabled          bool                `json:"enabled"`
+	UserVariables    map[string]string   `json:"user_variables"`
+	OrderedVariables []Argument          `json:"ordered_variables,omitempty"`
+	ThreadGroups     []*ThreadGroup      `json:"thread_groups"`
+	GlobalHeaders    map[string]string   `json:"global_headers"`
+	CSVDataSets      []*CSVDataSetConfig `json:"csv_datasets"`
+	KeepAliveMode    KeepAliveGlobalMode `json:"keep_alive_mode"`
+	RawProperties    map[string]string   `json:"raw_properties"`
 }
 
 // KeepAliveGlobalMode defines the global override state for connection reuse.
@@ -45,23 +52,24 @@ type FlowElement struct {
 
 // ThreadGroup represents a virtual user execution pool.
 type ThreadGroup struct {
-	Name                string            `json:"name"`
-	Enabled             bool              `json:"enabled"`
-	IsSetUp             bool              `json:"is_setup,omitempty"`
-	IsTearDown          bool              `json:"is_teardown,omitempty"`
-	NumThreads          int               `json:"num_threads"`
-	RampTimeSec         int               `json:"ramp_time_sec"`
-	DurationSec         int               `json:"duration_sec"`
-	StartupDelaySec     int               `json:"startup_delay_sec,omitempty"`
-	Scheduler           bool              `json:"scheduler,omitempty"`
-	LoopCount           int               `json:"loop_count"` // -1 for forever / duration bound
-	SameUserOnIteration bool              `json:"same_user_on_iteration"`
-	DefaultTimerDelayMs int               `json:"default_timer_delay_ms"`
-	DefaultTimerRangeMs int               `json:"default_timer_range_ms"`
-	DefaultTimerIsGaussian bool           `json:"default_timer_is_gaussian,omitempty"`
-	Samplers            []*HTTPSampler    `json:"samplers"` // Flat projection for backwards compatibility
-	FlowElements        []*FlowElement    `json:"flow_elements,omitempty"` // Hierarchical tree
-	Variables           map[string]string `json:"variables"`
+	Name                   string            `json:"name"`
+	Enabled                bool              `json:"enabled"`
+	IsSetUp                bool              `json:"is_setup,omitempty"`
+	IsTearDown             bool              `json:"is_teardown,omitempty"`
+	NumThreads             int               `json:"num_threads"`
+	RampTimeSec            int               `json:"ramp_time_sec"`
+	DurationSec            int               `json:"duration_sec"`
+	StartupDelaySec        int               `json:"startup_delay_sec,omitempty"`
+	Scheduler              bool              `json:"scheduler,omitempty"`
+	LoopCount              int               `json:"loop_count"` // -1 for forever / duration bound
+	SameUserOnIteration    bool              `json:"same_user_on_iteration"`
+	DefaultTimerDelayMs    int               `json:"default_timer_delay_ms"`
+	DefaultTimerRangeMs    int               `json:"default_timer_range_ms"`
+	DefaultTimerIsGaussian bool              `json:"default_timer_is_gaussian,omitempty"`
+	Samplers               []*HTTPSampler    `json:"samplers"`                // Flat projection for backwards compatibility
+	FlowElements           []*FlowElement    `json:"flow_elements,omitempty"` // Hierarchical tree
+	Variables              map[string]string `json:"variables"`
+	OrderedVariables       []Argument        `json:"ordered_variables,omitempty"`
 }
 
 // HTTPSampler represents an HTTP/1.1 or HTTP/2 request sampler.

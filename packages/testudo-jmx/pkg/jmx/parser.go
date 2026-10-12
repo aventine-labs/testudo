@@ -307,6 +307,9 @@ func ParseJMXBytes(data []byte) (*TestPlan, error) {
 					currentTG.DefaultTimerRangeMs = rng
 					currentTG.DefaultTimerIsGaussian = true
 				}
+
+			case "Arguments":
+				parseArgumentsElement(decoder, plan, currentTG)
 			}
 
 		case xml.EndElement:
@@ -382,6 +385,50 @@ func parseTestPlanProperties(decoder *xml.Decoder, plan *TestPlan) {
 					currentArgName = val
 				} else if propName == "Argument.value" && currentArgName != "" {
 					plan.UserVariables[currentArgName] = val
+					plan.OrderedVariables = append(plan.OrderedVariables, Argument{Name: currentArgName, Value: val})
+					currentArgName = ""
+				}
+			default:
+				depth++
+			}
+		case xml.EndElement:
+			depth--
+		}
+	}
+}
+
+func parseArgumentsElement(decoder *xml.Decoder, plan *TestPlan, currentTG *ThreadGroup) {
+	depth := 1
+	var currentArgName string
+
+	for depth > 0 {
+		t, err := decoder.Token()
+		if err != nil {
+			return
+		}
+		switch elem := t.(type) {
+		case xml.StartElement:
+			propName := getAttr(elem.Attr, "name")
+			switch elem.Name.Local {
+			case "stringProp", "boolProp", "intProp", "longProp":
+				val := readElementText(decoder)
+				if propName == "Argument.name" {
+					currentArgName = val
+				} else if propName == "Argument.value" && currentArgName != "" {
+					arg := Argument{Name: currentArgName, Value: val}
+					if currentTG != nil {
+						if currentTG.Variables == nil {
+							currentTG.Variables = make(map[string]string)
+						}
+						currentTG.Variables[currentArgName] = val
+						currentTG.OrderedVariables = append(currentTG.OrderedVariables, arg)
+					} else if plan != nil {
+						if plan.UserVariables == nil {
+							plan.UserVariables = make(map[string]string)
+						}
+						plan.UserVariables[currentArgName] = val
+						plan.OrderedVariables = append(plan.OrderedVariables, arg)
+					}
 					currentArgName = ""
 				}
 			default:

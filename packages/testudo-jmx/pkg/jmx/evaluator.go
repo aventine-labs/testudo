@@ -43,51 +43,42 @@ func GetAllProperties() map[string]string {
 	return res
 }
 
-// EvaluateString resolves ${var_name} and built-in functions from session variables.
+// EvaluateString resolves ${var_name} and built-in functions from session variables
+// using a strict single-pass left-to-right scan matching Apache JMeter semantics.
+// Substituted variable values are NEVER recursively re-evaluated, preventing token
+// leakage or accidental expansion of response content.
 func EvaluateString(template string, vars map[string]string, threadID int) string {
-	curr := template
-	for pass := 0; pass < 5; pass++ {
-		if !strings.Contains(curr, "${") {
-			return curr
-		}
-
-		var sb strings.Builder
-		pos := 0
-		hasChange := false
-
-		for pos < len(curr) {
-			start := strings.Index(curr[pos:], "${")
-			if start == -1 {
-				sb.WriteString(curr[pos:])
-				break
-			}
-			start += pos
-			sb.WriteString(curr[pos:start])
-
-			end := strings.Index(curr[start+2:], "}")
-			if end == -1 {
-				sb.WriteString(curr[start:])
-				break
-			}
-			end = start + 2 + end
-
-			expr := curr[start+2 : end]
-			replacement := resolveExpression(expr, vars, threadID)
-			if replacement != "${"+expr+"}" {
-				hasChange = true
-			}
-			sb.WriteString(replacement)
-
-			pos = end + 1
-		}
-
-		curr = sb.String()
-		if !hasChange {
-			break
-		}
+	if !strings.Contains(template, "${") {
+		return template
 	}
 
-	return curr
+	var sb strings.Builder
+	pos := 0
+
+	for pos < len(template) {
+		start := strings.Index(template[pos:], "${")
+		if start == -1 {
+			sb.WriteString(template[pos:])
+			break
+		}
+		start += pos
+		sb.WriteString(template[pos:start])
+
+		end := strings.Index(template[start+2:], "}")
+		if end == -1 {
+			sb.WriteString(template[start:])
+			break
+		}
+		end = start + 2 + end
+
+		expr := template[start+2 : end]
+		replacement := resolveExpression(expr, vars, threadID)
+		sb.WriteString(replacement)
+
+		pos = end + 1
+	}
+
+	return sb.String()
 }
 
 func resolveExpression(expr string, vars map[string]string, threadID int) string {

@@ -53,6 +53,7 @@ type SampleResult struct {
 	ResponseBody    string
 	ResponseHeaders http.Header
 	SubSamples      []*SampleResult // Decomposed redirect hops or asset sub-requests
+	ThreadName      string
 }
 
 // JtlMillis rounds a time.Duration to the nearest millisecond, preventing floor bias.
@@ -68,10 +69,10 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	}
 
 	var bodyReader io.Reader
-	var bytesSent int64
+	var bodyBytesSent int64
 	if body != "" && (method == "POST" || method == "PUT" || method == "PATCH") {
 		bodyBytes := []byte(body)
-		bytesSent = int64(len(bodyBytes))
+		bodyBytesSent = int64(len(bodyBytes))
 		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
@@ -84,6 +85,27 @@ func ExecuteRequest(ctx context.Context, client *http.Client, method, rawURL, bo
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
+
+	// Calculate wire bytes sent (request line + headers + body) matching JMeter sentBytes metric
+	reqURI := req.URL.RequestURI()
+	if reqURI == "" {
+		reqURI = "/"
+	}
+	bytesSent := int64(len(method) + 1 + len(reqURI) + 11) // "METHOD /uri HTTP/1.1\r\n"
+	hostHdr := req.Host
+	if hostHdr == "" {
+		hostHdr = parsedURL.Host
+	}
+	if hostHdr != "" {
+		bytesSent += int64(len("Host: ") + len(hostHdr) + 2)
+	}
+	for k, vv := range req.Header {
+		for _, v := range vv {
+			bytesSent += int64(len(k) + len(": ") + len(v) + 2)
+		}
+	}
+	bytesSent += 2 // Trailing CRLF (\r\n)
+	bytesSent += bodyBytesSent
 
 	// Performance trace instrumentation
 	var connectStart, connectEnd time.Time

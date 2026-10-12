@@ -998,5 +998,115 @@ func TestSetUpPlusContinuousMainGroupTarget(t *testing.T) {
 	}
 }
 
+func TestEngineThreadNameAndSentBytes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	u, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("Failed to parse mock server URL: %v", err)
+	}
+
+	plan := &jmx.TestPlan{
+		Name:    "JTL Compliance Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "E-Commerce Shoppers",
+				Enabled:    true,
+				NumThreads: 2,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{
+						Name:     "01_Home",
+						Enabled:  true,
+						Domain:   u.Hostname(),
+						Port:     u.Port(),
+						Protocol: "http",
+						Path:     "/",
+						Method:   "GET",
+					},
+				},
+			},
+		},
+	}
+
+	tmpDir := t.TempDir()
+	jtlPath := filepath.Join(tmpDir, "schema_test.jtl")
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{
+		IsHeadless: true,
+		Duration:   2 * time.Second,
+	})
+
+	jtlWriter, err := reporting.NewJTLWriter(jtlPath)
+	if err != nil {
+		t.Fatalf("Failed to create JTL writer: %v", err)
+	}
+
+	var samples []*transport.SampleResult
+	var mu sync.Mutex
+
+	go func() {
+		for sample := range driver.ResultChan {
+			mu.Lock()
+			samples = append(samples, sample)
+			mu.Unlock()
+			_ = jtlWriter.WriteSample(sample, sample.ThreadName, int(driver.Collector.Snapshot().ActiveVUs))
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_ = driver.Run(ctx)
+	_ = jtlWriter.Close()
+
+	mu.Lock()
+	collected := samples
+	mu.Unlock()
+
+	if len(collected) == 0 {
+		t.Fatalf("Expected collected samples, got 0")
+	}
+
+	for _, s := range collected {
+		// Verify ThreadName format: "E-Commerce Shoppers 1-X"
+		if !strings.HasPrefix(s.ThreadName, "E-Commerce Shoppers 1-") {
+			t.Errorf("Expected threadName to start with 'E-Commerce Shoppers 1-', got '%s'", s.ThreadName)
+		}
+		// Verify BytesSent > 0 (wire headers + body)
+		if s.BytesSent <= 0 {
+			t.Errorf("Expected BytesSent > 0, got %d", s.BytesSent)
+		}
+	}
+
+	// Verify CSV contents from disk
+	content, err := os.ReadFile(jtlPath)
+	if err != nil {
+		t.Fatalf("Failed to read JTL file: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+	if len(lines) < 2 {
+		t.Fatalf("Expected at least header + 1 sample line in JTL, got %d lines", len(lines))
+	}
+
+	// Verify header schema
+	header := lines[0]
+	if !strings.Contains(header, "threadName") || !strings.Contains(header, "sentBytes") {
+		t.Errorf("Missing expected columns in JTL header: %s", header)
+	}
+
+	// Verify sample row has non-zero sentBytes and proper threadName
+	sampleRow := lines[1]
+	if !strings.Contains(sampleRow, "E-Commerce Shoppers 1-") {
+		t.Errorf("Sample row missing expected threadName: %s", sampleRow)
+	}
+}
+
+
 
 

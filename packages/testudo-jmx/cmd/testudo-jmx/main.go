@@ -183,7 +183,7 @@ func main() {
 			fmt.Printf("[JTL] Logging sample execution logs to: %s\n", *jtlFile)
 			go func() {
 				for sample := range driver.ResultChan {
-					_ = jtlWriter.WriteSample(sample, "VirtualUser", int(driver.Collector.Snapshot().ActiveVUs))
+					_ = jtlWriter.WriteSample(sample, sample.ThreadName, int(driver.Collector.Snapshot().ActiveVUs))
 				}
 			}()
 		}

@@ -97,6 +97,13 @@ func (j *JTLWriter) WriteSample(res *transport.SampleResult, threadName string, 
 		succStr = "false"
 	}
 
+	effThreadName := threadName
+	if res.ThreadName != "" {
+		effThreadName = res.ThreadName
+	} else if effThreadName == "" {
+		effThreadName = "VirtualUser 1-1"
+	}
+
 	vusStr := strconv.Itoa(activeVUs)
 
 	// Standard 17-column row (ms rounded)
@@ -106,7 +113,7 @@ func (j *JTLWriter) WriteSample(res *transport.SampleResult, threadName string, 
 		res.Label,
 		strconv.Itoa(res.StatusCode),
 		res.ResponseMessage,
-		threadName,
+		effThreadName,
 		"text",
 		succStr,
 		res.ErrorMessage,
@@ -135,7 +142,7 @@ func (j *JTLWriter) WriteSample(res *transport.SampleResult, threadName string, 
 			strconv.FormatInt(res.ConnectUs, 10),
 			strconv.FormatInt(res.BytesReceived, 10),
 			strconv.FormatInt(res.BytesSent, 10),
-			threadName,
+			effThreadName,
 		}
 		_ = j.precisionWriter.Write(pRow)
 	}

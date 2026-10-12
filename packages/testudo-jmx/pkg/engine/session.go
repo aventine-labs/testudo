@@ -41,11 +41,44 @@ func NewUserSession(id int, tg *jmx.ThreadGroup, plan *jmx.TestPlan, coll *Colle
 // NewUserSessionWithTransport instantiates a virtual user session using a pooled transport while preserving full cookie and variable isolation.
 func NewUserSessionWithTransport(id int, tg *jmx.ThreadGroup, plan *jmx.TestPlan, coll *Collector, ch chan<- *transport.SampleResult, tcfg transport.TransportConfig, tr http.RoundTripper) *UserSession {
 	vars := make(map[string]string)
-	for k, v := range plan.UserVariables {
-		vars[k] = jmx.EvaluateString(v, vars, id)
+	if len(plan.OrderedVariables) > 0 {
+		for _, arg := range plan.OrderedVariables {
+			val := arg.Value
+			if override, exists := plan.UserVariables[arg.Name]; exists {
+				val = override
+			}
+			vars[arg.Name] = jmx.EvaluateString(val, vars, id)
+		}
+		for k, v := range plan.UserVariables {
+			if _, exists := vars[k]; !exists {
+				vars[k] = jmx.EvaluateString(v, vars, id)
+			}
+		}
+	} else {
+		for k, v := range plan.UserVariables {
+			vars[k] = jmx.EvaluateString(v, vars, id)
+		}
 	}
-	for k, v := range tg.Variables {
-		vars[k] = jmx.EvaluateString(v, vars, id)
+
+	if tg != nil {
+		if len(tg.OrderedVariables) > 0 {
+			for _, arg := range tg.OrderedVariables {
+				val := arg.Value
+				if override, exists := tg.Variables[arg.Name]; exists {
+					val = override
+				}
+				vars[arg.Name] = jmx.EvaluateString(val, vars, id)
+			}
+			for k, v := range tg.Variables {
+				if _, exists := vars[k]; !exists {
+					vars[k] = jmx.EvaluateString(v, vars, id)
+				}
+			}
+		} else {
+			for k, v := range tg.Variables {
+				vars[k] = jmx.EvaluateString(v, vars, id)
+			}
+		}
 	}
 	vars["__threadNum"] = strconv.Itoa(id)
 
@@ -171,6 +204,7 @@ func (s *UserSession) executeFlowElements(ctx context.Context, elements []*jmx.F
 					ElapsedMs:       transport.JtlMillis(pageDur),
 					ElapsedUs:       pageDur.Microseconds(),
 					BytesReceived:   pageBytesReceived,
+					ThreadName:      fmt.Sprintf("%s 1-%d", s.ThreadGroup, s.ThreadID),
 				}
 				s.Collector.RecordSample(pageRes)
 				if s.ResultChan != nil {
@@ -290,6 +324,7 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 	} else {
 		res, err = transport.ExecuteRequest(ctx, s.Client, sampler.Method, targetURL, evaluatedBody, mergedHeaders)
 	}
+	threadName := fmt.Sprintf("%s 1-%d", s.ThreadGroup, s.ThreadID)
 	if err != nil {
 		errSample := &transport.SampleResult{
 			Label:           sampler.Name,
@@ -300,6 +335,7 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 			Success:         false,
 			TimestampMs:     time.Now().UnixMilli(),
 			ErrorMessage:    err.Error(),
+			ThreadName:      threadName,
 		}
 		s.Collector.RecordSample(errSample)
 		if s.ResultChan != nil {
@@ -315,6 +351,7 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 		return 0, false, ctx.Err()
 	}
 	res.Label = sampler.Name
+	res.ThreadName = threadName
 	*samplersElapsedUs += res.ElapsedUs
 
 	// Evaluate extractors and update thread-local variables
@@ -326,6 +363,7 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 	// If decomposed sub-samples exist, push them to results channel
 	if s.DecomposeRedirects && len(res.SubSamples) > 0 {
 		for _, sub := range res.SubSamples {
+			sub.ThreadName = threadName
 			s.Collector.RecordSample(sub)
 			if s.ResultChan != nil {
 				select {
