@@ -32,6 +32,23 @@ Testudo-JMX represents the dedicated open-source JMeter execution branch of the 
 
 ---
 
+## Empirical Benchmark: Apache JMeter 5.6.3 vs Testudo-JMX 1.0.0
+Tested against an isolated Magento 2 storefront under identical transaction flows and arrival pacing:
+
+![Head-to-Head Benchmark Infographic: Apache JMeter vs Testudo-JMX](docs/visualizations/testudo_jmeter_head_to_head_infographic.png)
+
+| Virtual Users | Apache JMeter Throughput | Testudo-JMX Throughput | Apache JMeter Memory (RSS) | Testudo-JMX Memory (RSS) | Memory Reduction |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **2 VUs** | 0.49 req/s | **0.49 req/s** | 238.2 MB | **23.1 MB** | **10.3x Lower (-90.3%)** |
+| **10 VUs** | 2.35 req/s | **2.39 req/s** | 345.7 MB | **21.6 MB** | **16.0x Lower (-93.8%)** |
+| **20 VUs** | 4.62 req/s | **4.71 req/s** | 366.1 MB | **21.4 MB** | **17.1x Lower (-94.2%)** |
+| **30 VUs** | 6.93 req/s | **6.98 req/s** | 476.7 MB | **23.7 MB** | **20.1x Lower (-95.0%)** |
+| **50 VUs** | 11.46 req/s | **11.55 req/s** | 740.7 MB | **22.4 MB** | **33.1x Lower (-97.0%)** |
+
+*Complete documentation, research methodology, and printable PDF manual available in [docs/wiki/](./docs/wiki/).*
+
+---
+
 ## Installation & Quickstart
 
 ### 1. Global CLI via npm

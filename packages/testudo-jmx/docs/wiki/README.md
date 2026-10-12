@@ -45,6 +45,13 @@ Welcome to the official technical documentation for **Testudo-JMX™**, the free
    * Local Router NAT Table Exhaustion & Kernel Socket Buffer Tuning
    * When Single-Node Density is Ideal (DB Contention, Memory Leaks, Query Optimization)
 
+7. [07. Head-to-Head JMeter Benchmark Report & Visualizations](./07_HEAD_TO_HEAD_JMETER_BENCHMARK.md)
+   * Empirical 10-Tier Concurrency Ladder on Magento 2 Storefront (VU 2 to VU 50)
+   * High-Resolution Visualizations (Infographic, Resident Memory VmRSS, Throughput & Latency Parity)
+   * Mathematical Parity: Identical Throughput and Error Rates
+   * 33.1x Memory Reduction (22.4 MB vs 740.7 MB RSS)
+   * Gunther Universal Scalability Law (USL) Saturation Knee Analysis
+
 ---
 
 ## Printable Document PDF Manual

@@ -1,0 +1,3286 @@
+{
+  "jmeter": {
+    "2": {
+      "total": {
+        "count": 146,
+        "rps": 0.49,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 65.0,
+        "min": 37.0,
+        "max": 122.0,
+        "p50": 66.0,
+        "p90": 82.0,
+        "p95": 86.0,
+        "p99": 105.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 475,
+        "rps": 1.58,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 39.8,
+        "min": 15.0,
+        "max": 122.0,
+        "p50": 28.0,
+        "p90": 72.0,
+        "p95": 79.0,
+        "p99": 87.0,
+        "error_codes": {
+          "302": 183
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 43.5,
+          "min": 37.0,
+          "max": 62.0,
+          "p50": 41.0,
+          "p90": 51.0,
+          "p95": 59.0,
+          "p99": 62.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.0,
+          "min": 20.0,
+          "max": 32.0,
+          "p50": 23.0,
+          "p90": 30.0,
+          "p95": 30.0,
+          "p99": 32.0,
+          "error_codes": {
+            "302": 37
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 19.2,
+          "min": 15.0,
+          "max": 38.0,
+          "p50": 17.0,
+          "p90": 21.0,
+          "p95": 37.0,
+          "p99": 38.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 69.0,
+          "min": 62.0,
+          "max": 92.0,
+          "p50": 67.0,
+          "p90": 74.0,
+          "p95": 87.0,
+          "p99": 92.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 23.6,
+          "min": 20.0,
+          "max": 40.0,
+          "p50": 23.0,
+          "p90": 25.0,
+          "p95": 29.0,
+          "p99": 40.0,
+          "error_codes": {
+            "302": 37
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.9,
+          "min": 23.0,
+          "max": 31.0,
+          "p50": 26.0,
+          "p90": 29.0,
+          "p95": 30.0,
+          "p99": 31.0,
+          "error_codes": {
+            "302": 37
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 18.8,
+          "min": 17.0,
+          "max": 39.0,
+          "p50": 18.0,
+          "p90": 20.0,
+          "p95": 21.0,
+          "p99": 39.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 66.5,
+          "min": 61.0,
+          "max": 105.0,
+          "p50": 65.0,
+          "p90": 70.0,
+          "p95": 74.0,
+          "p99": 105.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 23.5,
+          "min": 21.0,
+          "max": 42.0,
+          "p50": 23.0,
+          "p90": 25.0,
+          "p95": 29.0,
+          "p99": 42.0,
+          "error_codes": {
+            "302": 36
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 42.6,
+          "min": 38.0,
+          "max": 62.0,
+          "p50": 42.0,
+          "p90": 46.0,
+          "p95": 47.0,
+          "p99": 62.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 81.4,
+          "min": 74.0,
+          "max": 122.0,
+          "p50": 79.0,
+          "p90": 86.0,
+          "p95": 87.0,
+          "p99": 122.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 23.9,
+          "min": 21.0,
+          "max": 42.0,
+          "p50": 23.0,
+          "p90": 25.0,
+          "p95": 30.0,
+          "p99": 42.0,
+          "error_codes": {
+            "302": 36
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 36,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 57.1,
+          "min": 52.0,
+          "max": 79.0,
+          "p50": 56.0,
+          "p90": 60.0,
+          "p95": 63.0,
+          "p99": 79.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 2,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 238.2,
+        "peak_threads": 52
+      }
+    },
+    "5": {
+      "total": {
+        "count": 354,
+        "rps": 1.18,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 62.5,
+        "min": 33.0,
+        "max": 121.0,
+        "p50": 64.0,
+        "p90": 77.0,
+        "p95": 81.0,
+        "p99": 101.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 1150,
+        "rps": 3.83,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 38.4,
+        "min": 15.0,
+        "max": 121.0,
+        "p50": 26.0,
+        "p90": 71.0,
+        "p95": 75.0,
+        "p99": 86.0,
+        "error_codes": {
+          "302": 442
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 91,
+          "rps": 0.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 41.6,
+          "min": 33.0,
+          "max": 71.0,
+          "p50": 40.0,
+          "p90": 47.0,
+          "p95": 56.0,
+          "p99": 71.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 91,
+          "rps": 0.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 22.6,
+          "min": 18.0,
+          "max": 35.0,
+          "p50": 22.0,
+          "p90": 25.0,
+          "p95": 26.0,
+          "p99": 35.0,
+          "error_codes": {
+            "302": 91
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 91,
+          "rps": 0.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 18.8,
+          "min": 15.0,
+          "max": 42.0,
+          "p50": 17.0,
+          "p90": 24.0,
+          "p95": 33.0,
+          "p99": 42.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 67.1,
+          "min": 61.0,
+          "max": 118.0,
+          "p50": 64.0,
+          "p90": 74.0,
+          "p95": 78.0,
+          "p99": 118.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 22.3,
+          "min": 18.0,
+          "max": 33.0,
+          "p50": 22.0,
+          "p90": 24.0,
+          "p95": 25.0,
+          "p99": 33.0,
+          "error_codes": {
+            "302": 88
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.5,
+          "min": 23.0,
+          "max": 40.0,
+          "p50": 25.0,
+          "p90": 28.0,
+          "p95": 33.0,
+          "p99": 40.0,
+          "error_codes": {
+            "302": 88
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 18.7,
+          "min": 16.0,
+          "max": 56.0,
+          "p50": 17.0,
+          "p90": 21.0,
+          "p95": 31.0,
+          "p99": 56.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 65.3,
+          "min": 56.0,
+          "max": 121.0,
+          "p50": 63.0,
+          "p90": 71.0,
+          "p95": 74.0,
+          "p99": 121.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 22.7,
+          "min": 17.0,
+          "max": 39.0,
+          "p50": 22.0,
+          "p90": 25.0,
+          "p95": 27.0,
+          "p99": 39.0,
+          "error_codes": {
+            "302": 88
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 88,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 42.3,
+          "min": 38.0,
+          "max": 98.0,
+          "p50": 40.0,
+          "p90": 46.0,
+          "p95": 50.0,
+          "p99": 98.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 87,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 76.7,
+          "min": 71.0,
+          "max": 97.0,
+          "p50": 76.0,
+          "p90": 83.0,
+          "p95": 86.0,
+          "p99": 97.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 87,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 22.4,
+          "min": 18.0,
+          "max": 31.0,
+          "p50": 22.0,
+          "p90": 24.0,
+          "p95": 28.0,
+          "p99": 31.0,
+          "error_codes": {
+            "302": 87
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 87,
+          "rps": 0.29,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 54.1,
+          "min": 50.0,
+          "max": 70.0,
+          "p50": 53.0,
+          "p90": 57.0,
+          "p95": 62.0,
+          "p99": 70.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 5,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 285.9,
+        "peak_threads": 57
+      }
+    },
+    "10": {
+      "total": {
+        "count": 705,
+        "rps": 2.35,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 66.2,
+        "min": 33.0,
+        "max": 154.0,
+        "p50": 64.0,
+        "p90": 88.0,
+        "p95": 105.0,
+        "p99": 132.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 2292,
+        "rps": 7.64,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 40.6,
+        "min": 15.0,
+        "max": 154.0,
+        "p50": 34.0,
+        "p90": 74.0,
+        "p95": 82.0,
+        "p99": 117.0,
+        "error_codes": {
+          "302": 882
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 180,
+          "rps": 0.6,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 43.8,
+          "min": 33.0,
+          "max": 115.0,
+          "p50": 39.0,
+          "p90": 57.0,
+          "p95": 70.0,
+          "p99": 112.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 180,
+          "rps": 0.6,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 23.4,
+          "min": 17.0,
+          "max": 69.0,
+          "p50": 22.0,
+          "p90": 27.0,
+          "p95": 32.0,
+          "p99": 68.0,
+          "error_codes": {
+            "302": 180
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 180,
+          "rps": 0.6,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 20.2,
+          "min": 15.0,
+          "max": 78.0,
+          "p50": 17.0,
+          "p90": 31.0,
+          "p95": 37.0,
+          "p99": 71.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 177,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 73.5,
+          "min": 57.0,
+          "max": 154.0,
+          "p50": 65.0,
+          "p90": 103.0,
+          "p95": 118.0,
+          "p99": 142.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 177,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.4,
+          "min": 17.0,
+          "max": 71.0,
+          "p50": 22.0,
+          "p90": 32.0,
+          "p95": 40.0,
+          "p99": 67.0,
+          "error_codes": {
+            "302": 177
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 177,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 28.4,
+          "min": 23.0,
+          "max": 84.0,
+          "p50": 25.0,
+          "p90": 40.0,
+          "p95": 45.0,
+          "p99": 83.0,
+          "error_codes": {
+            "302": 177
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 177,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 20.2,
+          "min": 16.0,
+          "max": 74.0,
+          "p50": 17.0,
+          "p90": 33.0,
+          "p95": 36.0,
+          "p99": 69.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 176,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 67.2,
+          "min": 56.0,
+          "max": 128.0,
+          "p50": 62.0,
+          "p90": 79.0,
+          "p95": 104.0,
+          "p99": 127.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 176,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.1,
+          "min": 16.0,
+          "max": 85.0,
+          "p50": 22.0,
+          "p90": 29.0,
+          "p95": 38.0,
+          "p99": 80.0,
+          "error_codes": {
+            "302": 176
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 176,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 42.9,
+          "min": 38.0,
+          "max": 100.0,
+          "p50": 40.0,
+          "p90": 53.0,
+          "p95": 58.0,
+          "p99": 91.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 172,
+          "rps": 0.57,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 81.0,
+          "min": 69.0,
+          "max": 151.0,
+          "p50": 76.0,
+          "p90": 93.0,
+          "p95": 111.0,
+          "p99": 148.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 172,
+          "rps": 0.57,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 23.6,
+          "min": 17.0,
+          "max": 64.0,
+          "p50": 22.0,
+          "p90": 28.0,
+          "p95": 36.0,
+          "p99": 57.0,
+          "error_codes": {
+            "302": 172
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 172,
+          "rps": 0.57,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 57.2,
+          "min": 50.0,
+          "max": 112.0,
+          "p50": 53.0,
+          "p90": 69.0,
+          "p95": 78.0,
+          "p99": 108.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 10,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 345.7,
+        "peak_threads": 62
+      }
+    },
+    "15": {
+      "total": {
+        "count": 1055,
+        "rps": 3.52,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 69.2,
+        "min": 33.0,
+        "max": 426.0,
+        "p50": 64.0,
+        "p90": 99.0,
+        "p95": 117.0,
+        "p99": 155.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 3432,
+        "rps": 11.44,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 42.4,
+        "min": 15.0,
+        "max": 426.0,
+        "p50": 37.0,
+        "p90": 75.0,
+        "p95": 91.0,
+        "p99": 127.0,
+        "error_codes": {
+          "302": 1322
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 47.4,
+          "min": 33.0,
+          "max": 176.0,
+          "p50": 40.0,
+          "p90": 67.0,
+          "p95": 89.0,
+          "p99": 117.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.5,
+          "min": 17.0,
+          "max": 124.0,
+          "p50": 22.0,
+          "p90": 35.0,
+          "p95": 48.0,
+          "p99": 88.0,
+          "error_codes": {
+            "302": 267
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 21.6,
+          "min": 15.0,
+          "max": 85.0,
+          "p50": 17.0,
+          "p90": 33.0,
+          "p95": 40.0,
+          "p99": 74.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 75.7,
+          "min": 55.0,
+          "max": 426.0,
+          "p50": 64.0,
+          "p90": 107.0,
+          "p95": 125.0,
+          "p99": 150.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.2,
+          "min": 16.0,
+          "max": 299.0,
+          "p50": 22.0,
+          "p90": 34.0,
+          "p95": 41.0,
+          "p99": 72.0,
+          "error_codes": {
+            "302": 267
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 28.7,
+          "min": 22.0,
+          "max": 93.0,
+          "p50": 25.0,
+          "p90": 40.0,
+          "p95": 48.0,
+          "p99": 83.0,
+          "error_codes": {
+            "302": 267
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 267,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 21.2,
+          "min": 15.0,
+          "max": 88.0,
+          "p50": 17.0,
+          "p90": 33.0,
+          "p95": 40.0,
+          "p99": 79.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 263,
+          "rps": 0.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 69.8,
+          "min": 56.0,
+          "max": 172.0,
+          "p50": 62.0,
+          "p90": 89.0,
+          "p95": 108.0,
+          "p99": 134.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 263,
+          "rps": 0.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.1,
+          "min": 17.0,
+          "max": 115.0,
+          "p50": 22.0,
+          "p90": 33.0,
+          "p95": 42.0,
+          "p99": 76.0,
+          "error_codes": {
+            "302": 263
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 263,
+          "rps": 0.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 44.5,
+          "min": 37.0,
+          "max": 98.0,
+          "p50": 40.0,
+          "p90": 56.0,
+          "p95": 61.0,
+          "p99": 94.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 258,
+          "rps": 0.86,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 84.4,
+          "min": 67.0,
+          "max": 181.0,
+          "p50": 75.0,
+          "p90": 110.0,
+          "p95": 127.0,
+          "p99": 172.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 258,
+          "rps": 0.86,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.7,
+          "min": 16.0,
+          "max": 85.0,
+          "p50": 22.0,
+          "p90": 35.0,
+          "p95": 47.0,
+          "p99": 77.0,
+          "error_codes": {
+            "302": 258
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 258,
+          "rps": 0.86,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 59.5,
+          "min": 50.0,
+          "max": 126.0,
+          "p50": 53.0,
+          "p90": 79.0,
+          "p95": 92.0,
+          "p99": 115.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 15,
+        "runtime_sec": 302.0,
+        "peak_rss_mb": 338.2,
+        "peak_threads": 65
+      }
+    },
+    "20": {
+      "total": {
+        "count": 1385,
+        "rps": 4.62,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 70.9,
+        "min": 32.0,
+        "max": 240.0,
+        "p50": 65.0,
+        "p90": 105.0,
+        "p95": 126.0,
+        "p99": 165.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 4506,
+        "rps": 15.02,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 43.5,
+        "min": 15.0,
+        "max": 240.0,
+        "p50": 38.0,
+        "p90": 76.0,
+        "p95": 94.0,
+        "p99": 138.0,
+        "error_codes": {
+          "302": 1736
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 352,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 45.7,
+          "min": 32.0,
+          "max": 126.0,
+          "p50": 39.0,
+          "p90": 64.0,
+          "p95": 82.0,
+          "p99": 107.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 352,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.2,
+          "min": 16.0,
+          "max": 83.0,
+          "p50": 22.0,
+          "p90": 34.0,
+          "p95": 42.0,
+          "p99": 61.0,
+          "error_codes": {
+            "302": 352
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 352,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 21.2,
+          "min": 15.0,
+          "max": 90.0,
+          "p50": 17.0,
+          "p90": 33.0,
+          "p95": 41.0,
+          "p99": 71.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 351,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 82.3,
+          "min": 56.0,
+          "max": 240.0,
+          "p50": 66.0,
+          "p90": 131.0,
+          "p95": 157.0,
+          "p99": 205.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 351,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 26.2,
+          "min": 16.0,
+          "max": 118.0,
+          "p50": 22.0,
+          "p90": 37.0,
+          "p95": 56.0,
+          "p99": 84.0,
+          "error_codes": {
+            "302": 351
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 351,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 30.8,
+          "min": 22.0,
+          "max": 105.0,
+          "p50": 25.0,
+          "p90": 46.0,
+          "p95": 64.0,
+          "p99": 96.0,
+          "error_codes": {
+            "302": 351
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 351,
+          "rps": 1.17,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 24.8,
+          "min": 16.0,
+          "max": 119.0,
+          "p50": 17.0,
+          "p90": 44.0,
+          "p95": 63.0,
+          "p99": 90.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 346,
+          "rps": 1.15,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 71.2,
+          "min": 55.0,
+          "max": 146.0,
+          "p50": 62.0,
+          "p90": 95.0,
+          "p95": 114.0,
+          "p99": 144.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 346,
+          "rps": 1.15,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.5,
+          "min": 16.0,
+          "max": 76.0,
+          "p50": 22.0,
+          "p90": 36.0,
+          "p95": 47.0,
+          "p99": 69.0,
+          "error_codes": {
+            "302": 346
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 346,
+          "rps": 1.15,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 45.5,
+          "min": 37.0,
+          "max": 107.0,
+          "p50": 40.0,
+          "p90": 61.0,
+          "p95": 73.0,
+          "p99": 92.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 336,
+          "rps": 1.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 85.2,
+          "min": 67.0,
+          "max": 220.0,
+          "p50": 75.0,
+          "p90": 115.0,
+          "p95": 129.0,
+          "p99": 163.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 336,
+          "rps": 1.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 25.7,
+          "min": 16.0,
+          "max": 132.0,
+          "p50": 22.0,
+          "p90": 38.0,
+          "p95": 47.0,
+          "p99": 69.0,
+          "error_codes": {
+            "302": 336
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 336,
+          "rps": 1.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 59.3,
+          "min": 50.0,
+          "max": 125.0,
+          "p50": 53.0,
+          "p90": 77.0,
+          "p95": 94.0,
+          "p99": 114.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 20,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 366.1,
+        "peak_threads": 69
+      }
+    },
+    "25": {
+      "total": {
+        "count": 1739,
+        "rps": 5.8,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 81.0,
+        "min": 31.0,
+        "max": 336.0,
+        "p50": 72.0,
+        "p90": 131.0,
+        "p95": 157.0,
+        "p99": 226.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 5656,
+        "rps": 18.85,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 49.7,
+        "min": 15.0,
+        "max": 336.0,
+        "p50": 39.0,
+        "p90": 92.0,
+        "p95": 117.0,
+        "p99": 175.0,
+        "error_codes": {
+          "302": 2178
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 443,
+          "rps": 1.48,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 56.1,
+          "min": 31.0,
+          "max": 191.0,
+          "p50": 41.0,
+          "p90": 101.0,
+          "p95": 124.0,
+          "p99": 160.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 443,
+          "rps": 1.48,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 28.7,
+          "min": 16.0,
+          "max": 136.0,
+          "p50": 22.0,
+          "p90": 48.0,
+          "p95": 65.0,
+          "p99": 93.0,
+          "error_codes": {
+            "302": 443
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 443,
+          "rps": 1.48,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 27.2,
+          "min": 15.0,
+          "max": 111.0,
+          "p50": 18.0,
+          "p90": 56.0,
+          "p95": 69.0,
+          "p99": 104.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 439,
+          "rps": 1.46,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 94.4,
+          "min": 58.0,
+          "max": 336.0,
+          "p50": 74.0,
+          "p90": 158.0,
+          "p95": 184.0,
+          "p99": 249.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 439,
+          "rps": 1.46,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 29.3,
+          "min": 17.0,
+          "max": 110.0,
+          "p50": 22.0,
+          "p90": 51.0,
+          "p95": 64.0,
+          "p99": 96.0,
+          "error_codes": {
+            "302": 439
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 439,
+          "rps": 1.46,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 35.4,
+          "min": 22.0,
+          "max": 120.0,
+          "p50": 25.0,
+          "p90": 62.0,
+          "p95": 84.0,
+          "p99": 113.0,
+          "error_codes": {
+            "302": 439
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 439,
+          "rps": 1.46,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 29.4,
+          "min": 16.0,
+          "max": 160.0,
+          "p50": 18.0,
+          "p90": 58.0,
+          "p95": 76.0,
+          "p99": 103.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 432,
+          "rps": 1.44,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 81.3,
+          "min": 54.0,
+          "max": 295.0,
+          "p50": 65.0,
+          "p90": 129.0,
+          "p95": 148.0,
+          "p99": 240.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 432,
+          "rps": 1.44,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 29.7,
+          "min": 16.0,
+          "max": 146.0,
+          "p50": 22.0,
+          "p90": 50.0,
+          "p95": 65.0,
+          "p99": 115.0,
+          "error_codes": {
+            "302": 432
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 432,
+          "rps": 1.44,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 51.5,
+          "min": 37.0,
+          "max": 181.0,
+          "p50": 41.0,
+          "p90": 78.0,
+          "p95": 97.0,
+          "p99": 135.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 425,
+          "rps": 1.42,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 92.9,
+          "min": 67.0,
+          "max": 235.0,
+          "p50": 79.0,
+          "p90": 133.0,
+          "p95": 155.0,
+          "p99": 189.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 425,
+          "rps": 1.42,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 29.4,
+          "min": 16.0,
+          "max": 130.0,
+          "p50": 22.0,
+          "p90": 52.0,
+          "p95": 66.0,
+          "p99": 97.0,
+          "error_codes": {
+            "302": 425
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 425,
+          "rps": 1.42,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 63.3,
+          "min": 50.0,
+          "max": 147.0,
+          "p50": 55.0,
+          "p90": 90.0,
+          "p95": 103.0,
+          "p99": 117.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 25,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 443.9,
+        "peak_threads": 74
+      }
+    },
+    "30": {
+      "total": {
+        "count": 2079,
+        "rps": 6.93,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 86.3,
+        "min": 31.0,
+        "max": 371.0,
+        "p50": 74.0,
+        "p90": 140.0,
+        "p95": 172.0,
+        "p99": 236.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 6760,
+        "rps": 22.53,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 53.0,
+        "min": 15.0,
+        "max": 371.0,
+        "p50": 42.0,
+        "p90": 99.0,
+        "p95": 125.0,
+        "p99": 189.0,
+        "error_codes": {
+          "302": 2602
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 531,
+          "rps": 1.77,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 63.4,
+          "min": 31.0,
+          "max": 310.0,
+          "p50": 45.0,
+          "p90": 113.0,
+          "p95": 137.0,
+          "p99": 173.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 531,
+          "rps": 1.77,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 32.8,
+          "min": 16.0,
+          "max": 208.0,
+          "p50": 23.0,
+          "p90": 61.0,
+          "p95": 81.0,
+          "p99": 108.0,
+          "error_codes": {
+            "302": 531
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 531,
+          "rps": 1.77,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 30.4,
+          "min": 15.0,
+          "max": 156.0,
+          "p50": 18.0,
+          "p90": 60.0,
+          "p95": 77.0,
+          "p99": 102.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 523,
+          "rps": 1.74,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 103.0,
+          "min": 56.0,
+          "max": 371.0,
+          "p50": 81.0,
+          "p90": 177.0,
+          "p95": 210.0,
+          "p99": 274.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 523,
+          "rps": 1.74,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 32.7,
+          "min": 16.0,
+          "max": 151.0,
+          "p50": 23.0,
+          "p90": 63.0,
+          "p95": 72.0,
+          "p99": 111.0,
+          "error_codes": {
+            "302": 523
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 523,
+          "rps": 1.74,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 38.3,
+          "min": 22.0,
+          "max": 137.0,
+          "p50": 26.0,
+          "p90": 70.0,
+          "p95": 80.0,
+          "p99": 128.0,
+          "error_codes": {
+            "302": 523
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 523,
+          "rps": 1.74,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 31.6,
+          "min": 15.0,
+          "max": 164.0,
+          "p50": 19.0,
+          "p90": 68.0,
+          "p95": 84.0,
+          "p99": 108.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 517,
+          "rps": 1.72,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 82.0,
+          "min": 55.0,
+          "max": 269.0,
+          "p50": 68.0,
+          "p90": 123.0,
+          "p95": 146.0,
+          "p99": 196.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 517,
+          "rps": 1.72,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 30.2,
+          "min": 16.0,
+          "max": 167.0,
+          "p50": 22.0,
+          "p90": 55.0,
+          "p95": 69.0,
+          "p99": 102.0,
+          "error_codes": {
+            "302": 517
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 517,
+          "rps": 1.72,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 51.7,
+          "min": 37.0,
+          "max": 156.0,
+          "p50": 42.0,
+          "p90": 81.0,
+          "p95": 93.0,
+          "p99": 114.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 508,
+          "rps": 1.69,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 97.5,
+          "min": 67.0,
+          "max": 277.0,
+          "p50": 83.0,
+          "p90": 144.0,
+          "p95": 169.0,
+          "p99": 213.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 508,
+          "rps": 1.69,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 32.6,
+          "min": 16.0,
+          "max": 157.0,
+          "p50": 22.0,
+          "p90": 64.0,
+          "p95": 76.0,
+          "p99": 116.0,
+          "error_codes": {
+            "302": 508
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 508,
+          "rps": 1.69,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 64.7,
+          "min": 50.0,
+          "max": 191.0,
+          "p50": 55.0,
+          "p90": 93.0,
+          "p95": 105.0,
+          "p99": 126.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 30,
+        "runtime_sec": 302.1,
+        "peak_rss_mb": 476.7,
+        "peak_threads": 79
+      }
+    },
+    "35": {
+      "total": {
+        "count": 2425,
+        "rps": 8.08,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 90.0,
+        "min": 32.0,
+        "max": 439.0,
+        "p50": 76.0,
+        "p90": 149.0,
+        "p95": 181.0,
+        "p99": 274.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 7884,
+        "rps": 26.28,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 55.3,
+        "min": 15.0,
+        "max": 439.0,
+        "p50": 43.0,
+        "p90": 106.0,
+        "p95": 133.0,
+        "p99": 204.0,
+        "error_codes": {
+          "302": 3034
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 618,
+          "rps": 2.06,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 62.7,
+          "min": 32.0,
+          "max": 293.0,
+          "p50": 46.0,
+          "p90": 112.0,
+          "p95": 134.0,
+          "p99": 192.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 618,
+          "rps": 2.06,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 32.0,
+          "min": 16.0,
+          "max": 150.0,
+          "p50": 22.0,
+          "p90": 61.0,
+          "p95": 75.0,
+          "p99": 100.0,
+          "error_codes": {
+            "302": 618
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 618,
+          "rps": 2.06,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 30.5,
+          "min": 15.0,
+          "max": 172.0,
+          "p50": 18.0,
+          "p90": 63.0,
+          "p95": 77.0,
+          "p99": 113.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 609,
+          "rps": 2.03,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 105.6,
+          "min": 57.0,
+          "max": 439.0,
+          "p50": 82.0,
+          "p90": 179.0,
+          "p95": 226.0,
+          "p99": 348.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 609,
+          "rps": 2.03,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 33.0,
+          "min": 16.0,
+          "max": 167.0,
+          "p50": 22.0,
+          "p90": 63.0,
+          "p95": 82.0,
+          "p99": 124.0,
+          "error_codes": {
+            "302": 609
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 609,
+          "rps": 2.03,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 39.7,
+          "min": 22.0,
+          "max": 203.0,
+          "p50": 26.0,
+          "p90": 76.0,
+          "p95": 93.0,
+          "p99": 141.0,
+          "error_codes": {
+            "302": 609
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 609,
+          "rps": 2.03,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 32.7,
+          "min": 16.0,
+          "max": 164.0,
+          "p50": 20.0,
+          "p90": 68.0,
+          "p95": 84.0,
+          "p99": 127.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 603,
+          "rps": 2.01,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 89.5,
+          "min": 55.0,
+          "max": 325.0,
+          "p50": 75.0,
+          "p90": 140.0,
+          "p95": 169.0,
+          "p99": 240.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 603,
+          "rps": 2.01,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 33.1,
+          "min": 17.0,
+          "max": 142.0,
+          "p50": 23.0,
+          "p90": 62.0,
+          "p95": 80.0,
+          "p99": 112.0,
+          "error_codes": {
+            "302": 603
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 603,
+          "rps": 2.01,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 56.3,
+          "min": 37.0,
+          "max": 242.0,
+          "p50": 44.0,
+          "p90": 91.0,
+          "p95": 107.0,
+          "p99": 147.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 595,
+          "rps": 1.98,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 102.9,
+          "min": 68.0,
+          "max": 398.0,
+          "p50": 88.0,
+          "p90": 155.0,
+          "p95": 181.0,
+          "p99": 276.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 595,
+          "rps": 1.98,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 34.0,
+          "min": 16.0,
+          "max": 212.0,
+          "p50": 22.0,
+          "p90": 65.0,
+          "p95": 83.0,
+          "p99": 135.0,
+          "error_codes": {
+            "302": 595
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 595,
+          "rps": 1.98,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 68.7,
+          "min": 49.0,
+          "max": 186.0,
+          "p50": 58.0,
+          "p90": 102.0,
+          "p95": 118.0,
+          "p99": 154.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 35,
+        "runtime_sec": 302.0,
+        "peak_rss_mb": 458.8,
+        "peak_threads": 84
+      }
+    },
+    "40": {
+      "total": {
+        "count": 2757,
+        "rps": 9.19,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 101.7,
+        "min": 32.0,
+        "max": 490.0,
+        "p50": 82.0,
+        "p90": 178.0,
+        "p95": 223.0,
+        "p99": 319.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 8967,
+        "rps": 29.89,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 62.5,
+        "min": 15.0,
+        "max": 490.0,
+        "p50": 52.0,
+        "p90": 122.0,
+        "p95": 156.0,
+        "p99": 256.0,
+        "error_codes": {
+          "302": 3453
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 704,
+          "rps": 2.35,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 76.5,
+          "min": 32.0,
+          "max": 467.0,
+          "p50": 58.0,
+          "p90": 141.0,
+          "p95": 182.0,
+          "p99": 272.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 704,
+          "rps": 2.35,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 38.6,
+          "min": 16.0,
+          "max": 225.0,
+          "p50": 24.0,
+          "p90": 77.0,
+          "p95": 96.0,
+          "p99": 138.0,
+          "error_codes": {
+            "302": 704
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 704,
+          "rps": 2.35,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 37.8,
+          "min": 15.0,
+          "max": 257.0,
+          "p50": 31.0,
+          "p90": 74.0,
+          "p95": 100.0,
+          "p99": 143.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 696,
+          "rps": 2.32,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 120.6,
+          "min": 56.0,
+          "max": 487.0,
+          "p50": 96.0,
+          "p90": 219.0,
+          "p95": 269.0,
+          "p99": 395.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 696,
+          "rps": 2.32,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 37.2,
+          "min": 16.0,
+          "max": 182.0,
+          "p50": 23.0,
+          "p90": 75.0,
+          "p95": 99.0,
+          "p99": 139.0,
+          "error_codes": {
+            "302": 696
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 696,
+          "rps": 2.32,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 45.2,
+          "min": 22.0,
+          "max": 212.0,
+          "p50": 33.0,
+          "p90": 84.0,
+          "p95": 103.0,
+          "p99": 174.0,
+          "error_codes": {
+            "302": 696
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 696,
+          "rps": 2.32,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 37.9,
+          "min": 15.0,
+          "max": 232.0,
+          "p50": 23.0,
+          "p90": 83.0,
+          "p95": 102.0,
+          "p99": 143.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 685,
+          "rps": 2.28,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 99.7,
+          "min": 54.0,
+          "max": 490.0,
+          "p50": 80.0,
+          "p90": 169.0,
+          "p95": 199.0,
+          "p99": 295.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 685,
+          "rps": 2.28,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 37.9,
+          "min": 16.0,
+          "max": 225.0,
+          "p50": 26.0,
+          "p90": 77.0,
+          "p95": 91.0,
+          "p99": 127.0,
+          "error_codes": {
+            "302": 685
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 685,
+          "rps": 2.28,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 61.6,
+          "min": 37.0,
+          "max": 265.0,
+          "p50": 53.0,
+          "p90": 101.0,
+          "p95": 122.0,
+          "p99": 174.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 672,
+          "rps": 2.24,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 110.8,
+          "min": 67.0,
+          "max": 436.0,
+          "p50": 91.0,
+          "p90": 177.0,
+          "p95": 214.0,
+          "p99": 325.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 672,
+          "rps": 2.24,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 37.5,
+          "min": 16.0,
+          "max": 252.0,
+          "p50": 24.0,
+          "p90": 74.0,
+          "p95": 96.0,
+          "p99": 146.0,
+          "error_codes": {
+            "302": 672
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 672,
+          "rps": 2.24,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 73.2,
+          "min": 50.0,
+          "max": 296.0,
+          "p50": 65.0,
+          "p90": 110.0,
+          "p95": 132.0,
+          "p99": 197.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 40,
+        "runtime_sec": 302.0,
+        "peak_rss_mb": 519.6,
+        "peak_threads": 89
+      }
+    },
+    "50": {
+      "total": {
+        "count": 3438,
+        "rps": 11.46,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 125.9,
+        "min": 31.0,
+        "max": 698.0,
+        "p50": 100.0,
+        "p90": 236.0,
+        "p95": 288.0,
+        "p99": 409.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 11177,
+        "rps": 37.26,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 77.4,
+        "min": 15.0,
+        "max": 698.0,
+        "p50": 60.0,
+        "p90": 157.0,
+        "p95": 205.0,
+        "p99": 327.0,
+        "error_codes": {
+          "302": 4301
+        }
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 879,
+          "rps": 2.93,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 95.8,
+          "min": 31.0,
+          "max": 443.0,
+          "p50": 70.0,
+          "p90": 191.0,
+          "p95": 245.0,
+          "p99": 337.0,
+          "error_codes": {}
+        },
+        "01_Storefront_Home-0": {
+          "count": 879,
+          "rps": 2.93,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 48.3,
+          "min": 16.0,
+          "max": 238.0,
+          "p50": 31.0,
+          "p90": 101.0,
+          "p95": 131.0,
+          "p99": 178.0,
+          "error_codes": {
+            "302": 879
+          }
+        },
+        "01_Storefront_Home-1": {
+          "count": 879,
+          "rps": 2.93,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 47.3,
+          "min": 15.0,
+          "max": 254.0,
+          "p50": 33.0,
+          "p90": 104.0,
+          "p95": 130.0,
+          "p99": 172.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 863,
+          "rps": 2.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 151.9,
+          "min": 56.0,
+          "max": 698.0,
+          "p50": 122.0,
+          "p90": 282.0,
+          "p95": 346.0,
+          "p99": 452.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search-0": {
+          "count": 863,
+          "rps": 2.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 48.2,
+          "min": 16.0,
+          "max": 247.0,
+          "p50": 34.0,
+          "p90": 103.0,
+          "p95": 129.0,
+          "p99": 190.0,
+          "error_codes": {
+            "302": 863
+          }
+        },
+        "02_Catalog_Search-1": {
+          "count": 863,
+          "rps": 2.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 54.7,
+          "min": 22.0,
+          "max": 253.0,
+          "p50": 41.0,
+          "p90": 104.0,
+          "p95": 129.0,
+          "p99": 180.0,
+          "error_codes": {
+            "302": 863
+          }
+        },
+        "02_Catalog_Search-2": {
+          "count": 863,
+          "rps": 2.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 48.7,
+          "min": 15.0,
+          "max": 301.0,
+          "p50": 34.0,
+          "p90": 100.0,
+          "p95": 125.0,
+          "p99": 186.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 852,
+          "rps": 2.84,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 121.2,
+          "min": 54.0,
+          "max": 493.0,
+          "p50": 97.0,
+          "p90": 213.0,
+          "p95": 261.0,
+          "p99": 382.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page-0": {
+          "count": 852,
+          "rps": 2.84,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 49.2,
+          "min": 16.0,
+          "max": 223.0,
+          "p50": 33.0,
+          "p90": 100.0,
+          "p95": 127.0,
+          "p99": 190.0,
+          "error_codes": {
+            "302": 852
+          }
+        },
+        "03_Customer_Login_Page-1": {
+          "count": 852,
+          "rps": 2.84,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 71.8,
+          "min": 37.0,
+          "max": 293.0,
+          "p50": 57.0,
+          "p90": 125.0,
+          "p95": 147.0,
+          "p99": 213.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 844,
+          "rps": 2.81,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 135.4,
+          "min": 67.0,
+          "max": 458.0,
+          "p50": 114.0,
+          "p90": 233.0,
+          "p95": 283.0,
+          "p99": 403.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart-0": {
+          "count": 844,
+          "rps": 2.81,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 49.5,
+          "min": 15.0,
+          "max": 259.0,
+          "p50": 34.0,
+          "p90": 104.0,
+          "p95": 131.0,
+          "p99": 187.0,
+          "error_codes": {
+            "302": 844
+          }
+        },
+        "04_Checkout_Cart-1": {
+          "count": 844,
+          "rps": 2.81,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 85.8,
+          "min": 50.0,
+          "max": 307.0,
+          "p50": 70.0,
+          "p90": 139.0,
+          "p95": 173.0,
+          "p99": 228.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "jmeter",
+        "vus": 50,
+        "runtime_sec": 302.0,
+        "peak_rss_mb": 740.7,
+        "peak_threads": 99
+      }
+    }
+  },
+  "testudo": {
+    "2": {
+      "total": {
+        "count": 146,
+        "rps": 0.49,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 62.3,
+        "min": 37.0,
+        "max": 100.0,
+        "p50": 64.0,
+        "p90": 78.0,
+        "p95": 83.0,
+        "p99": 93.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 146,
+        "rps": 0.49,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 62.3,
+        "min": 37.0,
+        "max": 100.0,
+        "p50": 64.0,
+        "p90": 78.0,
+        "p95": 83.0,
+        "p99": 93.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 41.2,
+          "min": 37.0,
+          "max": 93.0,
+          "p50": 39.0,
+          "p90": 41.0,
+          "p95": 59.0,
+          "p99": 93.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 66.2,
+          "min": 59.0,
+          "max": 76.0,
+          "p50": 65.0,
+          "p90": 72.0,
+          "p95": 75.0,
+          "p99": 76.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 37,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 64.8,
+          "min": 59.0,
+          "max": 100.0,
+          "p50": 63.0,
+          "p90": 71.0,
+          "p95": 81.0,
+          "p99": 100.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 35,
+          "rps": 0.12,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 77.8,
+          "min": 72.0,
+          "max": 88.0,
+          "p50": 76.0,
+          "p90": 84.0,
+          "p95": 86.0,
+          "p99": 88.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 2,
+        "runtime_sec": 306.1,
+        "peak_rss_mb": 23.1,
+        "peak_threads": 18
+      }
+    },
+    "5": {
+      "total": {
+        "count": 366,
+        "rps": 1.22,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 63.6,
+        "min": 33.0,
+        "max": 148.0,
+        "p50": 63.0,
+        "p90": 81.0,
+        "p95": 90.0,
+        "p99": 121.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 366,
+        "rps": 1.22,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 63.6,
+        "min": 33.0,
+        "max": 148.0,
+        "p50": 63.0,
+        "p90": 81.0,
+        "p95": 90.0,
+        "p99": 121.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 93,
+          "rps": 0.31,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 39.9,
+          "min": 33.0,
+          "max": 62.0,
+          "p50": 38.0,
+          "p90": 45.0,
+          "p95": 48.0,
+          "p99": 62.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 93,
+          "rps": 0.31,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 69.1,
+          "min": 58.0,
+          "max": 114.0,
+          "p50": 64.0,
+          "p90": 81.0,
+          "p95": 99.0,
+          "p99": 114.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 90,
+          "rps": 0.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 66.6,
+          "min": 58.0,
+          "max": 136.0,
+          "p50": 62.0,
+          "p90": 72.0,
+          "p95": 88.0,
+          "p99": 136.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 90,
+          "rps": 0.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 79.2,
+          "min": 69.0,
+          "max": 148.0,
+          "p50": 76.0,
+          "p90": 87.0,
+          "p95": 98.0,
+          "p99": 148.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 5,
+        "runtime_sec": 304.1,
+        "peak_rss_mb": 22.6,
+        "peak_threads": 19
+      }
+    },
+    "10": {
+      "total": {
+        "count": 718,
+        "rps": 2.39,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 66.7,
+        "min": 33.0,
+        "max": 173.0,
+        "p50": 64.0,
+        "p90": 89.0,
+        "p95": 111.0,
+        "p99": 144.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 718,
+        "rps": 2.39,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 66.7,
+        "min": 33.0,
+        "max": 173.0,
+        "p50": 64.0,
+        "p90": 89.0,
+        "p95": 111.0,
+        "p99": 144.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 185,
+          "rps": 0.62,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 43.3,
+          "min": 33.0,
+          "max": 140.0,
+          "p50": 39.0,
+          "p90": 56.0,
+          "p95": 66.0,
+          "p99": 89.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 181,
+          "rps": 0.6,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 75.3,
+          "min": 57.0,
+          "max": 162.0,
+          "p50": 65.0,
+          "p90": 111.0,
+          "p95": 119.0,
+          "p99": 160.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 177,
+          "rps": 0.59,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 66.8,
+          "min": 56.0,
+          "max": 155.0,
+          "p50": 62.0,
+          "p90": 80.0,
+          "p95": 92.0,
+          "p99": 131.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 175,
+          "rps": 0.58,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 82.5,
+          "min": 71.0,
+          "max": 173.0,
+          "p50": 76.0,
+          "p90": 100.0,
+          "p95": 119.0,
+          "p99": 162.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 10,
+        "runtime_sec": 306.1,
+        "peak_rss_mb": 21.6,
+        "peak_threads": 20
+      }
+    },
+    "15": {
+      "total": {
+        "count": 1070,
+        "rps": 3.57,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 69.0,
+        "min": 33.0,
+        "max": 212.0,
+        "p50": 64.0,
+        "p90": 97.0,
+        "p95": 113.0,
+        "p99": 146.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 1070,
+        "rps": 3.57,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 69.0,
+        "min": 33.0,
+        "max": 212.0,
+        "p50": 64.0,
+        "p90": 97.0,
+        "p95": 113.0,
+        "p99": 146.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 272,
+          "rps": 0.91,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 47.8,
+          "min": 33.0,
+          "max": 131.0,
+          "p50": 39.0,
+          "p90": 72.0,
+          "p95": 94.0,
+          "p99": 118.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 270,
+          "rps": 0.9,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 75.2,
+          "min": 56.0,
+          "max": 212.0,
+          "p50": 65.0,
+          "p90": 105.0,
+          "p95": 120.0,
+          "p99": 168.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 266,
+          "rps": 0.89,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 68.5,
+          "min": 55.0,
+          "max": 156.0,
+          "p50": 62.0,
+          "p90": 92.0,
+          "p95": 102.0,
+          "p99": 142.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 262,
+          "rps": 0.87,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 85.2,
+          "min": 68.0,
+          "max": 199.0,
+          "p50": 77.0,
+          "p90": 109.0,
+          "p95": 129.0,
+          "p99": 158.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 15,
+        "runtime_sec": 306.0,
+        "peak_rss_mb": 22.3,
+        "peak_threads": 19
+      }
+    },
+    "20": {
+      "total": {
+        "count": 1414,
+        "rps": 4.71,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 75.9,
+        "min": 32.0,
+        "max": 238.0,
+        "p50": 70.0,
+        "p90": 119.0,
+        "p95": 142.0,
+        "p99": 187.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 1414,
+        "rps": 4.71,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 75.9,
+        "min": 32.0,
+        "max": 238.0,
+        "p50": 70.0,
+        "p90": 119.0,
+        "p95": 142.0,
+        "p99": 187.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 364,
+          "rps": 1.21,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 53.2,
+          "min": 32.0,
+          "max": 162.0,
+          "p50": 40.0,
+          "p90": 88.0,
+          "p95": 105.0,
+          "p99": 153.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 353,
+          "rps": 1.18,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 86.7,
+          "min": 56.0,
+          "max": 238.0,
+          "p50": 70.0,
+          "p90": 141.0,
+          "p95": 160.0,
+          "p99": 202.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 349,
+          "rps": 1.16,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 75.8,
+          "min": 55.0,
+          "max": 197.0,
+          "p50": 63.0,
+          "p90": 109.0,
+          "p95": 135.0,
+          "p99": 175.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 348,
+          "rps": 1.16,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 88.8,
+          "min": 69.0,
+          "max": 205.0,
+          "p50": 78.0,
+          "p90": 121.0,
+          "p95": 141.0,
+          "p99": 178.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 20,
+        "runtime_sec": 306.1,
+        "peak_rss_mb": 21.4,
+        "peak_threads": 20
+      }
+    },
+    "25": {
+      "total": {
+        "count": 1749,
+        "rps": 5.83,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 79.9,
+        "min": 32.0,
+        "max": 840.0,
+        "p50": 72.0,
+        "p90": 126.0,
+        "p95": 147.0,
+        "p99": 218.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 1749,
+        "rps": 5.83,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 79.9,
+        "min": 32.0,
+        "max": 840.0,
+        "p50": 72.0,
+        "p90": 126.0,
+        "p95": 147.0,
+        "p99": 218.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 447,
+          "rps": 1.49,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 55.6,
+          "min": 32.0,
+          "max": 528.0,
+          "p50": 40.0,
+          "p90": 95.0,
+          "p95": 116.0,
+          "p99": 157.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 440,
+          "rps": 1.47,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 93.2,
+          "min": 56.0,
+          "max": 840.0,
+          "p50": 72.0,
+          "p90": 143.0,
+          "p95": 176.0,
+          "p99": 306.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 434,
+          "rps": 1.45,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 79.0,
+          "min": 54.0,
+          "max": 580.0,
+          "p50": 63.0,
+          "p90": 121.0,
+          "p95": 134.0,
+          "p99": 214.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 428,
+          "rps": 1.43,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 92.6,
+          "min": 68.0,
+          "max": 259.0,
+          "p50": 77.0,
+          "p90": 133.0,
+          "p95": 161.0,
+          "p99": 209.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 25,
+        "runtime_sec": 306.1,
+        "peak_rss_mb": 22.3,
+        "peak_threads": 21
+      }
+    },
+    "30": {
+      "total": {
+        "count": 2094,
+        "rps": 6.98,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 83.0,
+        "min": 32.0,
+        "max": 318.0,
+        "p50": 73.0,
+        "p90": 137.0,
+        "p95": 164.0,
+        "p99": 222.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 2094,
+        "rps": 6.98,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 83.0,
+        "min": 32.0,
+        "max": 318.0,
+        "p50": 73.0,
+        "p90": 137.0,
+        "p95": 164.0,
+        "p99": 222.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 534,
+          "rps": 1.78,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 58.0,
+          "min": 32.0,
+          "max": 202.0,
+          "p50": 41.0,
+          "p90": 107.0,
+          "p95": 132.0,
+          "p99": 177.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 527,
+          "rps": 1.76,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 93.9,
+          "min": 55.0,
+          "max": 318.0,
+          "p50": 75.0,
+          "p90": 156.0,
+          "p95": 192.0,
+          "p99": 246.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 520,
+          "rps": 1.73,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 83.2,
+          "min": 55.0,
+          "max": 245.0,
+          "p50": 65.0,
+          "p90": 130.0,
+          "p95": 163.0,
+          "p99": 212.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 513,
+          "rps": 1.71,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 97.7,
+          "min": 68.0,
+          "max": 308.0,
+          "p50": 82.0,
+          "p90": 145.0,
+          "p95": 167.0,
+          "p99": 219.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 30,
+        "runtime_sec": 306.0,
+        "peak_rss_mb": 23.7,
+        "peak_threads": 21
+      }
+    },
+    "35": {
+      "total": {
+        "count": 2411,
+        "rps": 8.04,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 91.2,
+        "min": 32.0,
+        "max": 346.0,
+        "p50": 76.0,
+        "p90": 153.0,
+        "p95": 187.0,
+        "p99": 259.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 2411,
+        "rps": 8.04,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 91.2,
+        "min": 32.0,
+        "max": 346.0,
+        "p50": 76.0,
+        "p90": 153.0,
+        "p95": 187.0,
+        "p99": 259.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 617,
+          "rps": 2.06,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 63.9,
+          "min": 32.0,
+          "max": 268.0,
+          "p50": 49.0,
+          "p90": 114.0,
+          "p95": 135.0,
+          "p99": 201.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 604,
+          "rps": 2.01,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 107.2,
+          "min": 57.0,
+          "max": 296.0,
+          "p50": 85.0,
+          "p90": 190.0,
+          "p95": 230.0,
+          "p99": 271.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 598,
+          "rps": 1.99,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 89.5,
+          "min": 55.0,
+          "max": 304.0,
+          "p50": 73.0,
+          "p90": 145.0,
+          "p95": 166.0,
+          "p99": 222.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 592,
+          "rps": 1.97,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 105.0,
+          "min": 67.0,
+          "max": 346.0,
+          "p50": 88.0,
+          "p90": 158.0,
+          "p95": 193.0,
+          "p99": 267.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 35,
+        "runtime_sec": 304.0,
+        "peak_rss_mb": 23.2,
+        "peak_threads": 21
+      }
+    },
+    "40": {
+      "total": {
+        "count": 2697,
+        "rps": 8.99,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 95.4,
+        "min": 31.0,
+        "max": 420.0,
+        "p50": 78.0,
+        "p90": 166.0,
+        "p95": 203.0,
+        "p99": 278.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 2697,
+        "rps": 8.99,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 95.4,
+        "min": 31.0,
+        "max": 420.0,
+        "p50": 78.0,
+        "p90": 166.0,
+        "p95": 203.0,
+        "p99": 278.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 689,
+          "rps": 2.3,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 72.8,
+          "min": 31.0,
+          "max": 329.0,
+          "p50": 55.0,
+          "p90": 134.0,
+          "p95": 167.0,
+          "p99": 252.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 679,
+          "rps": 2.26,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 111.9,
+          "min": 54.0,
+          "max": 420.0,
+          "p50": 87.0,
+          "p90": 202.0,
+          "p95": 242.0,
+          "p99": 316.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 673,
+          "rps": 2.24,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 93.0,
+          "min": 55.0,
+          "max": 304.0,
+          "p50": 76.0,
+          "p90": 155.0,
+          "p95": 194.0,
+          "p99": 264.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 656,
+          "rps": 2.19,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 104.5,
+          "min": 68.0,
+          "max": 313.0,
+          "p50": 89.0,
+          "p90": 162.0,
+          "p95": 192.0,
+          "p99": 240.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 40,
+        "runtime_sec": 306.0,
+        "peak_rss_mb": 22.8,
+        "peak_threads": 21
+      }
+    },
+    "50": {
+      "total": {
+        "count": 3465,
+        "rps": 11.55,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 122.5,
+        "min": 32.0,
+        "max": 553.0,
+        "p50": 100.0,
+        "p90": 228.0,
+        "p95": 273.0,
+        "p99": 361.0,
+        "error_codes": {}
+      },
+      "raw_total": {
+        "count": 3465,
+        "rps": 11.55,
+        "error_count": 0,
+        "error_pct": 0.0,
+        "mean": 122.5,
+        "min": 32.0,
+        "max": 553.0,
+        "p50": 100.0,
+        "p90": 228.0,
+        "p95": 273.0,
+        "p99": 361.0,
+        "error_codes": {}
+      },
+      "samplers": {
+        "01_Storefront_Home": {
+          "count": 882,
+          "rps": 2.94,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 95.9,
+          "min": 32.0,
+          "max": 382.0,
+          "p50": 74.0,
+          "p90": 186.0,
+          "p95": 236.0,
+          "p99": 313.0,
+          "error_codes": {}
+        },
+        "02_Catalog_Search": {
+          "count": 872,
+          "rps": 2.91,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 147.6,
+          "min": 55.0,
+          "max": 553.0,
+          "p50": 123.0,
+          "p90": 270.0,
+          "p95": 318.0,
+          "p99": 434.0,
+          "error_codes": {}
+        },
+        "03_Customer_Login_Page": {
+          "count": 863,
+          "rps": 2.88,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 116.5,
+          "min": 55.0,
+          "max": 368.0,
+          "p50": 97.0,
+          "p90": 207.0,
+          "p95": 250.0,
+          "p99": 330.0,
+          "error_codes": {}
+        },
+        "04_Checkout_Cart": {
+          "count": 848,
+          "rps": 2.83,
+          "error_count": 0,
+          "error_pct": 0.0,
+          "mean": 130.4,
+          "min": 67.0,
+          "max": 405.0,
+          "p50": 106.0,
+          "p90": 226.0,
+          "p95": 266.0,
+          "p99": 331.0,
+          "error_codes": {}
+        }
+      },
+      "generator": {
+        "tool": "testudo",
+        "vus": 50,
+        "runtime_sec": 306.0,
+        "peak_rss_mb": 22.4,
+        "peak_threads": 22
+      }
+    }
+  }
+}

@@ -66,6 +66,21 @@ Testudo-JMX is a 100% free, drop-in native execution engine and real-time Web Fl
   testudo-jmx -worker -worker-port 9091 -mesh-telemetry 127.0.0.1:8210
   ```
 
+### Empirical Head-to-Head Benchmark: Apache JMeter 5.6.3 vs Testudo-JMX 1.0.0
+Tested against an isolated Magento 2 storefront under identical transaction flows and arrival pacing:
+
+![Head-to-Head Benchmark Infographic: Apache JMeter vs Testudo-JMX](./benchmarks/visualizations/testudo_jmeter_head_to_head_infographic.png)
+
+| Virtual Users | Apache JMeter Throughput | Testudo-JMX Throughput | Apache JMeter Memory (RSS) | Testudo-JMX Memory (RSS) | Memory Reduction |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **2 VUs** | 0.49 req/s | **0.49 req/s** | 238.2 MB | **23.1 MB** | **10.3x Lower (-90.3%)** |
+| **10 VUs** | 2.35 req/s | **2.39 req/s** | 345.7 MB | **21.6 MB** | **16.0x Lower (-93.8%)** |
+| **20 VUs** | 4.62 req/s | **4.71 req/s** | 366.1 MB | **21.4 MB** | **17.1x Lower (-94.2%)** |
+| **30 VUs** | 6.93 req/s | **6.98 req/s** | 476.7 MB | **23.7 MB** | **20.1x Lower (-95.0%)** |
+| **50 VUs** | 11.46 req/s | **11.55 req/s** | 740.7 MB | **22.4 MB** | **33.1x Lower (-97.0%)** |
+
+*Full 10-tier matrix, high-resolution charts, per-URL breakdown, and Gunther USL saturation analysis available in [benchmarks/jmeter_vs_testudo_magento_benchmark.md](./benchmarks/jmeter_vs_testudo_magento_benchmark.md) and in the [Official Wiki](./docs/wiki/07_HEAD_TO_HEAD_JMETER_BENCHMARK.md).*
+
 ---
 
 ## Monorepo Quickstart
