@@ -1,17 +1,33 @@
 {
   "name": "@aventine/testudo-jmx",
   "version": "1.0.0",
-  "description": "Free Single-Binary Apache JMeter Native Execution Engine, Web Flight Deck and RegexForge Auto-Correlation Enclave",
+  "description": "Free Single-Binary Apache JMeter Native Execution Engine, Web Flight Deck GUI, and High-Concurrency Load Runner",
   "author": "Aventine Labs LLC <engineering@aventinelabs.com>",
   "license": "Apache-2.0",
   "homepage": "https://aventinelabs.com",
-  "main": "dist/index.js",
-  "bin": {
-    "testudo-jmx": "./bin/testudo-jmx"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aventine-labs/testudo.git",
+    "directory": "packages/testudo-jmx"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "testudo-jmx": "./bin/testudo-jmx.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
-    "build": "make build",
-    "test": "make test",
+    "build:go": "make cross-compile",
+    "build:ts": "tsc",
+    "build": "make build && npm run build:ts",
+    "test:go": "make test",
+    "test:node": "node test/cli_runner.test.js",
+    "test": "make test && npm run test:node",
     "lint": "make lint",
     "clean": "make clean"
   },

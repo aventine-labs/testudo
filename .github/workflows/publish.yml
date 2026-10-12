@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  publish:
+  publish-testudo-js:
     name: Build & Publish @aventine/testudo to npm
     runs-on: ubuntu-latest
     permissions:
@@ -45,6 +45,53 @@ jobs:
 
       - name: Publish @aventine/testudo to npm
         working-directory: packages/testudo-js
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-testudo-jmx:
+    name: Cross-Compile & Publish @aventine/testudo-jmx to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Set up Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Cross-compile Go binaries for all target platforms
+        working-directory: packages/testudo-jmx
+        run: make cross-compile
+
+      - name: Build TypeScript programmatic distribution
+        working-directory: packages/testudo-jmx
+        run: npm run build:ts
+
+      - name: Run Go tests
+        working-directory: packages/testudo-jmx
+        run: make test
+
+      - name: Run Node integration tests
+        working-directory: packages/testudo-jmx
+        run: npm run test:node
+
+      - name: Publish @aventine/testudo-jmx to npm
+        working-directory: packages/testudo-jmx
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

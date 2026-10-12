@@ -44,7 +44,7 @@ jobs:
         run: npm run size
 
   testudo-jmx:
-    name: Testudo-JMX Native Go Engine Tests & Build
+    name: Testudo-JMX Native Go Engine Tests & Multi-Platform Build
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,17 +59,33 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Set up Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install root dependencies
+        run: npm ci
+
       - name: Run Go unit and concurrency tests
         working-directory: packages/testudo-jmx
-        run: go test -v ./...
+        run: go test -v -race ./...
 
-      - name: Build native binary
+      - name: Cross-compile multi-platform binaries
         working-directory: packages/testudo-jmx
-        run: make build
+        run: make cross-compile
 
-      - name: Verify binary execution and version flag
+      - name: Build TypeScript programmatic distribution
+        working-directory: packages/testudo-jmx
+        run: npm run build:ts
+
+      - name: Verify CLI execution and version flag
         working-directory: packages/testudo-jmx
         run: ./bin/testudo-jmx -version
+
+      - name: Run Node integration tests
+        working-directory: packages/testudo-jmx
+        run: npm run test:node
 
   python:
     name: Load Engine Syntax Validation

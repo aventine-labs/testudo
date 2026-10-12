@@ -32,9 +32,39 @@ Testudo-JMX represents the dedicated open-source JMeter execution branch of the 
 
 ---
 
-## Quickstart
+## Installation & Quickstart
 
-### Build from Source
+### 1. Global CLI via npm
+Install the multi-platform native binary on Linux, macOS (Apple Silicon & Intel), or Windows:
+```bash
+npm install -g @aventine/testudo-jmx
+```
+Or execute directly on-demand via `npx`:
+```bash
+npx @aventine/testudo-jmx -t scenario.jmx -g
+```
+
+### 2. Node.js / TypeScript Programmatic API
+Add as a project dependency to integrate JMeter execution directly into automated test suites (Playwright, Jest, Vitest, CI scripts):
+```bash
+npm install --save-dev @aventine/testudo-jmx
+```
+
+```typescript
+import { runPlan, runSync } from '@aventine/testudo-jmx';
+
+// Execute a test plan programmatically
+const result = await runPlan('fixtures/scenario.jmx', {
+  users: 100,
+  duration: '1m',
+  jtlPath: 'results.jtl',
+  reportDir: './dashboard'
+});
+
+console.log('Execution finished with status:', result.status);
+```
+
+### 3. Build from Source (Go)
 ```bash
 make build
 ./bin/testudo-jmx --version
