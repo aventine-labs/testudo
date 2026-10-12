@@ -42,10 +42,10 @@ func NewUserSession(id int, tg *jmx.ThreadGroup, plan *jmx.TestPlan, coll *Colle
 func NewUserSessionWithTransport(id int, tg *jmx.ThreadGroup, plan *jmx.TestPlan, coll *Collector, ch chan<- *transport.SampleResult, tcfg transport.TransportConfig, tr http.RoundTripper) *UserSession {
 	vars := make(map[string]string)
 	for k, v := range plan.UserVariables {
-		vars[k] = v
+		vars[k] = jmx.EvaluateString(v, vars, id)
 	}
 	for k, v := range tg.Variables {
-		vars[k] = v
+		vars[k] = jmx.EvaluateString(v, vars, id)
 	}
 	vars["__threadNum"] = strconv.Itoa(id)
 
