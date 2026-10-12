@@ -94,7 +94,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.6.4",
     "typescript": "^7.0.2"
   }
 }
