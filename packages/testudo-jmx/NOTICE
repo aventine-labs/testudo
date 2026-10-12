@@ -1,0 +1,15 @@
+Testudo-JMX
+Copyright 2026 Aventine Labs LLC
+
+This product includes software developed by Aventine Labs LLC (https://aventinelabs.com).
+
+TRADEMARK AND INTEROPERABILITY NOTICE:
+Apache, Apache JMeter, JMeter, and the Apache feather logo are trademarks or
+registered trademarks of the Apache Software Foundation in the United States
+and/or other countries.
+
+Testudo-JMX is an independent, clean-room native execution engine and test
+runner created by Aventine Labs LLC. Testudo-JMX is not affiliated with,
+endorsed by, sponsored by, or connected to the Apache Software Foundation.
+All references to JMeter and the .jmx file format are solely for the purpose
+of describing technical compatibility and interoperability under 17 U.S.C. 1201(f).

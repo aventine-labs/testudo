@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    name: Build & Publish to npm
+    name: Build & Publish @aventine/testudo to npm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,19 +27,24 @@ jobs:
         run: npm ci
 
       - name: Verify zero runtime dependencies
+        working-directory: packages/testudo-js
         run: |
           node -e "const pkg = require('./package.json'); if (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) { console.error('Error: Runtime dependencies must be empty!'); process.exit(1); } console.log('Zero runtime dependencies verified.');"
 
       - name: Run test suite
+        working-directory: packages/testudo-js
         run: npm test
 
       - name: Build production bundle
+        working-directory: packages/testudo-js
         run: npm run build
 
       - name: Verify bundle size limits
+        working-directory: packages/testudo-js
         run: npm run size
 
-      - name: Publish to npm
+      - name: Publish @aventine/testudo to npm
+        working-directory: packages/testudo-js
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

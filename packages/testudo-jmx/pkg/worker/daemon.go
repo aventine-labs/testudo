@@ -1,0 +1,235 @@
+package worker
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"runtime"
+	"sync"
+	"time"
+
+	"aventinelabs.com/testudo-jmx/pkg/engine"
+	"aventinelabs.com/testudo-jmx/pkg/jmx"
+)
+
+// RunRequest encapsulates an incoming test execution directive from an orchestrator.
+type RunRequest struct {
+	JMXContent         string `json:"jmx_content"`
+	JMXFilePath        string `json:"jmx_file_path"`
+	OverrideVUs        int    `json:"override_vus"`
+	DurationSec        int    `json:"duration_sec"`
+	RampRate           int    `json:"ramp_rate"`
+	UdpTelemetryTarget string `json:"udp_telemetry_target"`
+	WorkerID           string `json:"worker_id"`
+}
+
+// WorkerStatus represents the operational state of the leaf worker node.
+type WorkerStatus struct {
+	Status        string  `json:"status"` // "IDLE" or "RUNNING"
+	Role          string  `json:"role"`   // "MESH_LEAF"
+	WorkerID      string  `json:"worker_id"`
+	NumCPU        int     `json:"num_cpu"`
+	ActiveVUs     int64   `json:"active_vus"`
+	TargetVUs     int64   `json:"target_vus"`
+	CurrentRPS    float64 `json:"current_rps"`
+	TotalRequests uint64  `json:"total_requests"`
+}
+
+// WorkerDaemon manages the HTTP control interface for headless leaf execution.
+type WorkerDaemon struct {
+	port       int
+	server     *http.Server
+	mu         sync.Mutex
+	status     string
+	workerID   string
+	driver     *engine.Driver
+	cancelFunc context.CancelFunc
+	streamer   *UdpStreamer
+}
+
+// NewWorkerDaemon creates a worker daemon bound to the specified port.
+func NewWorkerDaemon(port int) *WorkerDaemon {
+	if port <= 0 {
+		port = 9091
+	}
+
+	d := &WorkerDaemon{
+		port:     port,
+		status:   "IDLE",
+		workerID: fmt.Sprintf("testudo-leaf-%d", port),
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", d.handleHealth)
+	mux.HandleFunc("/api/worker/health", d.handleHealth)
+	mux.HandleFunc("/api/worker/status", d.handleHealth)
+	mux.HandleFunc("/api/worker/run", d.handleRun)
+	mux.HandleFunc("/api/worker/stop", d.handleStop)
+	mux.HandleFunc("/api/worker/metrics", d.handleMetrics)
+
+	d.server = &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: mux,
+	}
+
+	return d
+}
+
+// Start launches the daemon HTTP listener.
+func (d *WorkerDaemon) Start() error {
+	return d.server.ListenAndServe()
+}
+
+// Shutdown stops the daemon server and cancels any running test.
+func (d *WorkerDaemon) Shutdown(ctx context.Context) error {
+	d.mu.Lock()
+	if d.cancelFunc != nil {
+		d.cancelFunc()
+	}
+	if d.streamer != nil {
+		d.streamer.Stop()
+	}
+	d.mu.Unlock()
+
+	return d.server.Shutdown(ctx)
+}
+
+func (d *WorkerDaemon) handleHealth(w http.ResponseWriter, r *http.Request) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	st := WorkerStatus{
+		Status:   d.status,
+		Role:     "MESH_LEAF",
+		WorkerID: d.workerID,
+		NumCPU:   runtime.NumCPU(),
+	}
+
+	if d.driver != nil && d.driver.Collector != nil {
+		snap := d.driver.Collector.Snapshot()
+		st.ActiveVUs = snap.ActiveVUs
+		st.TargetVUs = snap.TargetVUs
+		st.CurrentRPS = snap.RequestsPerSec
+		st.TotalRequests = snap.TotalRequests
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(st)
+}
+
+func (d *WorkerDaemon) handleRun(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req RunRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("invalid request payload: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	d.mu.Lock()
+	if d.status == "RUNNING" {
+		d.mu.Unlock()
+		http.Error(w, "worker is already executing a test run", http.StatusConflict)
+		return
+	}
+
+	var plan *jmx.TestPlan
+	var err error
+
+	if req.JMXContent != "" {
+		plan, err = jmx.ParseJMXBytes([]byte(req.JMXContent))
+	} else if req.JMXFilePath != "" {
+		plan, err = jmx.ParseJMXFile(req.JMXFilePath)
+	} else {
+		d.mu.Unlock()
+		http.Error(w, "must provide jmx_content or jmx_file_path", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		d.mu.Unlock()
+		http.Error(w, fmt.Sprintf("failed to parse JMX plan: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.WorkerID != "" {
+		d.workerID = req.WorkerID
+	}
+
+	opts := jmx.ExecutionOptions{
+		OverrideVUs: req.OverrideVUs,
+		Duration:    time.Duration(req.DurationSec) * time.Second,
+		RampRate:    req.RampRate,
+	}
+
+	drv := engine.NewDriver(plan, opts)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	d.driver = drv
+	d.cancelFunc = cancel
+	d.status = "RUNNING"
+
+	// Start UDP telemetry if configured
+	if req.UdpTelemetryTarget != "" {
+		streamer, sErr := NewUdpStreamer(req.UdpTelemetryTarget, d.workerID)
+		if sErr == nil {
+			d.streamer = streamer
+			streamer.Start(drv.Collector, 500*time.Millisecond)
+		}
+	}
+
+	d.mu.Unlock()
+
+	go func() {
+		_ = drv.Run(ctx)
+		d.mu.Lock()
+		if d.streamer != nil {
+			d.streamer.Stop()
+			d.streamer = nil
+		}
+		d.status = "IDLE"
+		d.cancelFunc = nil
+		d.mu.Unlock()
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":    "STARTED",
+		"worker_id": d.workerID,
+		"target_vus": opts.OverrideVUs,
+	})
+}
+
+func (d *WorkerDaemon) handleStop(w http.ResponseWriter, r *http.Request) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.status != "RUNNING" || d.cancelFunc == nil {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ALREADY_IDLE"})
+		return
+	}
+
+	d.cancelFunc()
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "STOPPING"})
+}
+
+func (d *WorkerDaemon) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if d.driver == nil || d.driver.Collector == nil {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "NO_METRICS"})
+		return
+	}
+
+	snap := d.driver.Collector.Snapshot()
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(snap)
+}

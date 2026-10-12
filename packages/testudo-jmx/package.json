@@ -1,0 +1,29 @@
+{
+  "name": "@aventine/testudo-jmx",
+  "version": "1.0.0",
+  "description": "Free Single-Binary Apache JMeter Native Execution Engine, Web Flight Deck and RegexForge Auto-Correlation Enclave",
+  "author": "Aventine Labs LLC <engineering@aventinelabs.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://aventinelabs.com",
+  "main": "dist/index.js",
+  "bin": {
+    "testudo-jmx": "./bin/testudo-jmx"
+  },
+  "scripts": {
+    "build": "make build",
+    "test": "make test",
+    "lint": "make lint",
+    "clean": "make clean"
+  },
+  "keywords": [
+    "jmeter",
+    "load-testing",
+    "performance",
+    "concurrency",
+    "jmx",
+    "testudo",
+    "flight-deck",
+    "prometheus",
+    "grafana"
+  ]
+}

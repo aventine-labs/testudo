@@ -1,0 +1,84 @@
+package extractors_test
+
+import (
+	"testing"
+
+	"aventinelabs.com/testudo-jmx/pkg/extractors"
+)
+
+func TestBoundaryExtractor(t *testing.T) {
+	body := `{"status":"ok","token":"SEC_998877_XYZ","user":"admin"}`
+	res := extractors.ExtractBoundary(body, `"token":"`, `"`, 1, "NOT_FOUND")
+	if res != "SEC_998877_XYZ" {
+		t.Errorf("Expected SEC_998877_XYZ, got %s", res)
+	}
+
+	// Missing boundary
+	missing := extractors.ExtractBoundary(body, `"csrf":"`, `"`, 1, "DEFAULT_FALLBACK")
+	if missing != "DEFAULT_FALLBACK" {
+		t.Errorf("Expected DEFAULT_FALLBACK, got %s", missing)
+	}
+}
+
+func TestRegexExtractor(t *testing.T) {
+	html := `<input type="hidden" name="authenticity_token" value="abc123xyz"/>`
+	pattern := `name="authenticity_token" value="([^"]+)"`
+	res := extractors.ExtractRegex(html, pattern, "$1$", 1, "NOT_FOUND")
+	if res != "abc123xyz" {
+		t.Errorf("Expected abc123xyz, got %s", res)
+	}
+
+	// Multi-group template
+	csv := `user:mark,role:admin,id:42`
+	resMulti := extractors.ExtractRegex(csv, `user:([^,]+),role:([^,]+)`, "$1_is_$2", 1, "")
+	if resMulti != "mark_is_admin" {
+		t.Errorf("Expected mark_is_admin, got %s", resMulti)
+	}
+}
+
+func TestJSONExtractor(t *testing.T) {
+	jsonPayload := `{
+		"status": "success",
+		"data": {
+			"token": "JWT_TOKEN_ABC_123",
+			"user": {
+				"id": 9942,
+				"active": true
+			},
+			"items": [
+				{"name": "Laptop", "price": 1299.99},
+				{"name": "Mouse", "price": 49.50}
+			]
+		}
+	}`
+
+	// Test dot notation
+	t1 := extractors.ExtractJSON(jsonPayload, "$.data.token", 1, "FAIL")
+	if t1 != "JWT_TOKEN_ABC_123" {
+		t.Errorf("Expected JWT_TOKEN_ABC_123, got %s", t1)
+	}
+
+	// Test nested integer
+	t2 := extractors.ExtractJSON(jsonPayload, "data.user.id", 1, "FAIL")
+	if t2 != "9942" {
+		t.Errorf("Expected 9942, got %s", t2)
+	}
+
+	// Test boolean
+	t3 := extractors.ExtractJSON(jsonPayload, "$.data.user.active", 1, "FAIL")
+	if t3 != "true" {
+		t.Errorf("Expected true, got %s", t3)
+	}
+
+	// Test array index
+	t4 := extractors.ExtractJSON(jsonPayload, "$.data.items[1].name", 1, "FAIL")
+	if t4 != "Mouse" {
+		t.Errorf("Expected Mouse, got %s", t4)
+	}
+
+	// Test default value on missing field
+	t5 := extractors.ExtractJSON(jsonPayload, "$.data.nonexistent", 1, "DEFAULT_VAL")
+	if t5 != "DEFAULT_VAL" {
+		t.Errorf("Expected DEFAULT_VAL, got %s", t5)
+	}
+}

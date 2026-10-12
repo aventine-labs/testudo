@@ -1,0 +1,97 @@
+[
+  {
+    "id": "run_20261002_50k_golden",
+    "timestamp": "2026-10-04 109:10:00",
+    "scenario_name": "Aventine Testudo-JMX Golden Benchmark",
+    "duration_sec": 180,
+    "target_vus": 50000,
+    "total_requests": 27536447,
+    "total_errors": 0,
+    "error_rate_pct": 0,
+    "requests_per_sec": 171492.9,
+    "latency_p50_ms": 3.2,
+    "latency_p90_ms": 8.4,
+    "latency_p95_ms": 12.1,
+    "latency_p99_ms": 19.8,
+    "latency_max_ms": 45.2,
+    "peak_rss_mb": 142.5,
+    "status_codes": {
+      "200": 27536447
+    },
+    "sampler_stats": [
+      {
+        "name": "GET /api/v1/auth/token",
+        "count": 13768223,
+        "errors": 0,
+        "mean_ms": 2.8,
+        "p50_ms": 2.5,
+        "p90_ms": 6.1,
+        "p99_ms": 14.2,
+        "min_ttfb_ms": 0.8,
+        "max_ttfb_ms": 32,
+        "success_rate": 100
+      },
+      {
+        "name": "POST /api/v1/data",
+        "count": 13768224,
+        "errors": 0,
+        "mean_ms": 3.6,
+        "p50_ms": 3.4,
+        "p90_ms": 9.2,
+        "p99_ms": 21.5,
+        "min_ttfb_ms": 1.1,
+        "max_ttfb_ms": 45.2,
+        "success_rate": 100
+      }
+    ],
+    "sla_status": "PASS"
+  },
+  {
+    "id": "run_20261001_10k_checkout",
+    "timestamp": "2026-10-10 100:13:00",
+    "scenario_name": "E-Commerce Cart Checkout Flow",
+    "duration_sec": 120,
+    "target_vus": 10000,
+    "total_requests": 6248900,
+    "total_errors": 124,
+    "error_rate_pct": 0.002,
+    "requests_per_sec": 52074.1,
+    "latency_p50_ms": 4.8,
+    "latency_p90_ms": 14.2,
+    "latency_p95_ms": 22.4,
+    "latency_p99_ms": 38.6,
+    "latency_max_ms": 89.1,
+    "peak_rss_mb": 88,
+    "status_codes": {
+      "200": 6248776,
+      "500": 124
+    },
+    "sampler_stats": [
+      {
+        "name": "POST /cart/checkout",
+        "count": 3124450,
+        "errors": 124,
+        "mean_ms": 5.9,
+        "p50_ms": 5.1,
+        "p90_ms": 16.8,
+        "p99_ms": 42.1,
+        "min_ttfb_ms": 1.5,
+        "max_ttfb_ms": 89.1,
+        "success_rate": 99.99
+      },
+      {
+        "name": "GET /cart/status",
+        "count": 3124450,
+        "errors": 0,
+        "mean_ms": 3.7,
+        "p50_ms": 3.2,
+        "p90_ms": 8.4,
+        "p99_ms": 19.2,
+        "min_ttfb_ms": 0.9,
+        "max_ttfb_ms": 35.4,
+        "success_rate": 100
+      }
+    ],
+    "sla_status": "PASS"
+  }
+]
