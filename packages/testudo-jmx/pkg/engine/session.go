@@ -236,7 +236,7 @@ func (s *UserSession) executeSingleSampler(ctx context.Context, sampler *jmx.HTT
 		if sampler.TimerRangeMs > 0 {
 			if sampler.TimerIsGaussian {
 				// JMeter GaussianRandomTimer formula: Math.abs((random.nextGaussian() * range) + delay)
-				g := math.Abs(rand.NormFloat64()*float64(sampler.TimerRangeMs)) + float64(sampler.TimerDelayMs)
+				g := math.Abs(rand.NormFloat64()*float64(sampler.TimerRangeMs) + float64(sampler.TimerDelayMs))
 				delay = int(g)
 			} else {
 				delay += rand.Intn(sampler.TimerRangeMs)

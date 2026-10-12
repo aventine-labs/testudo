@@ -111,12 +111,8 @@ def parse_jtl_metrics(jtl_path):
             for row in reader:
                 if len(row) <= max(elapsed_idx, ts_idx):
                     continue
-                # Skip JMeter redirect subresults (e.g. "Checkout Cart-0", "Checkout Cart-1")
-                # so transaction metrics represent parent transaction samples only
-                if label_idx < len(row):
-                    label = row[label_idx].strip()
-                    if re.search(r'-\d+$', label):
-                        continue
+                # Subresults are disabled via -Jjmeter.save.saveservice.subresults=false
+                # at execution time, avoiding broad label regex drops
                 try:
                     ts = int(row[ts_idx])
                     elapsed = float(row[elapsed_idx])
@@ -276,6 +272,7 @@ def main():
     if jmeter_cmd:
         j_args = jmeter_cmd + [
             "-n", "-t", args.jmx,
+            "-Jjmeter.save.saveservice.subresults=false",
             f"-JVUS={args.vus}",
             f"-JDURATION={args.duration}",
             f"-JRAMP={args.ramp}",

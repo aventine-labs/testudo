@@ -2,6 +2,8 @@ package engine
 
 import (
 	"context"
+	"math"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -57,28 +59,30 @@ func NewDriver(plan *jmx.TestPlan, opts jmx.ExecutionOptions) *Driver {
 		}
 	}
 
-	totalPlanVUs := int64(0)
+	totalNormalVUs := int64(0)
 	maxRampSec := 0
 
-	for _, tg := range enabledTGs {
+	for _, tg := range normalTGs {
 		threads := tg.NumThreads
 		if threads <= 0 {
 			threads = 1
 		}
-		if opts.OverrideVUs > 0 && !tg.IsSetUp && !tg.IsTearDown && len(normalTGs) == 1 {
+		if opts.OverrideVUs > 0 && len(normalTGs) == 1 {
 			threads = opts.OverrideVUs
 		}
-		totalPlanVUs += int64(threads)
+		totalNormalVUs += int64(threads)
 		if tg.RampTimeSec > maxRampSec {
 			maxRampSec = tg.RampTimeSec
 		}
 	}
 
-	if totalPlanVUs == 0 && len(enabledTGs) > 0 {
-		totalPlanVUs = 1
+	if totalNormalVUs == 0 && len(normalTGs) > 0 {
+		totalNormalVUs = 1
+	} else if totalNormalVUs == 0 && len(enabledTGs) > 0 {
+		totalNormalVUs = 1
 	}
 
-	initialVUs := totalPlanVUs
+	initialVUs := totalNormalVUs
 	if opts.OverrideVUs > 0 && len(normalTGs) != 1 {
 		initialVUs = int64(opts.OverrideVUs)
 	}
@@ -236,6 +240,73 @@ func (d *Driver) cancelWorkers(n int) {
 	}
 }
 
+func (d *Driver) getTGTarget(tg *jmx.ThreadGroup, globalTarget int64) int64 {
+	if tg.IsSetUp || tg.IsTearDown {
+		t := int64(tg.NumThreads)
+		if t <= 0 {
+			t = 1
+		}
+		return t
+	}
+	if len(d.normalTGs) <= 1 {
+		return globalTarget
+	}
+
+	totalBase := int64(0)
+	tgIdx := -1
+	for idx, t := range d.normalTGs {
+		if t == tg {
+			tgIdx = idx
+		}
+		b := int64(t.NumThreads)
+		if b <= 0 {
+			b = 1
+		}
+		totalBase += b
+	}
+
+	if totalBase == 0 || tgIdx < 0 {
+		return globalTarget
+	}
+
+	// Largest remainder method (Hamilton-Hare) to guarantee sum(allocated) == globalTarget
+	allocated := make([]int64, len(d.normalTGs))
+	var sumAllocated int64
+	type remItem struct {
+		idx int
+		rem float64
+	}
+	rems := make([]remItem, len(d.normalTGs))
+
+	for idx, t := range d.normalTGs {
+		b := int64(t.NumThreads)
+		if b <= 0 {
+			b = 1
+		}
+		exact := float64(globalTarget) * float64(b) / float64(totalBase)
+		floor := int64(math.Floor(exact))
+		allocated[idx] = floor
+		sumAllocated += floor
+		rems[idx] = remItem{idx: idx, rem: exact - float64(floor)}
+	}
+
+	diff := int(globalTarget - sumAllocated)
+	if diff > 0 {
+		sort.Slice(rems, func(i, j int) bool {
+			return rems[i].rem > rems[j].rem
+		})
+		for i := 0; i < diff && i < len(rems); i++ {
+			allocated[rems[i].idx]++
+		}
+	}
+
+	target := allocated[tgIdx]
+	if target < 1 && globalTarget > 0 {
+		target = 1
+	}
+	return target
+}
+
 func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) {
 	// 1. Startup Delay
 	if tg.StartupDelaySec > 0 {
@@ -301,13 +372,37 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 	// Case B: Continuous execution with dynamic live VU scaling (Flight Deck & Knee Hunter)
 	var tgWG sync.WaitGroup
 	var tgActive int64
+	var tgMu sync.Mutex
+	tgCancels := make(map[int]context.CancelFunc)
+
+	cancelTGWorkers := func(n int) {
+		tgMu.Lock()
+		defer tgMu.Unlock()
+		cancelled := 0
+		for id, cancel := range tgCancels {
+			cancel()
+			delete(tgCancels, id)
+			cancelled++
+			if cancelled >= n {
+				break
+			}
+		}
+	}
 
 	spawnWorker := func() {
 		tgWG.Add(1)
 		atomic.AddInt64(&tgActive, 1)
-		d.spawnWorkerForTG(tgCtx, tg, func() {
+		d.spawnWorkerForTGWithRegistry(tgCtx, tg, func() {
 			atomic.AddInt64(&tgActive, -1)
 			tgWG.Done()
+		}, func(id int, cancel context.CancelFunc) {
+			tgMu.Lock()
+			tgCancels[id] = cancel
+			tgMu.Unlock()
+		}, func(id int) {
+			tgMu.Lock()
+			delete(tgCancels, id)
+			tgMu.Unlock()
 		})
 	}
 
@@ -327,6 +422,13 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 		}
 	}
 
+	// If this is setUp or tearDown, it does not participate in continuous live throttle scaling;
+	// it simply runs until tgCtx completes.
+	if tg.IsSetUp || tg.IsTearDown {
+		<-tgCtx.Done()
+		goto WAIT
+	}
+
 	{
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
@@ -335,8 +437,9 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 			case <-tgCtx.Done():
 				goto WAIT
 			case <-ticker.C:
-				target := d.Throttle.GetTargetVUs()
-				d.Collector.SetTargetVUs(target)
+				globalTarget := d.Throttle.GetTargetVUs()
+				d.Collector.SetTargetVUs(globalTarget)
+				target := d.getTGTarget(tg, globalTarget)
 				curr := atomic.LoadInt64(&tgActive)
 				if curr < target {
 					diff := int(target - curr)
@@ -348,7 +451,7 @@ func (d *Driver) runSingleThreadGroup(ctx context.Context, tg *jmx.ThreadGroup) 
 					}
 				} else if curr > target {
 					excess := int(curr - target)
-					d.cancelWorkers(excess)
+					cancelTGWorkers(excess)
 				}
 			}
 		}
@@ -359,6 +462,16 @@ WAIT:
 }
 
 func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup, onDone func()) {
+	d.spawnWorkerForTGWithRegistry(parentCtx, tg, onDone, nil, nil)
+}
+
+func (d *Driver) spawnWorkerForTGWithRegistry(
+	parentCtx context.Context,
+	tg *jmx.ThreadGroup,
+	onDone func(),
+	onRegister func(int, context.CancelFunc),
+	onUnregister func(int),
+) {
 	id := int(atomic.AddInt64(&d.nextID, 1))
 	ctx, cancel := context.WithCancel(parentCtx)
 
@@ -366,6 +479,10 @@ func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup
 	shard.Lock()
 	shard.cancels[id] = cancel
 	shard.Unlock()
+
+	if onRegister != nil {
+		onRegister(id, cancel)
+	}
 
 	atomic.AddInt64(&d.activeCount, 1)
 	d.Collector.SetActiveVUs(atomic.LoadInt64(&d.activeCount))
@@ -375,6 +492,9 @@ func (d *Driver) spawnWorkerForTG(parentCtx context.Context, tg *jmx.ThreadGroup
 			shard.Lock()
 			delete(shard.cancels, id)
 			shard.Unlock()
+			if onUnregister != nil {
+				onUnregister(id)
+			}
 			atomic.AddInt64(&d.activeCount, -1)
 			d.Collector.SetActiveVUs(atomic.LoadInt64(&d.activeCount))
 			if onDone != nil {

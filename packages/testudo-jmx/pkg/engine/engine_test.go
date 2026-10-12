@@ -3,6 +3,8 @@ package engine_test
 import (
 	"context"
 	"io"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -223,7 +225,9 @@ func TestEnginePageBreaksAndLoopsExecution(t *testing.T) {
 	samplesCollected := make([]*jmx.FlowElement, 0)
 	_ = samplesCollected
 
+	chanDone := make(chan struct{})
 	go func() {
+		defer close(chanDone)
 		for sample := range driver.ResultChan {
 			if sample.Method == "PAGE" {
 				pageBreakRecorded++
@@ -248,6 +252,7 @@ func TestEnginePageBreaksAndLoopsExecution(t *testing.T) {
 	if runErr != nil && runErr != context.Canceled && runErr != context.DeadlineExceeded {
 		t.Fatalf("Driver run encountered error: %v", runErr)
 	}
+	<-chanDone
 
 	_ = jtlWriter.Close()
 
@@ -807,5 +812,191 @@ func TestOverrideVUsWithSetUpAndTearDown(t *testing.T) {
 		t.Errorf("Expected peak active VUs to reflect overridden threads (5), but peak was %d", peak)
 	}
 }
+
+func TestGaussianTimerExactFormulaMean(t *testing.T) {
+	// JMeter formula: Math.abs((NormFloat64() * deviation) + delay)
+	offset := 300.0
+	dev := 100.0
+	iterations := 100000
+
+	var sum float64
+	for i := 0; i < iterations; i++ {
+		g := math.Abs(rand.NormFloat64()*dev + offset)
+		sum += g
+	}
+
+	mean := sum / float64(iterations)
+	// For offset=300 and dev=100, JMeter's mean is ~300.0 ms.
+	// The half-normal bug (taking Abs before adding offset) yielded ~380.0 ms.
+	if mean < 298.0 || mean > 302.0 {
+		t.Fatalf("Gaussian timer mean think time out of expected range (~300ms): got %.2f ms", mean)
+	}
+}
+
+func TestMultiThreadGroupContinuousPeakVUs(t *testing.T) {
+	// Two continuous thread groups of 3 VUs each should peak at 6 VUs total, NOT 12.
+	var maxActive int64
+	var currentActive int64
+	var mu sync.Mutex
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		currentActive++
+		if currentActive > maxActive {
+			maxActive = currentActive
+		}
+		mu.Unlock()
+
+		time.Sleep(20 * time.Millisecond)
+
+		mu.Lock()
+		currentActive--
+		mu.Unlock()
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "Two Continuous Groups Plan",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "TG1",
+				Enabled:    true,
+				NumThreads: 3,
+				LoopCount:  -1, // continuous
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "S1", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/1", Method: "GET"},
+				},
+			},
+			{
+				Name:       "TG2",
+				Enabled:    true,
+				NumThreads: 3,
+				LoopCount:  -1, // continuous
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "S2", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/2", Method: "GET"},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{
+		IsHeadless: true,
+		Duration:   500 * time.Millisecond,
+	})
+
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Millisecond)
+	defer cancel()
+
+	_ = driver.Run(ctx)
+
+	mu.Lock()
+	peak := maxActive
+	mu.Unlock()
+
+	// JMeter runs 6 VUs total (3 + 3).
+	// Under the inflation bug, each group spawned up to global target (6), peaking at 12.
+	if peak > 6 {
+		t.Errorf("Continuous multi-group VUs inflated: expected peak <= 6, got %d", peak)
+	}
+	if peak < 5 {
+		t.Errorf("Expected peak active VUs to reach near 6, got %d", peak)
+	}
+}
+
+func TestSetUpPlusContinuousMainGroupTarget(t *testing.T) {
+	// A setUp group of 1 plus a continuous main group with -u 10 should peak at 10, NOT 11.
+	var maxMainActive int64
+	var currentMainActive int64
+	var mu sync.Mutex
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/main" {
+			mu.Lock()
+			currentMainActive++
+			if currentMainActive > maxMainActive {
+				maxMainActive = currentMainActive
+			}
+			mu.Unlock()
+
+			time.Sleep(20 * time.Millisecond)
+
+			mu.Lock()
+			currentMainActive--
+			mu.Unlock()
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	u, _ := url.Parse(server.URL)
+
+	plan := &jmx.TestPlan{
+		Name:    "SetUp plus Continuous Main",
+		Enabled: true,
+		ThreadGroups: []*jmx.ThreadGroup{
+			{
+				Name:       "SetUpTG",
+				Enabled:    true,
+				IsSetUp:    true,
+				NumThreads: 1,
+				LoopCount:  1,
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "SetUp", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/setup", Method: "GET"},
+				},
+			},
+			{
+				Name:       "MainTG",
+				Enabled:    true,
+				NumThreads: 1, // Will be overridden to 10 by -u 10
+				LoopCount:  -1, // continuous
+				Samplers: []*jmx.HTTPSampler{
+					{Name: "Main", Enabled: true, Domain: u.Hostname(), Port: u.Port(), Protocol: "http", Path: "/main", Method: "GET"},
+				},
+			},
+		},
+	}
+
+	driver := engine.NewDriver(plan, jmx.ExecutionOptions{
+		IsHeadless:  true,
+		OverrideVUs: 10,
+		Duration:    500 * time.Millisecond,
+	})
+
+	go func() {
+		for range driver.ResultChan {
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 600*time.Millisecond)
+	defer cancel()
+
+	_ = driver.Run(ctx)
+
+	mu.Lock()
+	peak := maxMainActive
+	mu.Unlock()
+
+	// setUp group should be excluded from continuous throttle target; main group should peak at exactly 10, NOT 11.
+	if peak > 10 {
+		t.Errorf("Continuous main group target inflated: expected peak <= 10, got %d", peak)
+	}
+	if peak < 8 {
+		t.Errorf("Expected continuous main group to ramp near 10 VUs, got %d", peak)
+	}
+}
+
 
 
