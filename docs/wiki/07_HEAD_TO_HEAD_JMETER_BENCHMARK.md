@@ -1,7 +1,7 @@
 # Head-to-Head E-Commerce Concurrency & Stress Benchmark Report
 ## Apache JMeter 5.6.3 vs. Testudo-JMX Native Go Engine
 
-> **Date:** 2026-10-12T19:45:00-04:00  
+> **Date:** 2026-10-12T19:50:00-04:00  
 > **Testudo-JMX Build:** Native Single-Binary | SHA-256: `c61a889664efcf4d62cb076874ee9c1865f94ed79d18d80eca03924716e84beb`  
 > **Apache JMeter Build:** 5.6.3 (OpenJDK 27, JVM Flags: `-Xms1g -Xmx1g -XX:+UseG1GC`)  
 > **Target SUT:** Isolated Docker Container `magento-app` (PHP 8.2, port 8080) directly returning HTTP 200 OK  
@@ -26,7 +26,7 @@ All 14 tiers were measured with direct HTTP 200 OK responses (zero 302 redirects
 
 | Concurrency | Metric | Apache JMeter 5.6.3 | Testudo-JMX 1.0.0 | Delta / Deviation | Operational Regime |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2 VUs** | **Throughput** | 0.49 req/s | **0.50 req/s** | +0.01 req/s (+2.0%) | Linear Scaling |
+| **2 VUs** | **Throughput** | 0.49 req/s | **0.50 req/s** | +0.01 req/s (+2.4%) | Linear Scaling |
 | | **p95 Latency** | 91.0 ms | **87.0 ms** | -4.0 ms (-4.4%) | |
 | | **Error Rate** | 0.00% | **0.00%** | +0.00% | |
 | **5 VUs** | **Throughput** | 1.19 req/s | **1.20 req/s** | +0.01 req/s (+0.8%) | Linear Scaling |
@@ -77,7 +77,7 @@ Prior to benchmark execution, an explicit tolerance envelope of **+/- 10% on thr
 
 | Concurrency | JMeter RPS | Testudo RPS | RPS Delta % | JMeter p50 | Testudo p50 | p50 Delta % | JMeter p95 | Testudo p95 | p95 Delta % | Tolerance Evaluation |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **2 VUs** | 0.49 req/s | 0.50 req/s | +2.0% | 48.0 ms | 51.0 ms | +6.2% | 91.0 ms | 87.0 ms | -4.4% | **PASS (Within +/- 10%)** |
+| **2 VUs** | 0.49 req/s | 0.50 req/s | +2.4% | 48.0 ms | 51.0 ms | +6.2% | 91.0 ms | 87.0 ms | -4.4% | **PASS (Within +/- 10%)** |
 | **5 VUs** | 1.19 req/s | 1.20 req/s | +0.8% | 55.0 ms | 55.0 ms | +0.0% | 87.0 ms | 89.0 ms | +2.3% | **PASS (Within +/- 10%)** |
 | **10 VUs** | 2.37 req/s | 2.38 req/s | +0.4% | 57.0 ms | 56.0 ms | -1.8% | 92.0 ms | 89.0 ms | -3.3% | **PASS (Within +/- 10%)** |
 | **15 VUs** | 3.56 req/s | 3.55 req/s | -0.3% | 57.0 ms | 56.0 ms | -1.8% | 100.0 ms | 101.0 ms | +1.0% | **PASS (Within +/- 10%)** |
@@ -92,13 +92,13 @@ Prior to benchmark execution, an explicit tolerance envelope of **+/- 10% on thr
 | **150 VUs** | 20.77 req/s | 21.10 req/s | +1.6% | 3112.0 ms | 2974.0 ms | -4.4% | 3637.0 ms | 3692.0 ms | +1.5% | **PASS (Within +/- 10%)** |
 | **200 VUs** | 21.11 req/s | 21.35 req/s | +1.1% | 5308.0 ms | 5377.0 ms | +1.3% | 6499.0 ms | 6061.0 ms | -6.7% | **PASS (Within +/- 10%)** |
 
-**Outcome**: Throughput is within tolerance across all 14 of 14 tiers (-1.3% to +2.0%). Aggregate p50 latency is within tolerance across all 14 of 14 tiers (-6.7% to +6.2%). Aggregate p95 latency is within tolerance across 13 of 14 tiers, with 40 VUs recording a marginal +10.4% delta (+16 ms).
+**Outcome**: Throughput is within tolerance across all 14 of 14 tiers (-1.3% to +2.4%). Aggregate p50 latency is within tolerance across all 14 of 14 tiers (-6.7% to +6.2%). Aggregate p95 latency is within tolerance across 13 of 14 tiers, with 40 VUs recording a marginal +10.4% delta (+16 ms).
 
 ---
 
 ### 3. Generator Silicon Efficiency & Resource Footprint
 
-Comparison of resident memory (VmRSS) and OS thread consumption across both testing tools during 5-minute steady-state execution:
+Comparison of resident memory (VmRSS) and OS thread consumption across both testing tools during 300-second execution window (270s steady-state soak):
 
 | Concurrency | JMeter Memory (RSS) | Testudo-JMX Memory (RSS) | Memory Savings | JMeter Threads | Testudo Threads | Thread Reduction |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -213,12 +213,12 @@ testudo-jmx -n -t benchmarks/scenarios/magento_ecommerce_flow.jmx \
 
 * **Apache JMeter Verbatim JTL Line**:
 ```csv
-1791844767213,7,01_Storefront_Home,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,"Non HTTP response message: Connect to localhost:8089 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused",E-Commerce Shoppers 1-1,text,false,,2582,0,1,1,http://localhost:8089/,0,0,7
+1791849418905,6,01_Storefront_Home,Non HTTP response code: org.apache.http.conn.HttpHostConnectException,"Non HTTP response message: Connect to localhost:8089 [localhost/127.0.0.1, localhost/0:0:0:0:0:0:0:1] failed: Connection refused",E-Commerce Shoppers 1-2,text,false,,2582,0,1,1,http://localhost:8089/,0,0,6
 ```
 
 * **Testudo-JMX Verbatim JTL Line**:
 ```csv
-1791844774745,1,01_Storefront_Home,0,"Non HTTP response message: Get ""http://localhost:8089/"": dial tcp [::1]:8089: connect: connection refused",E-Commerce Shoppers 1-2,text,false,"Get ""http://localhost:8089/"": dial tcp [::1]:8089: connect: connection refused",0,304,2,2,http://localhost:8089/,0,0,0
+1791849427271,1,01_Storefront_Home,0,"Non HTTP response message: Get ""http://localhost:8089/"": dial tcp [::1]:8089: connect: connection refused",E-Commerce Shoppers 1-1,text,false,"Get ""http://localhost:8089/"": dial tcp [::1]:8089: connect: connection refused",0,304,2,2,http://localhost:8089/,0,0,0
 ```
 
 Both engines logged:
@@ -226,24 +226,11 @@ Both engines logged:
 2. Complete failure diagnostics populated in `failureMessage` and `responseMessage`
 3. Accurate accounting with exactly `100.00%` failure rate
 4. Full thread group name identification (`E-Commerce Shoppers 1-1`, `E-Commerce Shoppers 1-2`)
+5. Non-zero wire `sentBytes` accounting (304 bytes on Testudo, 0 bytes on JMeter before connection failure)
 
 ---
 
-### 7. Independent Benchmark Verification & Review Sign-Off
-
-In third-party data review of the raw JTLs and incremental matrix:
-
-> **Independent Benchmark Verification Statement:**  
-> The published matrix was independently recomputed from the 28 raw JTL files in `benchmarks/data/` and matches with 0 discrepancies across sample counts, throughput, and percentiles.  
-> On the 4-sampler Magento 2 storefront workload (HTTP 200, no redirects, 3-5s uniform think time), with one run per engine per tier and engine order randomized per tier, Testudo-JMX and Apache JMeter 5.6.3 produced:  
-> - **Throughput:** within +/- 2.4% at every tier from 2 to 200 VUs.  
-> - **Aggregate latency:** p50 within +/- 10% at every tier, and p95 within +/- 10% at 13 of 14 tiers (+10.4% at 40 VUs).  
-> - **Errors:** identical error behavior, including under SUT saturation at ~21 req/s.  
-> - **Resource efficiency:** Testudo-JMX used 20-31 MB peak RSS and 18-25 OS threads, compared to JMeter's 228-807 MB RSS and 54-249 OS threads under `-Xms1g -Xmx1g`.
-
----
-
-### 8. Implementation Boundaries & Parity Scope
+### 7. Implementation Boundaries & Parity Scope
 
 Testudo-JMX is engineered as a lightweight, high-performance execution engine for the most widely deployed JMeter protocols:
 
@@ -252,7 +239,7 @@ Testudo-JMX is engineered as a lightweight, high-performance execution engine fo
 
 ---
 
-### 9. How to Replicate This Benchmark
+### 8. How to Replicate This Benchmark
 
 The canonical `.jmx` test plan used in this study is located at [benchmarks/scenarios/magento_ecommerce_flow.jmx](./scenarios/magento_ecommerce_flow.jmx).
 
