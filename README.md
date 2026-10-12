@@ -1,8 +1,8 @@
 # 🛡️ Testudo™ Testing Suite
 ### Unified Defensive Software Testing: Front-End Synthetic Verification & Native Protocol Load Testing
-**Parent Organization:** Aventine Labs LLC • **License:** Apache-2.0
+**Parent Organization:** Aventine Labs LLC • **Open-Source License:** Apache-2.0 (Testudo-JS & Testudo-JMX only)
 
-Testudo is an open-source testing ecosystem engineered to deliver zero-dependency, mathematically rigorous software verification. From in-browser DOM exploration and float-precision accounting math to high-concurrency native Apache JMeter protocol execution, Testudo eliminates runtime bloat and generator jitter.
+Testudo is an open-source testing ecosystem engineered to deliver zero-dependency, mathematically rigorous software verification. The open-source suite comprises Testudo-JS (in-browser DOM exploration and float-precision accounting math) and Testudo-JMX (high-concurrency native Apache JMeter protocol execution), licensed under the Apache License 2.0. Advanced enterprise tools (Testudo LoadForge™ and Testudo LoadTest™) are developed separately as closed-source proprietary software by Aventine Labs LLC.
 
 ---
 
