@@ -197,7 +197,10 @@ Detailed transaction breakdown showing mean, p50, p90, p95, and p99 response tim
 
 ### 6. Head-to-Head Error Capture Fidelity Verification
 
-To verify that Testudo-JMX accurately captures and records failures identically to Apache JMeter under stress conditions, a controlled error scenario was executed against an unreachable port (`TARGET_PORT=8089`):
+To verify that Testudo-JMX accurately captures and records failures identically to Apache JMeter under stress conditions, a controlled error scenario was executed against an unreachable port (`TARGET_PORT=8089`).
+ 
+*Note on Provenance: The error probe was executed against post-fix engine build commit `f6e25f9` demonstrating verified `threadName` and `sentBytes` JTL output, while the 14 soak tiers remain pinned to the canonical dataset at `16493b0`.*
+
 
 ```bash
 # Apache JMeter Error Probe
