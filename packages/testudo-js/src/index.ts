@@ -15,6 +15,7 @@ export * from './scan.js';
 export * from './matchers.js';
 export * from './report.js';
 export * from './calc.js';
+export * from './workflow.js';
 export * from './adapters/playwright.js';
 export * from './adapters/standalone.js';
 

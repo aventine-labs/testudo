@@ -1,9 +1,12 @@
 {
   "name": "@aventine/testudo",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "The Zero-Dependency Master of Test Suites: High-Precision Financial Math, Framework-Safe Typing, and In-Browser QA Forensics",
   "main": "dist/index.js",
-  "module": "dist/index.js",
+  "module": "dist/testudo.esm.js",
+  "browser": "dist/testudo.iife.js",
+  "unpkg": "dist/testudo.iife.js",
+  "jsdelivr": "dist/testudo.iife.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
@@ -11,6 +14,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./esm": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/testudo.esm.js"
+    },
+    "./iife": "./dist/testudo.iife.js",
     "./math": {
       "types": "./dist/math.d.ts",
       "import": "./dist/math.js"
@@ -47,6 +55,10 @@
       "types": "./dist/calc.d.ts",
       "import": "./dist/calc.js"
     },
+    "./workflow": {
+      "types": "./dist/workflow.d.ts",
+      "import": "./dist/workflow.js"
+    },
     "./playwright": {
       "types": "./dist/adapters/playwright.d.ts",
       "import": "./dist/adapters/playwright.js"
@@ -62,11 +74,11 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
-    "pretest": "tsc",
+    "build": "tsc && node scripts/build-bundles.js",
+    "pretest": "tsc && node scripts/build-bundles.js",
     "test": "node --test tests/*.test.js",
-    "test:ts": "tsc && node --test dist/tests/*.test.js",
-    "size": "tsc && node scripts/check-size.js"
+    "test:ts": "tsc && node scripts/build-bundles.js && node --test dist/tests/*.test.js",
+    "size": "tsc && node scripts/build-bundles.js && node scripts/check-size.js"
   },
   "keywords": [
     "testudo",
@@ -95,6 +107,7 @@
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^26.6.4",
+    "esbuild": "^0.21.5",
     "typescript": "^7.0.2"
   }
 }

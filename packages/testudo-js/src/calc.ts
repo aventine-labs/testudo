@@ -6,10 +6,11 @@
  * (c) 2026 Aventine Labs LLC. Apache-2.0 License.
  */
 
-import { format } from './format.js';
+import { format, FormatParseOptions } from './format.js';
 import { math } from './math.js';
+import { visual } from './visual.js';
 
-export const parseCurrency = (text: string): number => format.parse(text);
+export const parseCurrency = (text: string, options?: FormatParseOptions): number => format.parse(text, options);
 
 export interface CalcOperand {
   index: number;
@@ -30,7 +31,7 @@ export interface CalcEvaluation {
   tokens: string[];
 }
 
-export interface CalcAssertOptions {
+export interface CalcAssertOptions extends FormatParseOptions {
   tolerance?: number;
   autoHighlight?: boolean;
   contextNode?: Element | Document | null;
@@ -174,30 +175,64 @@ export function tokenizeExpression(expr: string): Token[] {
       continue;
     }
 
-    // Currency or numeric literals starting with currency symbols ($1,200.00, €500)
+    // Currency or numeric literals starting with currency symbols ($1,200.00, €500, $42.1 Billion)
     if (/^[$€£¥₹]/.test(remaining)) {
       let currStr = '';
       while (i < len) {
         const c = expr[i];
+        if ((c === 'e' || c === 'E') && /[+-]?[0-9]/.test(expr.slice(i + 1, i + 3))) {
+          currStr += c;
+          i++;
+          if (expr[i] === '+' || expr[i] === '-') {
+            currStr += expr[i];
+            i++;
+          }
+          continue;
+        }
         if (/[\s+*/)]/.test(c)) break;
         if (c === '-' && /\s/.test(expr[i - 1] || '')) break;
         currStr += c;
         i++;
       }
+      const afterCurr = expr.slice(i);
+      const magWordMatch = afterCurr.match(
+        /^(\s*(?:trillions?|billions?|millions?|thousands?|bn|mm|tr|mn|[kmbt]))(?![a-zA-Z0-9_-])/i
+      );
+      if (magWordMatch) {
+        currStr += magWordMatch[1];
+        i += magWordMatch[1].length;
+      }
       tokens.push({ type: 'NUMBER', value: currStr });
       continue;
     }
 
-    // Direct numbers (digits, decimal, or comma thousands)
+    // Direct numbers (digits, decimal, comma thousands, scientific notation, or magnitude suffix)
     if (/[0-9]/.test(ch)) {
       let numStr = '';
       while (i < len) {
         const c = expr[i];
+        if ((c === 'e' || c === 'E') && /[+-]?[0-9]/.test(expr.slice(i + 1, i + 3))) {
+          numStr += c;
+          i++;
+          if (expr[i] === '+' || expr[i] === '-') {
+            numStr += expr[i];
+            i++;
+          }
+          continue;
+        }
         if (/[\s+*/)]/.test(c)) break;
         if (c === '-' && /\s/.test(expr[i - 1] || '')) break;
         if (c === ',' && (i + 1 >= len || !/[0-9]/.test(expr[i + 1]))) break;
         numStr += c;
         i++;
+      }
+      const afterNum = expr.slice(i);
+      const magWordMatch = afterNum.match(
+        /^(\s*(?:trillions?|billions?|millions?|thousands?|bn|mm|tr|mn|[kmbt]))(?![a-zA-Z0-9_-])/i
+      );
+      if (magWordMatch) {
+        numStr += magWordMatch[1];
+        i += magWordMatch[1].length;
       }
       tokens.push({ type: 'NUMBER', value: numStr });
       continue;
@@ -485,7 +520,7 @@ export class TestudoCalc {
         targetElement = doc.querySelector(targetSelector);
         if (targetElement) {
           rawTargetText = (targetElement.value !== undefined ? targetElement.value : targetElement.textContent) || '';
-          actual = parseCurrency(rawTargetText);
+          actual = parseCurrency(rawTargetText, options);
         }
       }
     }
@@ -496,7 +531,6 @@ export class TestudoCalc {
 
     if (!pass && autoHighlight && targetElement) {
       try {
-        const { visual } = await import('./visual.js');
         if (visual && visual.highlightCalculus) {
           visual.highlightCalculus(evaluation, targetElement, { delta, tolerance });
         }

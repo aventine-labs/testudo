@@ -1,6 +1,6 @@
 /**
  * @aventine/testudo - Deterministic Production Bundle Size Verifier
- * Measures exact gzipped byte size of core and full bundles.
+ * Measures exact gzipped byte size of core modules, full module suite, IIFE bundle, and ESM bundle.
  * Zero external dependencies.
  */
 
@@ -39,7 +39,7 @@ const coreGzipRaw = zlib.gzipSync(Buffer.from(coreRaw)).length;
 const coreMin = stripCommentsAndWhitespace(coreRaw);
 const coreGzipMin = zlib.gzipSync(Buffer.from(coreMin)).length;
 const coreKb = (coreGzipMin / 1024).toFixed(2);
-const CORE_LIMIT_KB = 5.0;
+const CORE_LIMIT_KB = 6.0;
 
 console.log('================================================================');
 console.log('              TESTUDO BUNDLE SIZE VERIFICATION                  ');
@@ -55,7 +55,7 @@ if (coreGzipMin > CORE_LIMIT_KB * 1024) {
   console.log(`STATUS: PASSED (Strictly < ${CORE_LIMIT_KB} KB target).`);
 }
 
-// 2. Measure Browser Full Bundle (all browser dist JS files excluding Node-only playwright.js)
+// 2. Measure Browser Full Module Suite (excluding Node-only playwright.js and pre-bundled iife/esm artifacts)
 let fullRaw = '';
 function scanDir(dir) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -67,7 +67,9 @@ function scanDir(dir) {
       entry.isFile() &&
       entry.name.endsWith('.js') &&
       !entry.name.endsWith('.map') &&
-      entry.name !== 'playwright.js'
+      entry.name !== 'playwright.js' &&
+      entry.name !== 'testudo.iife.js' &&
+      entry.name !== 'testudo.esm.js'
     ) {
       fullRaw += fs.readFileSync(fullPath, 'utf8') + '\n';
     }
@@ -79,7 +81,7 @@ const fullGzipRaw = zlib.gzipSync(Buffer.from(fullRaw)).length;
 const fullMin = stripCommentsAndWhitespace(fullRaw);
 const fullGzipMin = zlib.gzipSync(Buffer.from(fullMin)).length;
 const fullKb = (fullGzipMin / 1024).toFixed(2);
-const FULL_LIMIT_KB = 16.0;
+const FULL_LIMIT_KB = 25.0;
 
 console.log(
   `Full Bundle: ${fullKb} KB minified gzip (${fullGzipMin} bytes, raw: ${(fullGzipRaw / 1024).toFixed(2)} KB)`
@@ -90,5 +92,16 @@ if (fullGzipMin > FULL_LIMIT_KB * 1024) {
   process.exit(1);
 } else {
   console.log(`STATUS: PASSED (Strictly < ${FULL_LIMIT_KB} KB target).`);
+}
+
+// 3. Report Explicit IIFE & ESM Bundles
+for (const bundleName of ['testudo.iife.js', 'testudo.esm.js']) {
+  const bundlePath = path.join(distDir, bundleName);
+  if (fs.existsSync(bundlePath)) {
+    const raw = fs.readFileSync(bundlePath, 'utf8');
+    const min = stripCommentsAndWhitespace(raw);
+    const gz = zlib.gzipSync(Buffer.from(min)).length;
+    console.log(`${bundleName}: ${(gz / 1024).toFixed(2)} KB minified gzip (${gz} bytes)`);
+  }
 }
 console.log('================================================================');

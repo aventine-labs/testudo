@@ -1,14 +1,14 @@
 /**
  * @aventine/testudo - Playwright & Jest Custom Matchers
- * Extends Playwright expect() with toEqualCurrency and toEqualNumber assertions.
+ * Extends Playwright expect() with toEqualCurrency, toEqualBasisPoints, and toEqualNumber assertions.
  * Zero external dependencies.
  */
 
-import { format } from './format.js';
+import { format, MonetaryParseOptions } from './format.js';
 import { math } from './math.js';
 import { charDiff } from './diff.js';
 
-export interface CurrencyMatcherOptions {
+export interface CurrencyMatcherOptions extends MonetaryParseOptions {
   tolerance?: number;
   message?: string;
 }
@@ -16,18 +16,17 @@ export interface CurrencyMatcherOptions {
 export const testudoMatchers = {
   /**
    * Asserts that a Locator's text content or raw string equals an expected currency string within tolerance.
-   * Example: await expect(page.locator('#balance')).toEqualCurrency('$1,250.00', { tolerance: 0.01 });
+   * Fails closed on AMBIGUOUS_NUMERIC_VALUE, INVALID_NUMERIC_FORMAT, and UNIT_MISMATCH_BPS.
    */
   async toEqualCurrency(
     received: any,
     expected: string | number,
     options: CurrencyMatcherOptions = {}
   ) {
-    const { tolerance = 0.01 } = options;
+    const { tolerance = 0.01, tokenIndex, locale, applyMagnitude } = options;
 
     let rawText = '';
 
-    // Handle Playwright Locator vs Raw String
     if (received && typeof received.textContent === 'function') {
       try {
         rawText = (await received.textContent()) || '';
@@ -43,7 +42,6 @@ export const testudoMatchers = {
       rawText = String(received);
     }
 
-    // Guard against intermediate empty states during framework hydration
     if (!rawText.trim()) {
       return {
         pass: false,
@@ -51,11 +49,14 @@ export const testudoMatchers = {
       };
     }
 
-    const actualVal = format.parse(rawText);
-    const expectedVal = typeof expected === 'number' ? expected : format.parse(expected);
+    const actualVal = format.parseMonetary(rawText, { tokenIndex, locale, applyMagnitude });
+    const expectedVal =
+      typeof expected === 'number'
+        ? expected
+        : format.parseMonetary(expected, { locale, applyMagnitude });
 
     const delta = Math.abs(actualVal - expectedVal);
-    const pass = delta <= tolerance;
+    const pass = math.isCloseTo(actualVal, expectedVal, tolerance);
 
     const diff =
       typeof expected === 'string' ? charDiff(expected, format.normalizeWhitespace(rawText)) : null;
@@ -73,17 +74,72 @@ export const testudoMatchers = {
   },
 
   /**
+   * Asserts that a Locator or raw value equals an expected basis-points value within tolerance.
+   */
+  async toEqualBasisPoints(
+    received: any,
+    expectedBps: string | number,
+    options: { tolerance?: number; tokenIndex?: number } = {}
+  ) {
+    const { tolerance = 0.01, tokenIndex } = options;
+    let rawText = '';
+
+    if (received && typeof received.textContent === 'function') {
+      try {
+        rawText = (await received.textContent()) || '';
+      } catch {
+        return {
+          pass: false,
+          message: () => `[Testudo] Locator could not resolve text content during polling.`
+        };
+      }
+    } else if (typeof received === 'string' || typeof received === 'number') {
+      rawText = String(received);
+    }
+
+    if (!rawText.trim()) {
+      return {
+        pass: false,
+        message: () => `[Testudo] Element text is empty or not yet populated by framework.`
+      };
+    }
+
+    const actual = format.parseBasisPoints(rawText, { tokenIndex });
+    const expected = format.parseBasisPoints(expectedBps);
+    const pass = math.isCloseTo(actual.bps, expected.bps, tolerance);
+
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected basis points NOT to equal ${expected.bps} bps (within ±${tolerance}), but got ${actual.bps} bps`
+          : `[Testudo Assertion Error] Expected basis points: ${expected.bps} bps (within ±${tolerance}), but got ${actual.bps} bps (raw: "${rawText}")`
+    };
+  },
+
+  /**
    * Asserts that a Locator or raw value equals an expected number within floating-point tolerance.
    */
-  async toEqualNumber(received: any, expected: number, options: { tolerance?: number } = {}) {
-    const { tolerance = 0.000001 } = options;
+  async toEqualNumber(
+    received: any,
+    expected: number,
+    options: { tolerance?: number; tokenIndex?: number; locale?: string } = {}
+  ) {
+    const { tolerance = 0.000001, tokenIndex, locale } = options;
     let rawVal = 0;
 
     if (received && typeof received.textContent === 'function') {
       try {
         const text = (await received.textContent()) || '';
-        rawVal = format.parse(text);
-      } catch {
+        if (!text.trim()) {
+          return {
+            pass: false,
+            message: () => `[Testudo] Element text is empty or not yet populated by framework.`
+          };
+        }
+        rawVal = format.parseMonetary(text, { tokenIndex, locale });
+      } catch (err: any) {
+        if (err && err.code) throw err;
         return {
           pass: false,
           message: () => `[Testudo] Locator could not resolve text during polling.`
@@ -92,7 +148,7 @@ export const testudoMatchers = {
     } else if (typeof received === 'number') {
       rawVal = received;
     } else if (typeof received === 'string') {
-      rawVal = format.parse(received);
+      rawVal = format.parseMonetary(received, { tokenIndex, locale });
     }
 
     const pass = math.isCloseTo(rawVal, expected, tolerance);

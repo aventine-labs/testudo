@@ -1,17 +1,19 @@
 /**
- * @aventine/testudo - Playwright Fixture & In-Page Bridge Adapter
- * Bridges Node.js Playwright test runner with in-browser Testudo DOM scanner, visual forensics HUD,
- * and Playwright-native locator interactions.
- * Zero external dependencies.
+ * @aventine/testudo - Playwright Fixture & Unified In-Page Bridge Adapter
+ * Bridges Node.js Playwright test runner with the compiled in-browser Testudo IIFE runtime
+ * (dist/testudo.iife.js), ensuring 100% calculation, parsing, workflow, and visual forensics parity
+ * between Node-driven Playwright and browser-native Standalone mode.
+ * Zero external runtime dependencies.
  */
 
 import { testudoMatchers } from '../matchers.js';
 import { math } from '../math.js';
-import { format } from '../format.js';
+import { format, FormatParseOptions } from '../format.js';
 import { type, TypeOptions } from '../type.js';
 import { visual, VisualErrorOptions } from '../visual.js';
-import { calc } from '../calc.js';
+import { calc, CalcEvaluation, CalcAssertResult } from '../calc.js';
 import { reporter } from '../report.js';
+import { PollOptions, WorkflowStep, WorkflowRunOptions, WorkflowReport } from '../workflow.js';
 
 export interface SerializedScannedElement {
   index: number;
@@ -27,6 +29,12 @@ export interface SerializedScannedElement {
   snippet: string;
 }
 
+export interface PlaywrightAssertOptions extends FormatParseOptions, PollOptions {
+  tolerance?: number;
+  message?: string;
+  screenshotPath?: string;
+}
+
 export interface TestudoPlaywrightSelector {
   click: () => Promise<void>;
   type: (text: string, options?: TypeOptions) => Promise<void>;
@@ -35,12 +43,33 @@ export interface TestudoPlaywrightSelector {
   highlightError: (message?: string, options?: VisualErrorOptions) => Promise<any>;
   assertCurrency: (
     expected: string | number,
-    options?: { tolerance?: number; message?: string; screenshotPath?: string }
-  ) => Promise<{ pass: boolean; expected: number; actual: number; delta: number }>;
+    options?: PlaywrightAssertOptions
+  ) => Promise<{ pass: boolean; expected: number; actual: number; delta: number; elapsedMs?: number; samples?: number }>;
+  assertBasisPoints: (
+    expected: string | number,
+    options?: PlaywrightAssertOptions
+  ) => Promise<{
+    pass: boolean;
+    expected: number;
+    actual: number;
+    delta: number;
+    unit: 'bps';
+    elapsedMs?: number;
+    samples?: number;
+  }>;
   assertText: (
     expected: string,
-    options?: { screenshotPath?: string }
-  ) => Promise<{ pass: boolean; expected: string; actual: string }>;
+    options?: PollOptions & { screenshotPath?: string; message?: string }
+  ) => Promise<{ pass: boolean; expected: string; actual: string; elapsedMs?: number; samples?: number }>;
+}
+
+export interface TestudoPlaywrightWorkflowBridge {
+  preview: () => Promise<{ name: string; count: number; steps: Array<{ stepNumber: number; selector: string; label: string }> }>;
+  clearPreview: () => Promise<void>;
+  run: (runOptions?: WorkflowRunOptions) => Promise<WorkflowReport>;
+  cancel: (reason?: string) => Promise<void>;
+  reset: (options?: { confirmReplay?: boolean }) => Promise<void>;
+  getReport: () => Promise<WorkflowReport>;
 }
 
 export interface TestudoPlaywrightBridge {
@@ -55,13 +84,28 @@ export interface TestudoPlaywrightBridge {
   clearBadges: () => Promise<void>;
   cleanup: () => Promise<void>;
   highlightError: (selector: string, options?: VisualErrorOptions) => Promise<any>;
-  calc: (expression: string) => {
-    evaluate: () => Promise<any>;
+  calc: (
+    expression: string,
+    customValues?: Record<string, number | string>
+  ) => {
+    evaluate: () => Promise<CalcEvaluation>;
     toEqualCurrency: (
       targetSelectorOrValue: string | number,
-      options?: { tolerance?: number; autoHighlight?: boolean; screenshotPath?: string }
-    ) => Promise<any>;
+      options?: {
+        tolerance?: number;
+        autoHighlight?: boolean;
+        screenshotPath?: string;
+        tokenIndex?: number;
+        locale?: string;
+        throwOnFail?: boolean;
+      }
+    ) => Promise<CalcAssertResult>;
   };
+  workflow: (
+    name: string,
+    steps: WorkflowStep[],
+    options?: WorkflowRunOptions
+  ) => TestudoPlaywrightWorkflowBridge;
   visual: typeof visual;
   reporter: typeof reporter;
 }
@@ -71,6 +115,7 @@ export interface TestudoFixture {
 }
 
 let matchersRegistered = false;
+let cachedIifeBundle: string | null = null;
 
 function ensureMatchersRegistered(): void {
   if (matchersRegistered) return;
@@ -85,22 +130,63 @@ function ensureMatchersRegistered(): void {
   }
 }
 
+async function getIifeBundleSource(): Promise<string | null> {
+  if (cachedIifeBundle) return cachedIifeBundle;
+  try {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const urlMod = await import('node:url');
+    const fs = fsMod.default || fsMod;
+    const path = pathMod.default || pathMod;
+    const currentFile = urlMod.fileURLToPath(import.meta.url);
+    const currentDir = path.dirname(currentFile);
+    const candidates = [
+      path.resolve(currentDir, '../testudo.iife.js'),
+      path.resolve(currentDir, '../../dist/testudo.iife.js')
+    ];
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        cachedIifeBundle = fs.readFileSync(candidate, 'utf8');
+        return cachedIifeBundle;
+      }
+    }
+  } catch {
+    // Fallback if fs lookup is unavailable in browser environments
+  }
+  return null;
+}
+
 export async function ensureInPageBridge(page: any): Promise<void> {
   if (!page || typeof page.evaluate !== 'function') return;
+
+  const alreadyReady = await page.evaluate(() => {
+    const win = window as any;
+    return Boolean(win.$T && win.$T.calc && win.$T.workflow && win.$T.format?.parseBasisPoints);
+  });
+
+  if (!alreadyReady) {
+    const iifeSource = await getIifeBundleSource();
+    if (iifeSource) {
+      await page.evaluate((code: string) => {
+        // Evaluate self-contained Testudo IIFE bundle in page context
+        const fn = new Function(code);
+        fn();
+      }, iifeSource);
+    }
+  }
+
   await page.evaluate(() => {
     const win = window as any;
+    if (!win.__TESTUDO_WORKFLOWS__) {
+      win.__TESTUDO_WORKFLOWS__ = {};
+    }
     if (win.__TESTUDO_INPAGE__) return;
 
-    const COLORS = new Set(['red', 'crimson', 'orange', 'amber', 'yellow', 'green', 'emerald', 'teal', 'cyan', 'blue', 'indigo', 'purple', 'violet', 'pink', 'white', 'black']);
-    const safeColor = (c?: string, fb = '#EF4444') => {
-      const t = (c || '').trim();
-      if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(t)) return t;
-      return COLORS.has(t.toLowerCase()) ? t.toLowerCase() : fb;
-    };
-
-    const resolveEl = (sel: string) => document.querySelector(sel.trim()) as HTMLElement | null;
-
     const cleanupOverlays = () => {
+      if (win.$T?.visual?.cleanup) {
+        win.$T.visual.cleanup();
+        return;
+      }
       document.querySelectorAll('[data-testudo-overlay]').forEach((el) => el.remove());
       document.querySelectorAll('[data-testudo-outlined]').forEach((el) => {
         const h = el as HTMLElement;
@@ -112,82 +198,30 @@ export async function ensureInPageBridge(page: any): Promise<void> {
     };
 
     const highlightStep = (sel: string, label?: string, color = '#10B981') => {
-      const el = resolveEl(sel);
-      if (!el) return false;
-      const clr = safeColor(color, '#10B981');
-      el.scrollIntoView?.({ behavior: 'instant' as any, block: 'center', inline: 'center' });
-      const r = el.getBoundingClientRect();
-      const box = document.createElement('div');
-      box.setAttribute('data-testudo-overlay', 'true');
-      box.setAttribute('data-testudo-step-box', 'true');
-      box.style.cssText = `position:absolute;top:${r.top + window.scrollY - 4}px;left:${r.left + window.scrollX - 4}px;width:${r.width + 8}px;height:${r.height + 8}px;border:2px solid ${clr};border-radius:6px;box-shadow:0 0 14px ${clr}66;pointer-events:none;z-index:99997;box-sizing:border-box;`;
-      if (label) {
-        const pill = document.createElement('div');
-        pill.style.cssText = `position:absolute;top:-20px;left:-2px;background:${clr};color:#030712;font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;`;
-        pill.textContent = label;
-        box.appendChild(pill);
+      if (win.$T?.visual?.highlightStep) {
+        return Boolean(win.$T.visual.highlightStep(sel, { label, color }));
       }
-      document.body.appendChild(box);
-      return true;
+      return false;
     };
 
     const highlightError = (sel: string, opts: any = {}) => {
-      cleanupOverlays();
-      const el = resolveEl(sel);
-      if (!el) return { diff: null };
-      const clr = safeColor(opts.color, '#EF4444');
-      const msg = String(opts.message || 'Assertion Failed');
-      const exp = String(opts.expected || '');
-      const act = String(opts.actual || '');
-      if (opts.autoScroll !== false) el.scrollIntoView?.({ behavior: 'instant' as any, block: 'center', inline: 'center' });
-
-      el.setAttribute('data-testudo-outlined', 'true');
-      el.style.setProperty('outline', `3px solid ${clr}`, 'important');
-      el.style.setProperty('outline-offset', '3px', 'important');
-      el.style.setProperty('box-shadow', `0 0 15px ${clr}BF`, 'important');
-
-      let diff: any = null;
-      if (exp && act && exp !== act) {
-        let i = 0;
-        while (i < exp.length && i < act.length && exp[i] === act[i]) i++;
-        const ec = i < exp.length ? exp[i] : 'EOF';
-        const ac = i < act.length ? act[i] : 'EOF';
-        diff = { index: i, expectedChar: ec, actualChar: ac, message: `Unexpected '${ac}' at index ${i} (expected '${ec}')` };
+      if (win.$T?.visual?.highlightError) {
+        return win.$T.visual.highlightError(sel, opts);
       }
-
-      const r = el.getBoundingClientRect();
-      const hud = document.createElement('div');
-      hud.setAttribute('data-testudo-overlay', 'true');
-      hud.setAttribute('data-testudo-hud', 'true');
-      hud.style.cssText = `position:absolute;top:${Math.max(10, r.top + window.scrollY - 52)}px;left:${r.left + window.scrollX}px;background:#0F172A;color:#F8FAFC;border:2px solid ${clr};border-radius:6px;padding:6px 10px;font:700 12px monospace;box-shadow:0 8px 20px rgba(0,0,0,0.65);pointer-events:none;z-index:100000;white-space:nowrap;`;
-      const txt = document.createElement('div');
-      txt.textContent = `[TESTUDO FAIL] ${msg}`;
-      hud.appendChild(txt);
-      if (diff) {
-        const dEl = document.createElement('div');
-        dEl.style.cssText = 'margin-top:4px;font-size:11px;color:#F87171;';
-        dEl.textContent = diff.message;
-        hud.appendChild(dEl);
-      }
-      document.body.appendChild(hud);
-      return { diff };
+      return { diff: null };
     };
 
-    win.__TESTUDO_INPAGE__ = { resolveEl, cleanupOverlays, highlightStep, highlightError };
+    win.__TESTUDO_INPAGE__ = { cleanupOverlays, highlightStep, highlightError };
   });
+}
+
+function stripNonSerializableOptions(options: any = {}) {
+  const { signal, guard, screenshotPath, ...rest } = options || {};
+  return rest;
 }
 
 export function createPlaywrightTestudo(page: any, testInfo?: any): TestudoPlaywrightBridge {
   ensureMatchersRegistered();
-
-  const readNodeText = (sel: string) =>
-    page.evaluate((s: string) => {
-      const el = document.querySelector(s) as HTMLElement | null;
-      if (!el) return '';
-      return (el as HTMLInputElement).value !== undefined && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
-        ? (el as HTMLInputElement).value
-        : el.innerText || el.textContent || '';
-    }, sel);
 
   const selectorApi = (selector: string): TestudoPlaywrightSelector => {
     if (!selector || typeof selector !== 'string') {
@@ -225,62 +259,128 @@ export function createPlaywrightTestudo(page: any, testInfo?: any): TestudoPlayw
       highlight: async (label?: string, color: string = '#10B981') => {
         await ensureInPageBridge(page);
         await page.evaluate(
-          ({ s, l, c }: any) => (window as any).__TESTUDO_INPAGE__?.highlightStep(s, l, c),
+          ({ s, l, c }: any) => (window as any).$T(s).highlight(l, c),
           { s: selector, l: label, c: color }
         );
       },
       highlightError: async (message?: string, options: VisualErrorOptions = {}) => {
         await ensureInPageBridge(page);
         return page.evaluate(
-          ({ s, m, o }: any) =>
-            ((window as any).$T?.visual || (window as any).__TESTUDO_INPAGE__).highlightError(s, { message: m, ...o }),
+          ({ s, m, o }: any) => (window as any).$T(s).highlightError(m, o),
           { s: selector, m: message, o: options }
         );
       },
-      assertCurrency: async (expected: string | number, options: any = {}) => {
+      assertCurrency: async (expected: string | number, options: PlaywrightAssertOptions = {}) => {
         await assertUniqueLocator();
-        const raw = await readNodeText(selector);
-        const actualVal = format.parse(raw);
-        const expVal = typeof expected === 'number' ? expected : format.parse(expected);
-        const tol = options.tolerance ?? 0.01;
-        const delta = Math.round((actualVal - expVal) * 1e4) / 1e4;
+        await ensureInPageBridge(page);
+        const serialOpts = stripNonSerializableOptions(options);
 
-        if (!math.isCloseTo(actualVal, expVal, tol)) {
-          const expFormatted =
-            typeof expected === 'string'
-              ? expected
-              : `$${expVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          const msg =
-            options.message ||
-            `Currency mismatch on ${selector}: expected ${expVal}, got ${actualVal} (delta ${delta >= 0 ? '+' : ''}${delta})`;
+        const evalRes = await page.evaluate(
+          async ({ s, exp, opts }: any) => {
+            try {
+              const res = await (window as any).$T(s).assertCurrency(exp, opts);
+              return { ok: true, res };
+            } catch (err: any) {
+              const hud = document.querySelector('[data-testudo-hud="true"]');
+              return {
+                ok: false,
+                message: err?.message || String(err),
+                code: err?.code,
+                hudText: hud?.textContent || ''
+              };
+            }
+          },
+          { s: selector, exp: expected, opts: serialOpts }
+        );
 
-          const { diff } = await selectorApi(selector).highlightError(msg, {
-            expected: expFormatted,
-            actual: raw.trim()
-          });
-          reporter.error(msg, { selector, expected: expVal, actual: actualVal, delta, tolerance: tol, divergenceIndex: diff?.index });
-          if (options.screenshotPath && page.screenshot) await page.screenshot({ path: options.screenshotPath, fullPage: false });
-          if (testInfo?.attach && page.screenshot) {
-            await testInfo.attach('testudo-assertion-failure', { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' });
+        if (!evalRes.ok) {
+          reporter.error(evalRes.message, { selector, expected });
+          if (options.screenshotPath && page.screenshot) {
+            await page.screenshot({ path: options.screenshotPath, fullPage: false });
           }
-          throw new Error(`[Testudo Assertion Failed] ${msg} | Expected: "${expFormatted}", Actual: "${raw.trim()}"${diff ? ` | ${diff.message}` : ''}`);
+          if (testInfo?.attach && page.screenshot) {
+            await testInfo.attach('testudo-assertion-failure', {
+              body: await page.screenshot({ fullPage: false }),
+              contentType: 'image/png'
+            });
+          }
+          const errorObj: any = new Error(
+            evalRes.hudText ? `${evalRes.message} | ${evalRes.hudText}` : evalRes.message
+          );
+          if (evalRes.code) errorObj.code = evalRes.code;
+          throw errorObj;
         }
-        return { pass: true, expected: expVal, actual: actualVal, delta };
+
+        return evalRes.res;
+      },
+      assertBasisPoints: async (expected: string | number, options: PlaywrightAssertOptions = {}) => {
+        await assertUniqueLocator();
+        await ensureInPageBridge(page);
+        const serialOpts = stripNonSerializableOptions(options);
+
+        const evalRes = await page.evaluate(
+          async ({ s, exp, opts }: any) => {
+            try {
+              const res = await (window as any).$T(s).assertBasisPoints(exp, opts);
+              return { ok: true, res };
+            } catch (err: any) {
+              const hud = document.querySelector('[data-testudo-hud="true"]');
+              return {
+                ok: false,
+                message: err?.message || String(err),
+                code: err?.code,
+                hudText: hud?.textContent || ''
+              };
+            }
+          },
+          { s: selector, exp: expected, opts: serialOpts }
+        );
+
+        if (!evalRes.ok) {
+          reporter.error(evalRes.message, { selector, expected });
+          if (options.screenshotPath && page.screenshot) {
+            await page.screenshot({ path: options.screenshotPath, fullPage: false });
+          }
+          const errorObj: any = new Error(
+            evalRes.hudText ? `${evalRes.message} | ${evalRes.hudText}` : evalRes.message
+          );
+          if (evalRes.code) errorObj.code = evalRes.code;
+          throw errorObj;
+        }
+
+        return evalRes.res;
       },
       assertText: async (expected: string, options: any = {}) => {
         await assertUniqueLocator();
-        const raw = await readNodeText(selector);
-        const normActual = format.normalizeWhitespace(raw.trim());
-        const normExpected = format.normalizeWhitespace(expected.trim());
+        await ensureInPageBridge(page);
+        const serialOpts = stripNonSerializableOptions(options);
 
-        if (normActual !== normExpected) {
-          const msg = `Text mismatch on ${selector}: expected "${normExpected}", got "${normActual}"`;
-          const { diff } = await selectorApi(selector).highlightError(msg, { expected: normExpected, actual: normActual });
-          reporter.error(msg, { selector, expected: normExpected, actual: normActual, divergenceIndex: diff?.index });
-          if (options.screenshotPath && page.screenshot) await page.screenshot({ path: options.screenshotPath, fullPage: false });
-          throw new Error(`[Testudo Assertion Failed] ${msg}${diff ? ` | ${diff.message}` : ''}`);
+        const evalRes = await page.evaluate(
+          async ({ s, exp, opts }: any) => {
+            try {
+              const res = await (window as any).$T(s).assertText(exp, opts);
+              return { ok: true, res };
+            } catch (err: any) {
+              const hud = document.querySelector('[data-testudo-hud="true"]');
+              return {
+                ok: false,
+                message: err?.message || String(err),
+                hudText: hud?.textContent || ''
+              };
+            }
+          },
+          { s: selector, exp: expected, opts: serialOpts }
+        );
+
+        if (!evalRes.ok) {
+          reporter.error(evalRes.message, { selector, expected });
+          if (options.screenshotPath && page.screenshot) {
+            await page.screenshot({ path: options.screenshotPath, fullPage: false });
+          }
+          throw new Error(evalRes.hudText ? `${evalRes.message} | ${evalRes.hudText}` : evalRes.message);
         }
-        return { pass: true, expected: normExpected, actual: normActual };
+
+        return evalRes.res;
       }
     };
   };
@@ -294,71 +394,239 @@ export function createPlaywrightTestudo(page: any, testInfo?: any): TestudoPlayw
     scan: async (scope?: string): Promise<SerializedScannedElement[]> => {
       await ensureInPageBridge(page);
       return page.evaluate((sq?: string) => {
-        const root = sq
-          ? (/^[#.\[]/.test(sq)
-              ? document.querySelector(sq)
-              : document.querySelector(`[data-testid="${sq}"], [data-test="${sq}"], [data-demo-id="${sq}"], #${sq}`)) || document.body
-          : document.body;
-        const nodes = root.querySelectorAll('button, input, select, textarea, a[href], [role="button"], [role="link"], [role="tab"], [onclick]');
-        const out: any[] = [];
-        let idx = 1;
-        for (const n of Array.from(nodes)) {
-          const el = n as HTMLElement;
-          if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
-          const st = window.getComputedStyle(el);
-          if (st.display === 'none' || st.visibility === 'hidden') continue;
-          const tag = el.tagName.toLowerCase();
-          const tp = ((el as HTMLInputElement).type || 'text').toLowerCase();
-          const tid = el.getAttribute('data-testid');
-          const dt = el.getAttribute('data-test');
-          const did = el.getAttribute('data-demo-id');
-          const id = el.id;
-          const nm = (el as HTMLInputElement).name;
-          const sel = tid ? `[data-testid="${tid}"]` : dt ? `[data-test="${dt}"]` : did ? `[data-demo-id="${did}"]` : id ? `#${id}` : nm ? `${tag}[name="${nm}"]` : tag;
-          const isSel = tag === 'select';
-          const isTxt = tag === 'textarea' || (tag === 'input' && !['button', 'submit', 'reset', 'checkbox', 'radio'].includes(tp));
-          const action = isSel ? 'select' : isTxt ? 'type' : 'click';
-          const opt = isSel ? (el as HTMLSelectElement).options?.[0]?.value || 'option' : 'example';
-          const snippet = `await $T('${sel}').${action}(${action === 'click' ? '' : `'${opt}'`});`;
-          out.push({ index: idx++, tag, type: tp, name: nm, id, text: (el.innerText || el.textContent || '').trim().slice(0, 30), action, selector: sel, snippet });
-        }
-        return out;
+        const items = (window as any).$T.scan(sq);
+        return items.map((it: any) => ({
+          index: it.index,
+          tag: it.tag,
+          type: it.type,
+          name: it.name,
+          id: it.id,
+          label: it.label,
+          role: it.role,
+          text: it.text,
+          action: it.action,
+          selector: it.selector,
+          snippet: it.snippet
+        }));
       }, scope);
     },
     explore: async (scope?: string): Promise<number> => {
-      const items = await bridge.scan(scope);
-      return page.evaluate((list: SerializedScannedElement[]) => {
-        document.querySelectorAll('.testudo-badge').forEach((b) => b.remove());
-        for (const it of list) {
-          const el = document.querySelector(it.selector) as HTMLElement | null;
-          if (!el) continue;
-          const r = el.getBoundingClientRect();
-          const b = document.createElement('div');
-          b.className = 'testudo-badge';
-          b.setAttribute('data-testudo-badge', 'true');
-          b.style.cssText = `position:absolute;top:${r.top + window.scrollY}px;left:${r.left + window.scrollX}px;background:#2563EB;color:#FFF;font:bold 11px monospace;padding:2px 6px;border-radius:4px;z-index:100000;`;
-          b.textContent = `[${it.index}]`;
-          document.body.appendChild(b);
-        }
+      await ensureInPageBridge(page);
+      return page.evaluate((sq?: string) => {
+        (window as any).$T.explore(sq);
         return document.querySelectorAll('.testudo-badge').length;
-      }, items);
+      }, scope);
     },
-    clearBadges: () => page.evaluate(() => document.querySelectorAll('.testudo-badge').forEach((b) => b.remove())),
+    clearBadges: async () => {
+      await ensureInPageBridge(page);
+      await page.evaluate(() => (window as any).$T.clearBadges());
+    },
     cleanup: async () => {
       await ensureInPageBridge(page);
       await page.evaluate(() => {
-        (window as any).__TESTUDO_INPAGE__?.cleanupOverlays();
-        document.querySelectorAll('.testudo-badge').forEach((b) => b.remove());
+        (window as any).$T.visual.cleanup();
+        (window as any).$T.clearBadges();
       });
     },
     highlightError: (s: string, o?: VisualErrorOptions) => selectorApi(s).highlightError(o?.message, o),
-    calc: (expression: string) => ({
-      evaluate: async () => calc(expression).evaluate(),
-      toEqualCurrency: async (target: string | number, options: any = {}) =>
-        typeof target === 'string'
-          ? selectorApi(target).assertCurrency(calc.evaluate(expression), options)
-          : calc(expression).toEqualCurrency(target, options)
+    calc: (expression: string, customValues?: Record<string, number | string>) => ({
+      evaluate: async (): Promise<CalcEvaluation> => {
+        if (!page || typeof page.evaluate !== 'function') {
+          return calc(expression, customValues).evaluate();
+        }
+        await ensureInPageBridge(page);
+        const evalRes = await page.evaluate(
+          ({ expr, cv }: any) => {
+            try {
+              const res = (window as any).$T.calc(expr, cv).evaluate();
+              return {
+                ok: true,
+                res: {
+                  expression: res.expression,
+                  expectedValue: res.expectedValue,
+                  tokens: res.tokens,
+                  operands: res.operands.map((op: any) => ({
+                    index: op.index,
+                    selector: op.selector,
+                    rawText: op.rawText,
+                    value: op.value,
+                    color: op.color,
+                    label: op.label,
+                    shape: op.shape,
+                    borderPattern: op.borderPattern
+                  }))
+                }
+              };
+            } catch (err: any) {
+              return { ok: false, message: err?.message || String(err), code: err?.code };
+            }
+          },
+          { expr: expression, cv: customValues }
+        );
+        if (!evalRes.ok) {
+          const e: any = new Error(evalRes.message);
+          if (evalRes.code) e.code = evalRes.code;
+          throw e;
+        }
+        return evalRes.res;
+      },
+      toEqualCurrency: async (
+        targetSelectorOrValue: string | number,
+        options: {
+          tolerance?: number;
+          autoHighlight?: boolean;
+          screenshotPath?: string;
+          tokenIndex?: number;
+          locale?: string;
+          throwOnFail?: boolean;
+        } = {}
+      ): Promise<CalcAssertResult> => {
+        if (!page || typeof page.evaluate !== 'function') {
+          return calc(expression, customValues).toEqualCurrency(targetSelectorOrValue, options);
+        }
+        await ensureInPageBridge(page);
+        const serialOpts = stripNonSerializableOptions(options);
+        const evalRes = await page.evaluate(
+          async ({ expr, cv, target, opts }: any) => {
+            try {
+              const res = await (window as any).$T.calc(expr, cv).toEqualCurrency(target, opts);
+              return {
+                ok: true,
+                res: {
+                  pass: res.pass,
+                  expected: res.expected,
+                  actual: res.actual,
+                  delta: res.delta,
+                  tolerance: res.tolerance,
+                  targetSelector: res.targetSelector,
+                  rawTargetText: res.rawTargetText,
+                  evaluation: {
+                    expression: res.evaluation.expression,
+                    expectedValue: res.evaluation.expectedValue,
+                    tokens: res.evaluation.tokens,
+                    operands: res.evaluation.operands.map((op: any) => ({
+                      index: op.index,
+                      selector: op.selector,
+                      rawText: op.rawText,
+                      value: op.value,
+                      color: op.color,
+                      label: op.label,
+                      shape: op.shape,
+                      borderPattern: op.borderPattern
+                    }))
+                  }
+                }
+              };
+            } catch (err: any) {
+              return { ok: false, message: err?.message || String(err), code: err?.code };
+            }
+          },
+          { expr: expression, cv: customValues, target: targetSelectorOrValue, opts: serialOpts }
+        );
+        if (!evalRes.ok) {
+          const e: any = new Error(evalRes.message);
+          if (evalRes.code) e.code = evalRes.code;
+          throw e;
+        }
+        if (!evalRes.res.pass && options.screenshotPath && page.screenshot) {
+          await page.screenshot({ path: options.screenshotPath, fullPage: false });
+        }
+        if (!evalRes.res.pass && options.throwOnFail) {
+          throw new Error(
+            `[Testudo Calc Assertion Failed] ${expression} vs ${targetSelectorOrValue}: expected ${evalRes.res.expected}, got ${evalRes.res.actual} (delta: ${evalRes.res.delta})`
+          );
+        }
+        return evalRes.res;
+      }
     }),
+    workflow: (name: string, steps: WorkflowStep[], options: WorkflowRunOptions = {}): TestudoPlaywrightWorkflowBridge => {
+      const serialSteps = steps.map((s) => {
+        const { guard, ...rest } = s;
+        return rest;
+      });
+      const serialOpts = stripNonSerializableOptions(options);
+
+      const ensureWf = async () => {
+        await ensureInPageBridge(page);
+        await page.evaluate(
+          ({ wfName, wfSteps, wfOpts }: any) => {
+            const win = window as any;
+            if (!win.__TESTUDO_WORKFLOWS__[wfName]) {
+              win.__TESTUDO_WORKFLOWS__[wfName] = win.$T.workflow(wfName, wfSteps, wfOpts);
+            }
+          },
+          { wfName: name, wfSteps: serialSteps, wfOpts: serialOpts }
+        );
+      };
+
+      return {
+        preview: async () => {
+          await ensureWf();
+          return page.evaluate(({ wfName }: any) => (window as any).__TESTUDO_WORKFLOWS__[wfName].preview(), {
+            wfName: name
+          });
+        },
+        clearPreview: async () => {
+          await ensureWf();
+          await page.evaluate(({ wfName }: any) => (window as any).__TESTUDO_WORKFLOWS__[wfName].clearPreview(), {
+            wfName: name
+          });
+        },
+        run: async (runOptions: WorkflowRunOptions = {}) => {
+          await ensureWf();
+          const serialRunOpts = stripNonSerializableOptions(runOptions);
+          const evalRes = await page.evaluate(
+            async ({ wfName, rOpts }: any) => {
+              try {
+                const report = await (window as any).__TESTUDO_WORKFLOWS__[wfName].run(rOpts);
+                return { ok: true, report };
+              } catch (err: any) {
+                return { ok: false, message: err?.message || String(err), code: err?.code };
+              }
+            },
+            { wfName: name, rOpts: serialRunOpts }
+          );
+          if (!evalRes.ok) {
+            const e: any = new Error(evalRes.message);
+            if (evalRes.code) e.code = evalRes.code;
+            throw e;
+          }
+          return evalRes.report;
+        },
+        cancel: async (reason?: string) => {
+          await ensureWf();
+          await page.evaluate(
+            ({ wfName, r }: any) => (window as any).__TESTUDO_WORKFLOWS__[wfName].cancel(r),
+            { wfName: name, r: reason }
+          );
+        },
+        reset: async (resetOpts: { confirmReplay?: boolean } = {}) => {
+          await ensureWf();
+          const evalRes = await page.evaluate(
+            ({ wfName, rOpts }: any) => {
+              try {
+                (window as any).__TESTUDO_WORKFLOWS__[wfName].reset(rOpts);
+                return { ok: true };
+              } catch (err: any) {
+                return { ok: false, message: err?.message || String(err), code: err?.code };
+              }
+            },
+            { wfName: name, rOpts: resetOpts }
+          );
+          if (!evalRes.ok) {
+            const e: any = new Error(evalRes.message);
+            if (evalRes.code) e.code = evalRes.code;
+            throw e;
+          }
+        },
+        getReport: async () => {
+          await ensureWf();
+          return page.evaluate(({ wfName }: any) => (window as any).__TESTUDO_WORKFLOWS__[wfName].getReport(), {
+            wfName: name
+          });
+        }
+      };
+    },
     visual,
     reporter
   });
@@ -372,7 +640,10 @@ export const testudoFixture = {
     await use(inst);
     if (testInfo && testInfo.status !== testInfo.expectedStatus && page?.screenshot && testInfo.attach) {
       try {
-        await testInfo.attach('testudo-failure-forensics', { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' });
+        await testInfo.attach('testudo-failure-forensics', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png'
+        });
       } catch {
         // Ignore teardown screenshot errors
       }

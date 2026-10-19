@@ -62,7 +62,7 @@ Testudo is an open-source testing ecosystem engineered to deliver zero-dependenc
 ---
 
 ## 1. Testudo-JS™ (`packages/testudo-js`)
-**Package:** [`@aventine/testudo`](https://www.npmjs.com/package/@aventine/testudo) (npm) • **Runtime:** Browser / Node.js / Playwright / Puppeteer • **Tests:** `49/49` Passing
+**Package:** [`@aventine/testudo`](https://www.npmjs.com/package/@aventine/testudo) (npm) • **Runtime:** Browser / Node.js / Playwright / Puppeteer • **Tests:** `62/62` Passing
 
 Testudo-JS provides zero-dependency front-end synthetic testing, interactive DOM exploration, and financial assertion mathematics:
 * **Smart Scoping Priority Cascade**: Pinpoints DOM containers through a deterministic 8-tier hierarchy (`data-testid` -> `data-demo-id` -> `id` -> `name` -> `aria-label` -> `heading` -> `class` -> `tag`), stopping immediately at the highest matching priority tier.

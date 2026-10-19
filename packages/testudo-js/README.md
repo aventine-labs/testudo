@@ -5,11 +5,11 @@
   <p>High-Precision Financial Math, Framework-Safe Typing, Single-Click Uniqueness Guarantees, and In-Browser Visual Forensics for Playwright, Puppeteer, and Synthetic Monitors.</p>
 
   <p>
-    <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/badge/tests-49%2F49%20passing-brightgreen?style=flat-square" alt="Tests"></a>
+    <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/badge/tests-62%2F62%20passing-brightgreen?style=flat-square" alt="Tests"></a>
     <a href="https://www.npmjs.com/package/@aventine/testudo"><img src="https://img.shields.io/npm/v/@aventine/testudo?style=flat-square&color=blue" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/@aventine/testudo"><img src="https://img.shields.io/badge/dependencies-0-success?style=flat-square" alt="Dependencies"></a>
     <a href="https://github.com/aventine-labs/testudo/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat-square" alt="License"></a>
-    <img src="https://img.shields.io/badge/size-%3C5KB%20gzip-informational?style=flat-square" alt="Bundle Size">
+    <img src="https://img.shields.io/badge/core-%3C6KB%20gzip-informational?style=flat-square" alt="Bundle Size">
   </p>
 
   <p>
@@ -23,35 +23,40 @@
 
 ## What is Testudo-JS?
 
-Testudo (`$T`) is an ultra-lightweight, zero-dependency browser testing utility and forensic shield designed to eliminate the brittle edge cases that consume 90% of a QA engineer's debugging time:
+Testudo (`$T`) is an ultra-lightweight, zero-dependency browser testing workbench and forensic shield designed to eliminate the brittle edge cases that consume 90% of a QA engineer's debugging time:
 
 1. **Penny Rounding & Float Drift**: Compare numbers and currencies with allowable tolerance (`isCloseTo`, `0.1 + 0.2 === 0.3`).
-2. **Framework Synthetic Setter Bypass**: Type directly into React, Vue, and Angular inputs without losing internal component state (`_valueTracker` bypass) and select dropdown options (`$T('#filter').select('value')`).
-3. **Single-Click & Strict Uniqueness Guarantee**: Executes exactly one native `element.click()` in standalone mode or `locator.click()` in Playwright mode (never synthesizing redundant pointer/mouse events that double-fire trading orders or toggles) and throws an explicit ambiguity error if a selector matches more than one DOM node.
-4. **Visual Error Forensics (100% `textContent` Safe)**: Highlights failing elements in glowing neon red with a character-level diff HUD constructed purely via DOM nodes and `textContent` (zero `innerHTML` injection), automatically attaching forensic screenshots to Playwright HTML Reports.
-5. **Smart Scope DOM Explorer**: Instant DOM scanning (`$T.scan('blotter-controls')`) stopping at the highest matching priority tier and emitting 100% standards-compliant, unique CSS selectors.
-6. **Universal Currency Parsing**: Ingest European commas (`1.249,50 €`), SAP trailing minuses (`1.249,50- EUR`), and accounting parens (`(€1,249.50)`) into clean numbers.
-7. **Whitespace Normalization**: Automatically converts invisible narrow non-breaking spaces (`\u202F`, `\u00A0`) into standard ASCII space (`\u0020`).
+2. **Fail-Closed Financial & Basis-Point Parsing**: Parses unambiguous magnitude suffixes (`$42.1 Billion` = `42.1e9`, `$1.5M`, `250K`, `1.25e6`), European commas (`1.249,50 €`), SAP trailing minuses (`1.249,50- EUR`), Indian lakhs/crores (`₹12,34,567.89`), and accounting parens (`(€1,249.50)`). Rejects multi-number cards with `AMBIGUOUS_NUMERIC_VALUE` unless `{ tokenIndex }` is specified, rejects malformed strings with `INVALID_NUMERIC_FORMAT`, and parses basis points (`45 bps`, `-12.5 bp`, `0.45%`) as a distinct typed unit via `format.parseBasisPoints()`.
+3. **Interactive Visual Workflow Engine (`$T.workflow`)**: Previews numbered workflow steps (`[1]`, `[2]`, ...) with `pointer-events: none` (100% read-only preview), executes steps with live DOM re-resolution and state guards, supports mid-flight `cancel()` / `AbortSignal`, and blocks accidental order replay (`WORKFLOW_REPLAY_BLOCKED`) unless `.reset({ confirmReplay: true })` is called.
+4. **Two-Mode Temporal Assertion Polling (`eventually` vs `stable`)**: Supports `mode: 'eventually'` (matches at least once within `timeout`) and `mode: 'stable'` (remains continuously valid across `stableMs` observation window on high-frequency mutating DOM streams).
+5. **Framework Synthetic Setter Bypass & Single-Click Uniqueness**: Type directly into React, Vue, and Angular inputs (`_valueTracker` bypass), select dropdown options (`$T('#filter').select('value')`), and execute a single native click (`element.click()` / `locator.click()`) with strict selector uniqueness verification.
+6. **Visual Error Forensics & Unified Calculus Bridge (`$T.calc`)**: Highlights failing elements in glowing crimson with a character-level diff HUD constructed purely via `textContent` (zero `innerHTML` injection), and executes multi-cell financial formulas identically across Standalone browser and Node Playwright environments.
 
 ---
 
-## Installation
+## Installation (Dual Explicit Builds: ESM + IIFE)
 
 ```bash
 npm install @aventine/testudo
 ```
 
-Or drop directly into synthetic transaction monitors (Apica, Datadog Synthetics) via CDN:
+Drop the self-contained IIFE bundle directly into any browser page, Playwright `page.addScriptTag`, or synthetic monitor (Apica, Datadog Synthetics) without a module loader:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@aventine/testudo/dist/adapters/standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@aventine/testudo/dist/testudo.iife.js"></script>
+```
+
+Or import the self-contained ES module bundle in modern module environments:
+
+```javascript
+import { $T, testudo, createTestudoInstance, format, calc, createWorkflow } from '@aventine/testudo/esm';
 ```
 
 ---
 
 ## 1-Minute Playwright Quickstart
 
-Extend Playwright's native `expect` with custom Testudo matchers and the in-page `page.evaluate()` bridge:
+Extend Playwright's native `expect` with custom Testudo matchers and the unified in-page `$T` bridge:
 
 ```typescript
 // playwright.config.ts or test file
@@ -65,7 +70,7 @@ expect.extend(testudoMatchers);
 // Extend Playwright test runner with pre-wired $T fixture
 export const test = base.extend(testudoFixture);
 
-test('validate checkout balance, dropdowns, and masks', async ({ page, $T }) => {
+test('validate checkout balance, basis points, and workflows', async ({ page, $T }) => {
   await page.goto('https://app.example.com/checkout');
 
   // 1. Framework-safe typing with credit card mask
@@ -75,8 +80,13 @@ test('validate checkout balance, dropdowns, and masks', async ({ page, $T }) => 
   await $T('#asset-filter').select('structured-credit');
   await $T('#btn-recalc').click();
 
-  // 3. High-precision financial tolerance assertion
-  await expect(page.locator('#invoice-total')).toEqualCurrency('$1,250.00', { tolerance: 0.01 });
+  // 3. High-precision financial tolerance & stability assertion
+  await $T('#invoice-total').assertCurrency('$42.1 Billion', {
+    tolerance: 0.01,
+    mode: 'stable',
+    stableMs: 250
+  });
+  await $T('#net-spread').assertBasisPoints(45, { tolerance: 0.01 });
 });
 ```
 
@@ -84,9 +94,9 @@ test('validate checkout balance, dropdowns, and masks', async ({ page, $T }) => 
 
 ## Core Feature Showcase
 
-### 1. Financial Math with Allowable Tolerance
+### 1. Fail-Closed Financial Math & Basis-Point Parsing
 
-Prevent brittle test failures caused by floating point drift or rounding differences:
+Prevent brittle test failures and silent regex guessing across complex financial cards:
 
 ```javascript
 import { math, format } from '@aventine/testudo';
@@ -94,16 +104,18 @@ import { math, format } from '@aventine/testudo';
 // Float precision equality with epsilon
 math.eq(0.1 + 0.2, 0.3); // => true
 
-// Closeness check within 1 penny
-math.isCloseTo(1249.99, 1250.0, 0.01); // => true
-
-// Excel pattern formatting
-format.pattern(1249.5, '€#.##0,00'); // => "€1.249,50"
-
-// Universal parsing
-format.parse('(€1,249.50)'); // => -1249.50
+// Unambiguous magnitude suffixes & regional formats
+format.parse('$42.1 Billion'); // => 42100000000
+format.parse('($1.25 Million)'); // => -1250000
 format.parse('1.249,50- EUR'); // => -1249.50
-format.parse('1 249,50 €'); // => 1249.50
+format.parse('₹12,34,567.89'); // => 1234567.89
+
+// Multi-number containers fail closed with AMBIGUOUS_NUMERIC_VALUE unless tokenIndex is explicit
+format.parse('$42.1B vs $38.7B (+8.8%)', { tokenIndex: 0 }); // => 42100000000
+format.parse('$42.1B vs $38.7B (+8.8%)', { tokenIndex: 1 }); // => 38700000000
+
+// Dedicated basis-point parser (rejects bps in parseMonetary with UNIT_MISMATCH_BPS)
+format.parseBasisPoints('45 bps'); // => { bps: 45, percent: 0.45, decimal: 0.0045, unit: 'bps' }
 ```
 
 ### 2. Framework-Safe Typing, Selection & Single-Click (`$T.type`, `$T.select`, `$T.click`)
