@@ -106,7 +106,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "esbuild": "^0.21.5",
     "typescript": "^7.0.2"
   }
