@@ -6,6 +6,49 @@
  */
 
 import { charDiff, CharDiffResult } from './diff.js';
+import { resolveElement } from './scan.js';
+
+/**
+ * Escapes HTML special characters to prevent DOM XSS / markup corruption in visual HUD overlays.
+ */
+export function escapeHtml(raw: string): string {
+  return String(raw ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const ALLOWED_NAMED_COLORS = new Set([
+  'red',
+  'crimson',
+  'orange',
+  'amber',
+  'yellow',
+  'green',
+  'emerald',
+  'teal',
+  'cyan',
+  'blue',
+  'indigo',
+  'purple',
+  'violet',
+  'pink',
+  'white',
+  'black'
+]);
+
+/**
+ * Validates a CSS color string strictly against 3/6/8-digit hexadecimal values or an explicit allowlist.
+ */
+export function sanitizeCssColor(color: string | undefined, fallback: string = '#EF4444'): string {
+  if (!color || typeof color !== 'string') return fallback;
+  const trimmed = color.trim();
+  if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed)) return trimmed;
+  if (ALLOWED_NAMED_COLORS.has(trimmed.toLowerCase())) return trimmed.toLowerCase();
+  return fallback;
+}
 
 export interface VisualErrorOptions {
   message?: string;
@@ -42,6 +85,44 @@ export class TestudoVisual {
   }
 
   /**
+   * Highlights a step element with a labeled Testudo bounding box (used in guided walkthroughs).
+   */
+  public highlightStep(
+    elementOrSelector: string | HTMLElement,
+    options: { label?: string; color?: string; clearPrevious?: boolean } = {}
+  ): HTMLElement | null {
+    if (typeof document === 'undefined') return null;
+    if (options.clearPrevious) {
+      this.cleanup();
+    }
+
+    const element =
+      typeof elementOrSelector === 'string'
+        ? resolveElement(elementOrSelector)
+        : elementOrSelector;
+
+    if (!element) return null;
+
+    const safeColor = sanitizeCssColor(options.color, '#10B981');
+    const rect = element.getBoundingClientRect();
+
+    const box = document.createElement('div');
+    box.setAttribute('data-testudo-overlay', 'true');
+    box.setAttribute('data-testudo-step-box', 'true');
+    box.style.cssText = `position:absolute;top:${rect.top + window.scrollY - 4}px;left:${rect.left + window.scrollX - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px;border:2px solid ${safeColor};border-radius:6px;box-shadow:0 0 14px ${safeColor}66;pointer-events:none;z-index:99997;box-sizing:border-box;`;
+
+    if (options.label) {
+      const pill = document.createElement('div');
+      pill.style.cssText = `position:absolute;top:-20px;left:-2px;background:${safeColor};color:#030712;font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;`;
+      pill.textContent = options.label;
+      box.appendChild(pill);
+    }
+
+    document.body.appendChild(box);
+    return box;
+  }
+
+  /**
    * Highlights an error in the DOM with glowing red outline, character diff HUD, and viewport centering.
    */
   public async highlightError(
@@ -53,12 +134,10 @@ export class TestudoVisual {
     // Clean up any stale overlays first
     this.cleanup();
 
-    let element: HTMLElement | null = null;
-    if (typeof elementOrSelector === 'string') {
-      element = document.querySelector(elementOrSelector);
-    } else {
-      element = elementOrSelector;
-    }
+    const element =
+      typeof elementOrSelector === 'string'
+        ? resolveElement(elementOrSelector)
+        : elementOrSelector;
 
     if (!element) {
       return { diff: null };
@@ -71,6 +150,7 @@ export class TestudoVisual {
       color = '#EF4444',
       autoScroll = true
     } = options;
+    const safeColor = sanitizeCssColor(color, '#EF4444');
 
     // 1. Viewport auto-centering
     if (autoScroll && element.scrollIntoView) {
@@ -79,9 +159,9 @@ export class TestudoVisual {
 
     // 2. Glowing Neon Red Outline
     element.setAttribute('data-testudo-outlined', 'true');
-    element.style.setProperty('outline', `3px solid ${color}`, 'important');
+    element.style.setProperty('outline', `3px solid ${safeColor}`, 'important');
     element.style.setProperty('outline-offset', '3px', 'important');
-    element.style.setProperty('box-shadow', `0 0 15px ${color}BF`, 'important');
+    element.style.setProperty('box-shadow', `0 0 15px ${safeColor}BF`, 'important');
 
     // 3. Compute character diff
     const diff = expected && actual ? charDiff(expected, actual) : null;
@@ -90,13 +170,13 @@ export class TestudoVisual {
     const isInput = element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement;
 
     if (isInput) {
-      await this.highlightInputGhost(element as HTMLInputElement, diff, color);
+      await this.highlightInputGhost(element as HTMLInputElement, diff, safeColor);
     } else {
-      this.highlightTextRange(element, diff, color);
+      this.highlightTextRange(element, diff, safeColor);
     }
 
     // 5. Floating HUD Tooltip
-    this.renderFloatingHUD(element, message, diff, color);
+    this.renderFloatingHUD(element, message, diff, safeColor);
 
     // 6. Watch for element removal during SPA transitions
     this.watchForElementRemoval(element);
@@ -252,7 +332,7 @@ export class TestudoVisual {
   }
 
   /**
-   * Injects the floating error HUD badge above the target element.
+   * Injects the floating error HUD badge above the target element using safe DOM nodes and textContent.
    */
   private renderFloatingHUD(
     element: HTMLElement,
@@ -260,129 +340,83 @@ export class TestudoVisual {
     diff: CharDiffResult | null,
     color: string
   ): void {
+    const safeColor = sanitizeCssColor(color, '#EF4444');
     const rect = element.getBoundingClientRect();
     const hud = document.createElement('div');
     hud.setAttribute('data-testudo-overlay', 'true');
+    hud.setAttribute('data-testudo-hud', 'true');
 
-    let diffHtml = '';
+    hud.style.cssText = `position:absolute;top:${Math.max(10, rect.top + window.scrollY - 48)}px;left:${rect.left + window.scrollX}px;background:#0F172A;color:#F8FAFC;border:1px solid ${safeColor};border-radius:6px;padding:6px 10px;font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.4);pointer-events:none;z-index:100000;white-space:nowrap;`;
+
+    const headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+    const dot = document.createElement('span');
+    dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${safeColor};`;
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = `[TESTUDO FAIL] ${message}`;
+
+    headerRow.appendChild(dot);
+    headerRow.appendChild(msgSpan);
+    hud.appendChild(headerRow);
+
     if (diff) {
-      diffHtml = `
-        <div style="margin-top: 4px; font-size: 11px; font-family: monospace; color: #F87171;">
-          ${diff.message}
-        </div>
-      `;
+      const diffDiv = document.createElement('div');
+      diffDiv.style.cssText = 'margin-top:4px;font:11px monospace;color:#F87171;';
+      diffDiv.textContent = diff.message;
+      hud.appendChild(diffDiv);
     }
-
-    hud.style.cssText = `
-      position: absolute;
-      top: ${Math.max(10, rect.top + window.scrollY - 48)}px;
-      left: ${rect.left + window.scrollX}px;
-      background: #0F172A;
-      color: #F8FAFC;
-      border: 1px solid ${color};
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      pointer-events: none;
-      z-index: 100000;
-      white-space: nowrap;
-    `;
-
-    hud.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color};"></span>
-        <span>[TESTUDO FAIL] ${message}</span>
-      </div>
-      ${diffHtml}
-    `;
 
     document.body.appendChild(hud);
   }
 
-  /**
-   * Watches for host element removal during SPA navigation and cleans up orphaned overlays.
-   */
   private watchForElementRemoval(element: HTMLElement): void {
     if (typeof MutationObserver === 'undefined') return;
-
     this.activeObserver = new MutationObserver(() => {
-      if (!document.body.contains(element)) {
-        this.cleanup();
-      }
+      if (!document.body.contains(element)) this.cleanup();
     });
-
     this.activeObserver.observe(document.body, { childList: true, subtree: true });
   }
 
-  /**
-   * Highlights a multi-cell financial calculus failure with distinct non-colliding operand colors,
-   * a target failure outline, floating character-level diff zoom card, and connecting formula HUD.
-   */
   public highlightCalculus(
     evaluation: any,
     targetElementOrSelector: string | HTMLElement,
     options: { delta?: number; tolerance?: number; autoScroll?: boolean } = {}
   ): void {
     if (typeof document === 'undefined') return;
-
     this.cleanup();
-
     const { delta = 0, tolerance = 0.005, autoScroll = true } = options;
-
-    let targetEl: HTMLElement | null = null;
-    if (typeof targetElementOrSelector === 'string') {
-      targetEl = document.querySelector(targetElementOrSelector);
-    } else {
-      targetEl = targetElementOrSelector;
-    }
-
+    const targetEl: HTMLElement | null =
+      typeof targetElementOrSelector === 'string'
+        ? resolveElement(targetElementOrSelector)
+        : targetElementOrSelector;
     if (!targetEl) return;
 
     if (autoScroll && targetEl.scrollIntoView) {
       targetEl.scrollIntoView({ behavior: 'instant' as any, block: 'center', inline: 'center' });
     }
 
-    // 1. Highlight each operand with its distinct palette color
     if (evaluation && evaluation.operands) {
       for (const op of evaluation.operands) {
-        let el = op.element;
-        if (!el && op.selector) {
-          el = document.querySelector(op.selector);
-        }
+        const el = op.element || (op.selector ? resolveElement(op.selector) : null);
         if (el) {
+          const opColor = sanitizeCssColor(op.color, '#38BDF8');
           el.setAttribute('data-testudo-outlined', 'true');
-          el.style.setProperty('outline', `2px ${op.borderPattern || 'solid'} ${op.color}`, 'important');
+          el.style.setProperty('outline', `2px ${op.borderPattern || 'solid'} ${opColor}`, 'important');
           el.style.setProperty('outline-offset', '2px', 'important');
-          el.style.setProperty('box-shadow', `0 0 12px ${op.color}80`, 'important');
+          el.style.setProperty('box-shadow', `0 0 12px ${opColor}80`, 'important');
 
           const pill = document.createElement('div');
           pill.setAttribute('data-testudo-overlay', 'true');
           const rect = el.getBoundingClientRect();
-          pill.style.cssText = `
-            position: absolute;
-            top: ${window.scrollY + rect.top - 14}px;
-            left: ${window.scrollX + rect.left}px;
-            background: ${op.color};
-            color: #000;
-            font-size: 9px;
-            font-weight: 800;
-            padding: 1px 5px;
-            border-radius: 3px;
-            letter-spacing: 0.05em;
-            z-index: 100000;
-            font-family: monospace;
-            pointer-events: none;
-          `;
+          pill.style.cssText = `position:absolute;top:${window.scrollY + rect.top - 14}px;left:${window.scrollX + rect.left}px;background:${opColor};color:#000;font:800 9px monospace;padding:1px 5px;border-radius:3px;letter-spacing:0.05em;z-index:100000;pointer-events:none;`;
           pill.textContent = `${op.shape ? op.shape + ' ' : ''}${op.label} ${op.selector}`;
           document.body.appendChild(pill);
         }
       }
     }
 
-    // 2. Highlight target element in pulsing crimson
     const crimson = '#F43F5E';
     targetEl.setAttribute('data-testudo-outlined', 'true');
     targetEl.style.setProperty('outline', `2px solid ${crimson}`, 'important');
@@ -390,28 +424,12 @@ export class TestudoVisual {
     targetEl.style.setProperty('box-shadow', `0 0 15px ${crimson}B3`, 'important');
 
     const targetRect = targetEl.getBoundingClientRect();
-
     const targetPill = document.createElement('div');
     targetPill.setAttribute('data-testudo-overlay', 'true');
-    targetPill.style.cssText = `
-      position: absolute;
-      top: ${window.scrollY + targetRect.top - 14}px;
-      left: ${window.scrollX + targetRect.left}px;
-      background: ${crimson};
-      color: #fff;
-      font-size: 9px;
-      font-weight: 800;
-      padding: 1px 5px;
-      border-radius: 3px;
-      letter-spacing: 0.05em;
-      z-index: 100000;
-      font-family: monospace;
-      pointer-events: none;
-    `;
+    targetPill.style.cssText = `position:absolute;top:${window.scrollY + targetRect.top - 14}px;left:${window.scrollX + targetRect.left}px;background:${crimson};color:#fff;font:800 9px monospace;padding:1px 5px;border-radius:3px;letter-spacing:0.05em;z-index:100000;pointer-events:none;`;
     targetPill.textContent = `🚨 TARGET [ERROR] (Δ ${delta >= 0 ? '+' : ''}${delta})`;
     document.body.appendChild(targetPill);
 
-    // 3. Floating Character-Level Diff Zoom Card (4K-Crisp)
     const targetText = ((targetEl as any).value !== undefined ? (targetEl as any).value : targetEl.textContent) || '';
     const expectedText = `$${Number(evaluation.expectedValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
     const diff = charDiff(expectedText, targetText.trim());
@@ -419,37 +437,39 @@ export class TestudoVisual {
     const zoomCard = document.createElement('div');
     zoomCard.setAttribute('data-testudo-overlay', 'true');
     zoomCard.className = 'testudo-diff-zoom';
-    zoomCard.style.cssText = `
-      position: absolute;
-      top: ${window.scrollY + targetRect.top - 80}px;
-      left: ${window.scrollX + targetRect.left + 30}px;
-      background: #0F172A;
-      border: 2px solid ${crimson};
-      border-radius: 8px;
-      padding: 10px 14px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.85), 0 0 12px rgba(244, 63, 94, 0.4);
-      z-index: 100001;
-      font-family: monospace;
-      color: #F8FAFC;
-      font-size: 11px;
-      pointer-events: none;
-      min-width: 260px;
-    `;
+    zoomCard.style.cssText = `position:absolute;top:${window.scrollY + targetRect.top - 80}px;left:${window.scrollX + targetRect.left + 30}px;background:#0F172A;border:2px solid ${crimson};border-radius:8px;padding:10px 14px;box-shadow:0 20px 40px rgba(0,0,0,0.85),0 0 12px rgba(244,63,94,0.4);z-index:100001;font:11px monospace;color:#F8FAFC;pointer-events:none;min-width:260px;`;
 
-    zoomCard.innerHTML = `
-      <div style="font-weight: 800; color: ${crimson}; margin-bottom: 6px; font-size: 10px; display: flex; justify-content: space-between;">
-        <span>🔍 CHARACTER-LEVEL DIFF ZOOM</span>
-        <span style="color: #94A3B8;">Index ${diff ? diff.index : 0}</span>
-      </div>
-      <div style="display: grid; grid-template-columns: 70px 1fr; gap: 4px; font-size: 11px;">
-        <span style="color: #94A3B8;">Expected:</span>
-        <span style="color: #34D399; font-weight: 700;">${expectedText}</span>
-        <span style="color: #94A3B8;">Actual DOM:</span>
-        <span style="color: #F87171; font-weight: 700;">${targetText.trim()}</span>
-        <span style="color: #94A3B8;">Divergence:</span>
-        <span style="color: #FDE047;">Δ ${delta >= 0 ? '+' : ''}${delta} (Tol: ${tolerance})</span>
-      </div>
-    `;
+    const zoomHeader = document.createElement('div');
+    zoomHeader.style.cssText = `font-weight:800;color:${crimson};margin-bottom:6px;font-size:10px;display:flex;justify-content:space-between;`;
+    const zoomTitle = document.createElement('span');
+    zoomTitle.textContent = '🔍 CHARACTER-LEVEL DIFF ZOOM';
+    const zoomIndex = document.createElement('span');
+    zoomIndex.style.color = '#94A3B8';
+    zoomIndex.textContent = `Index ${diff ? diff.index : 0}`;
+    zoomHeader.appendChild(zoomTitle);
+    zoomHeader.appendChild(zoomIndex);
+
+    const zoomGrid = document.createElement('div');
+    zoomGrid.style.cssText = 'display: grid; grid-template-columns: 70px 1fr; gap: 4px; font-size: 11px;';
+
+    const appendRow = (labelText: string, valueText: string, valueColor: string, bold: boolean = false) => {
+      const lbl = document.createElement('span');
+      lbl.style.color = '#94A3B8';
+      lbl.textContent = labelText;
+      const val = document.createElement('span');
+      val.style.color = valueColor;
+      if (bold) val.style.fontWeight = '700';
+      val.textContent = valueText;
+      zoomGrid.appendChild(lbl);
+      zoomGrid.appendChild(val);
+    };
+
+    appendRow('Expected:', expectedText, '#34D399', true);
+    appendRow('Actual DOM:', targetText.trim(), '#F87171', true);
+    appendRow('Divergence:', `Δ ${delta >= 0 ? '+' : ''}${delta} (Tol: ${tolerance})`, '#FDE047', false);
+
+    zoomCard.appendChild(zoomHeader);
+    zoomCard.appendChild(zoomGrid);
     document.body.appendChild(zoomCard);
 
     this.watchForElementRemoval(targetEl);

@@ -4,6 +4,8 @@
  * Zero external dependencies.
  */
 
+import { resolveElement } from './scan.js';
+
 export interface TypeOptions {
   delay?: number; // Base delay in milliseconds between keystrokes
   jitter?: number; // Random variance in milliseconds (+/- jitter)
@@ -49,19 +51,26 @@ export class TestudoType {
   }
 
   /**
-   * Sets value on an HTMLInputElement bypassing React/Vue internal state trackers (_valueTracker).
+   * Sets value on an HTMLInputElement / HTMLTextAreaElement / HTMLSelectElement bypassing React/Vue internal state trackers (_valueTracker).
    */
-  public setNativeValue(element: HTMLInputElement | HTMLTextAreaElement, value: string): void {
+  public setNativeValue(
+    element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+    value: string
+  ): void {
     const prototype =
-      element instanceof HTMLTextAreaElement
+      typeof HTMLTextAreaElement !== 'undefined' && element instanceof HTMLTextAreaElement
         ? window.HTMLTextAreaElement.prototype
-        : window.HTMLInputElement.prototype;
+        : typeof HTMLSelectElement !== 'undefined' && element instanceof HTMLSelectElement
+        ? window.HTMLSelectElement.prototype
+        : typeof window !== 'undefined' && window.HTMLInputElement
+        ? window.HTMLInputElement.prototype
+        : Object.getPrototypeOf(element);
 
-    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+    const descriptor = prototype ? Object.getOwnPropertyDescriptor(prototype, 'value') : undefined;
     if (descriptor && descriptor.set) {
       descriptor.set.call(element, value);
     } else {
-      element.value = value;
+      (element as any).value = value;
     }
   }
 
@@ -74,7 +83,66 @@ export class TestudoType {
   }
 
   /**
-   * Types text into a target input element safely, dispatching native event sequences.
+   * Executes a single native click operation on an unambiguous target element.
+   * Never dispatches redundant pointer/mouse events alongside element.click() to prevent double-click bugs.
+   */
+  public async click(elementOrSelector: string | HTMLElement): Promise<void> {
+    const element =
+      typeof elementOrSelector === 'string'
+        ? resolveElement(elementOrSelector, undefined, { requireUnique: true })
+        : elementOrSelector;
+
+    if (!element) {
+      throw new Error(`[Testudo] Target element not found for click: ${elementOrSelector}`);
+    }
+
+    if ((element as HTMLButtonElement).disabled) {
+      throw new Error(`[Testudo] Target element is disabled and cannot be clicked: ${elementOrSelector}`);
+    }
+
+    if (typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'instant' as any, block: 'center', inline: 'center' });
+    }
+
+    if (typeof element.click === 'function') {
+      element.click();
+    } else {
+      this.dispatch(element, 'click');
+    }
+  }
+
+  /**
+   * Selects a value on an unambiguous HTMLSelectElement and dispatches React/Vue-compatible input + change events.
+   */
+  public async select(
+    elementOrSelector: string | HTMLSelectElement | HTMLElement,
+    value: string
+  ): Promise<void> {
+    const element = (
+      typeof elementOrSelector === 'string'
+        ? resolveElement(elementOrSelector, undefined, { requireUnique: true })
+        : elementOrSelector
+    ) as HTMLSelectElement | null;
+
+    if (!element) {
+      throw new Error(`[Testudo] Target select element not found: ${elementOrSelector}`);
+    }
+
+    if (typeof element.focus === 'function') {
+      element.focus();
+    }
+    this.dispatch(element, 'focus');
+    this.setNativeValue(element, value);
+    this.dispatch(element, 'input');
+    this.dispatch(element, 'change');
+    if (typeof element.blur === 'function') {
+      element.blur();
+    }
+    this.dispatch(element, 'blur');
+  }
+
+  /**
+   * Types text into an unambiguous target input element safely, dispatching native event sequences.
    */
   public async type(
     elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
@@ -84,9 +152,9 @@ export class TestudoType {
     let element: HTMLInputElement | HTMLTextAreaElement | null = null;
 
     if (typeof elementOrSelector === 'string') {
-      if (typeof document !== 'undefined') {
-        element = document.querySelector(elementOrSelector) as HTMLInputElement;
-      }
+      element = resolveElement(elementOrSelector, undefined, {
+        requireUnique: true
+      }) as HTMLInputElement | HTMLTextAreaElement | null;
     } else {
       element = elementOrSelector;
     }
@@ -157,9 +225,15 @@ export const type = Object.assign(
       text: string,
       options?: TypeOptions
     ) => defaultInstance.type(elementOrSelector, text, options),
+    click: (elementOrSelector: string | HTMLElement) => defaultInstance.click(elementOrSelector),
+    select: (elementOrSelector: string | HTMLSelectElement | HTMLElement, value: string) =>
+      defaultInstance.select(elementOrSelector, value),
     applyMask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
     mask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
-    setNativeValue: (element: HTMLInputElement | HTMLTextAreaElement, value: string) =>
-      defaultInstance.setNativeValue(element, value)
+    setNativeValue: (
+      element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+      value: string
+    ) => defaultInstance.setNativeValue(element, value)
   }
 );
+

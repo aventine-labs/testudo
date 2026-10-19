@@ -14,9 +14,87 @@ export interface ScannedElement {
   label?: string;
   role?: string;
   text?: string;
+  action: 'click' | 'type' | 'select';
   selector: string;
   snippet: string;
   element: HTMLElement;
+}
+
+export interface ResolveScopeOptions {
+  cascadeAll?: boolean;
+}
+
+export interface ResolveElementOptions {
+  requireUnique?: boolean;
+}
+
+/**
+ * Normalizes a CSS selector to escape numeric-prefixed #id or .class tokens so standard querySelectorAll works cleanly.
+ */
+export function normalizeCssSelector(selector: string): string {
+  const clean = selector.trim();
+  if (!clean) return clean;
+
+  if (clean.startsWith('#') && !/[\s>.+\[~:]/.test(clean.slice(1))) {
+    const rawId = clean.slice(1);
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      return `#${CSS.escape(rawId)}`;
+    }
+    return `[id="${rawId.replace(/"/g, '\\"')}"]`;
+  }
+
+  if (clean.startsWith('.') && !/[\s>.+\[~:#]/.test(clean.slice(1))) {
+    const rawClass = clean.slice(1);
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      return `.${CSS.escape(rawClass)}`;
+    }
+  }
+
+  return clean;
+}
+
+/**
+ * Resolves a single DOM element from a standards-compliant CSS selector or HTMLElement.
+ * When options.requireUnique is true, throws an explicit ambiguity error if the selector matches > 1 visible element.
+ */
+export function resolveElement(
+  selectorOrElement: string | HTMLElement,
+  root?: Document | Element | null,
+  options: ResolveElementOptions = {}
+): HTMLElement | null {
+  if (!selectorOrElement) return null;
+  if (typeof selectorOrElement !== 'string') return selectorOrElement;
+  const doc = root || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return null;
+
+  const clean = selectorOrElement.trim();
+  if (!clean) return null;
+
+  const normalized = normalizeCssSelector(clean);
+  let matches: HTMLElement[] = [];
+
+  try {
+    matches = Array.from(doc.querySelectorAll(normalized)) as HTMLElement[];
+  } catch {
+    if (clean.startsWith('#') && 'getElementById' in doc && typeof doc.getElementById === 'function') {
+      const byId = doc.getElementById(clean.slice(1));
+      if (byId) matches = [byId as HTMLElement];
+    } else {
+      throw new Error(`[Testudo] Invalid CSS selector: "${clean}"`);
+    }
+  }
+
+  if (matches.length === 0) {
+    return null;
+  }
+
+  if (options.requireUnique && matches.length > 1) {
+    throw new Error(
+      `[Testudo] Ambiguous selector "${clean}" matched ${matches.length} elements. Refusing to execute action on ambiguous target.`
+    );
+  }
+
+  return matches[0];
 }
 
 export class TestudoScan {
@@ -27,7 +105,8 @@ export class TestudoScan {
    * Uses native CSS4 [attr="value" i] with graceful fallback for Safari 16.
    */
   private safeQueryAttr(attr: string, value: string, partial: boolean = false): HTMLElement[] {
-    const selector = partial ? `[${attr}*="${value}" i]` : `[${attr}="${value}" i]`;
+    const escapedVal = value.replace(/"/g, '\\"');
+    const selector = partial ? `[${attr}*="${escapedVal}" i]` : `[${attr}="${escapedVal}" i]`;
     try {
       const found = document.querySelectorAll(selector);
       if (found.length > 0) return Array.from(found) as HTMLElement[];
@@ -50,14 +129,20 @@ export class TestudoScan {
   /**
    * Deterministic Smart Scope Resolver.
    * Resolves plain words (e.g. 'contact' or 'modal' or 'form.contact') into target container elements.
-   * Priority cascade: data-testid > data-test > id > name > aria-label > heading text > class > tag.
+   * Priority cascade: data-testid > data-test > data-demo-id > id > name > aria-label > heading text > class > tag.
+   * Stops at the highest matching priority level by default (set options.cascadeAll = true to union all levels).
    */
-  public resolveScope(scopeQuery?: string | HTMLElement): HTMLElement[] {
+  public resolveScope(
+    scopeQuery?: string | HTMLElement,
+    options: ResolveScopeOptions = {}
+  ): HTMLElement[] {
     if (typeof document === 'undefined') return [];
     if (!scopeQuery) return [document.body];
     if (typeof scopeQuery !== 'string') return [scopeQuery];
 
     const clean = scopeQuery.trim();
+    if (!clean) return [document.body];
+    const { cascadeAll = false } = options;
 
     // 1. Direct standard CSS selector check (e.g. #contact, .modal, form[name="checkout"])
     if (
@@ -66,8 +151,14 @@ export class TestudoScan {
       clean.includes('[') ||
       clean.includes('>')
     ) {
-      const found = document.querySelectorAll(clean);
-      if (found.length > 0) return Array.from(found) as HTMLElement[];
+      const normalized = normalizeCssSelector(clean);
+      try {
+        const found = document.querySelectorAll(normalized);
+        if (found.length > 0) return Array.from(found) as HTMLElement[];
+      } catch {
+        const single = resolveElement(clean);
+        if (single) return [single];
+      }
     }
 
     // 2. Handle dot-notation: e.g. "form.contact"
@@ -76,47 +167,82 @@ export class TestudoScan {
       const tag = parts[0];
       const ident = parts[1];
       const selector = `${tag}#${ident}, ${tag}.${ident}, ${tag}[name="${ident}"]`;
-      const found = document.querySelectorAll(selector);
-      if (found.length > 0) return Array.from(found) as HTMLElement[];
+      try {
+        const found = document.querySelectorAll(selector);
+        if (found.length > 0) return Array.from(found) as HTMLElement[];
+      } catch {
+        // Continue to cascade
+      }
     }
 
-    // 3. Deterministic Priority Cascade for plain words (e.g. 'contact')
+    // 3. Deterministic Priority Cascade for plain words (stops at highest matching tier unless cascadeAll=true)
     const candidates: HTMLElement[] = [];
 
     // Priority 1: data-testid
     const byTestId = this.safeQueryAttr('data-testid', clean);
-    if (byTestId.length > 0) candidates.push(...byTestId);
+    if (byTestId.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(byTestId));
+      candidates.push(...byTestId);
+    }
 
     // Priority 2: data-test
     const byDataTest = this.safeQueryAttr('data-test', clean);
-    if (byDataTest.length > 0) candidates.push(...byDataTest);
+    if (byDataTest.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(byDataTest));
+      candidates.push(...byDataTest);
+    }
+
+    // Priority 2b: data-demo-id
+    const byDemoId = this.safeQueryAttr('data-demo-id', clean);
+    if (byDemoId.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(byDemoId));
+      candidates.push(...byDemoId);
+    }
 
     // Priority 3: id (strict exact match only)
     const byId = document.getElementById(clean) || this.safeQueryAttr('id', clean, false)[0];
-    if (byId) candidates.push(byId as HTMLElement);
+    if (byId) {
+      if (!cascadeAll) return [byId as HTMLElement];
+      candidates.push(byId as HTMLElement);
+    }
 
     // Priority 4: name attribute
     const byName = this.safeQueryAttr('name', clean);
-    if (byName.length > 0) candidates.push(...byName);
+    if (byName.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(byName));
+      candidates.push(...byName);
+    }
 
     // Priority 5: aria-label
     const byAria = this.safeQueryAttr('aria-label', clean, true);
-    if (byAria.length > 0) candidates.push(...byAria);
+    if (byAria.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(byAria));
+      candidates.push(...byAria);
+    }
 
     // Priority 6: heading text (h1..h6)
+    const headingContainers: HTMLElement[] = [];
     const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
     for (const h of Array.from(headings)) {
       if (h.textContent?.toLowerCase().includes(clean.toLowerCase())) {
         const container = h.closest('section, form, div, main, article') || h.parentElement;
-        if (container) candidates.push(container as HTMLElement);
+        if (container) headingContainers.push(container as HTMLElement);
       }
+    }
+    if (headingContainers.length > 0) {
+      if (!cascadeAll) return Array.from(new Set(headingContainers));
+      candidates.push(...headingContainers);
     }
 
     // Priority 7: class name (escapes numeric prefixes / special chars)
     try {
       const escapedClass = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(clean) : clean;
       const byClass = document.querySelectorAll(`.${escapedClass}`);
-      if (byClass.length > 0) candidates.push(...(Array.from(byClass) as HTMLElement[]));
+      if (byClass.length > 0) {
+        const arr = Array.from(byClass) as HTMLElement[];
+        if (!cascadeAll) return Array.from(new Set(arr));
+        candidates.push(...arr);
+      }
     } catch {
       // Gracefully ignore invalid CSS selector
     }
@@ -124,17 +250,139 @@ export class TestudoScan {
     // Priority 8: tag name (e.g. 'form', 'table', 'nav', 'header')
     try {
       const byTag = document.querySelectorAll(clean);
-      if (byTag.length > 0) candidates.push(...(Array.from(byTag) as HTMLElement[]));
+      if (byTag.length > 0) {
+        const arr = Array.from(byTag) as HTMLElement[];
+        if (!cascadeAll) return Array.from(new Set(arr));
+        candidates.push(...arr);
+      }
     } catch {
       // Gracefully ignore invalid tag selector
     }
 
     if (candidates.length > 0) {
-      // Deduplicate elements
       return Array.from(new Set(candidates));
     }
 
     return [document.body];
+  }
+
+  /**
+   * Builds a standards-compliant, unique CSS selector for an element.
+   */
+  private buildUniqueCssSelector(el: HTMLElement): string {
+    const tag = el.tagName.toLowerCase();
+    const testId = el.getAttribute('data-testid');
+    const dataTest = el.getAttribute('data-test');
+    const demoId = el.getAttribute('data-demo-id');
+    const id = el.id;
+    const name = (el as HTMLInputElement).name;
+    const ariaLabel = el.getAttribute('aria-label');
+
+    const isUnique = (sel: string): boolean => {
+      try {
+        return document.querySelectorAll(normalizeCssSelector(sel)).length === 1;
+      } catch {
+        return false;
+      }
+    };
+
+    if (testId) {
+      const sel = `[data-testid="${testId.replace(/"/g, '\\"')}"]`;
+      if (isUnique(sel)) return sel;
+    }
+    if (dataTest) {
+      const sel = `[data-test="${dataTest.replace(/"/g, '\\"')}"]`;
+      if (isUnique(sel)) return sel;
+    }
+    if (demoId) {
+      const sel = `[data-demo-id="${demoId.replace(/"/g, '\\"')}"]`;
+      if (isUnique(sel)) return sel;
+    }
+    if (id) {
+      const sel = `#${id}`;
+      if (isUnique(sel)) return sel;
+    }
+    if (name) {
+      const sel = `${tag}[name="${name.replace(/"/g, '\\"')}"]`;
+      if (isUnique(sel)) return sel;
+    }
+    if (ariaLabel) {
+      const sel = `${tag}[aria-label="${ariaLabel.replace(/"/g, '\\"')}"]`;
+      if (isUnique(sel)) return sel;
+    }
+
+    const firstClass =
+      typeof el.className === 'string' && el.className.trim()
+        ? el.className.trim().split(/\s+/)[0]
+        : '';
+    if (firstClass) {
+      const candidate = `${tag}.${firstClass}`;
+      if (isUnique(candidate)) return candidate;
+    }
+
+    // Build structural CSS path (standards-compliant nth-of-type) to guarantee uniqueness
+    const segments: string[] = [];
+    let current: HTMLElement | null = el;
+    while (current && current !== document.body && current !== document.documentElement) {
+      const cTag = current.tagName.toLowerCase();
+      if (current.id) {
+        const idSel = `#${current.id}`;
+        segments.unshift(idSel);
+        break;
+      }
+      const parent: HTMLElement | null = current.parentElement;
+      if (!parent) {
+        segments.unshift(cTag);
+        break;
+      }
+      const sameTagSiblings = Array.from(parent.children).filter(
+        (child: Element) => child.tagName.toLowerCase() === cTag
+      );
+      if (sameTagSiblings.length > 1) {
+        const nth = sameTagSiblings.indexOf(current) + 1;
+        segments.unshift(`${cTag}:nth-of-type(${nth})`);
+      } else {
+        segments.unshift(cTag);
+      }
+      current = parent;
+    }
+    return segments.join(' > ') || tag;
+  }
+
+  /**
+   * Determines the appropriate action ('click' | 'type' | 'select') and executable snippet for an element.
+   */
+  private buildActionSnippet(el: HTMLElement, selector: string): { action: 'click' | 'type' | 'select'; snippet: string } {
+    const tag = el.tagName.toLowerCase();
+    const inputType = ((el as HTMLInputElement).type || 'text').toLowerCase();
+    const safeSel = selector.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+    if (tag === 'select') {
+      const selectEl = el as HTMLSelectElement;
+      let optVal = 'option';
+      if (selectEl.options && selectEl.options.length > 0) {
+        const nonEmpty = Array.from(selectEl.options).find((o) => o.value && o.value !== 'none');
+        optVal = (nonEmpty ? nonEmpty.value : selectEl.options[0].value) || 'option';
+      }
+      const safeOpt = optVal.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return {
+        action: 'select',
+        snippet: `await $T('${safeSel}').select('${safeOpt}');`
+      };
+    }
+
+    const nonTypingInputs = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'image', 'file', 'color', 'range']);
+    if (tag === 'textarea' || (tag === 'input' && !nonTypingInputs.has(inputType))) {
+      return {
+        action: 'type',
+        snippet: `await $T('${safeSel}').type('example');`
+      };
+    }
+
+    return {
+      action: 'click',
+      snippet: `await $T('${safeSel}').click();`
+    };
   }
 
   /**
@@ -145,13 +393,21 @@ export class TestudoScan {
     if (scopes.length === 0) return [];
 
     const results: ScannedElement[] = [];
+    const seen = new Set<HTMLElement>();
     const interactiveQuery =
       'button, input, select, textarea, a[href], [role="button"], [role="link"], [role="tab"], [onclick]';
 
     let index = 1;
     for (const scope of scopes) {
-      const elements = scope.querySelectorAll(interactiveQuery);
-      for (const el of Array.from(elements) as HTMLElement[]) {
+      const nodeList = scope.matches && scope.matches(interactiveQuery)
+        ? [scope, ...Array.from(scope.querySelectorAll(interactiveQuery))]
+        : Array.from(scope.querySelectorAll(interactiveQuery));
+
+      for (const rawEl of nodeList) {
+        const el = rawEl as HTMLElement;
+        if (seen.has(el)) continue;
+        seen.add(el);
+
         // Skip hidden elements (zero dimensions, display: none, or visibility: hidden)
         if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
         if (typeof window !== 'undefined' && window.getComputedStyle) {
@@ -164,33 +420,14 @@ export class TestudoScan {
         const name = (el as HTMLInputElement).name;
         const id = el.id;
         const role = el.getAttribute('role') || undefined;
-        const text = el.innerText?.trim().slice(0, 30);
-        const testId = el.getAttribute('data-testid');
+        const ariaLabel = el.getAttribute('aria-label') || undefined;
+        const text = (el.innerText || el.textContent || '')?.trim().replace(/\s+/g, ' ').slice(0, 30);
 
-        // Build resilient selector & snippet
-        let selector = '';
-        let snippet = '';
+        // 1. Build standards-compliant, unique CSS selector
+        const selector = this.buildUniqueCssSelector(el);
 
-        if (testId) {
-          selector = `[data-testid="${testId}"]`;
-          snippet = `await $T('${selector}').click();`;
-        } else if (id) {
-          selector = `#${id}`;
-          snippet = `await $T('${selector}').click();`;
-        } else if (name) {
-          selector = `${tag}[name="${name}"]`;
-          if (tag === 'input' && type !== 'submit' && type !== 'button') {
-            snippet = `await $T('${selector}').type('example');`;
-          } else {
-            snippet = `await $T('${selector}').click();`;
-          }
-        } else if (text && (tag === 'button' || role === 'button')) {
-          selector = `button:has-text("${text}")`;
-          snippet = `await $T('${selector}').click();`;
-        } else {
-          selector = `${tag}${el.className ? '.' + el.className.split(' ')[0] : ''}`;
-          snippet = `await $T('${selector}').click();`;
-        }
+        // 2. Build element-appropriate executable action snippet (.click, .type, .select)
+        const { action, snippet } = this.buildActionSnippet(el, selector);
 
         results.push({
           index: index++,
@@ -198,8 +435,10 @@ export class TestudoScan {
           type,
           name,
           id,
+          label: ariaLabel,
           role,
           text,
+          action,
           selector,
           snippet,
           element: el
@@ -289,3 +528,4 @@ export class TestudoScan {
 }
 
 export const scan = new TestudoScan();
+

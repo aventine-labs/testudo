@@ -8,21 +8,28 @@
 <h1 align="center">🛡️ Testudo™ Testing Suite</h1>
 <p align="center">
   <strong>The Armored Tuxedo Tortoise: Unified Defensive Software Verification</strong><br>
-  <em>High-Precision Synthetic Verification & Native Single-Binary JMeter Protocol Load Engine</em>
+  <em>High-Precision Browser Forensics (`@aventine/testudo`) & Native Single-Binary JMeter Protocol Load Engine (`@aventine/testudo-jmx`)</em>
 </p>
 
 <p align="center">
   <a href="https://github.com/aventine-labs/testudo/actions"><img src="https://img.shields.io/github/actions/workflow/status/aventine-labs/testudo/ci.yml?branch=main&label=CI%20Pipeline&logo=github" alt="CI Status"></a>
-  <a href="https://www.npmjs.com/package/@aventine/testudo-jmx"><img src="https://img.shields.io/npm/v/@aventine/testudo-jmx?color=blue&label=%40aventine%2Ftestudo-jmx" alt="npm testudo-jmx"></a>
   <a href="https://www.npmjs.com/package/@aventine/testudo"><img src="https://img.shields.io/npm/v/@aventine/testudo?color=green&label=%40aventine%2Ftestudo" alt="npm testudo"></a>
+  <a href="https://www.npmjs.com/package/@aventine/testudo-jmx"><img src="https://img.shields.io/npm/v/@aventine/testudo-jmx?color=blue&label=%40aventine%2Ftestudo-jmx" alt="npm testudo-jmx"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/aventine-labs/testudo/wiki"><strong>📖 Official GitHub Wiki (Testudo-JS & Testudo-JMX)</strong></a> •
+  <a href="./docs/wiki/README.md"><strong>📚 In-Repo Unified Wiki & Screengrabs</strong></a> •
+  <a href="./packages/testudo-js/README.md"><strong>⚡ Testudo-JS Docs</strong></a> •
+  <a href="./packages/testudo-jmx/README.md"><strong>🚀 Testudo-JMX Docs</strong></a>
 </p>
 
 <p align="center">
   <strong>Parent Organization:</strong> Aventine Labs LLC • <strong>Open-Source Core:</strong> Apache-2.0 (Testudo-JS & Testudo-JMX)
 </p>
 
-Testudo is an open-source testing ecosystem engineered to deliver zero-dependency, mathematically rigorous software verification. The open-source suite comprises Testudo-JS (in-browser DOM exploration and float-precision accounting math) and Testudo-JMX (high-concurrency native Apache JMeter protocol execution), licensed under the Apache License 2.0. Advanced enterprise tools (Testudo LoadForge™ and Testudo LoadTest™) are developed separately as closed-source proprietary software by Aventine Labs LLC.
+Testudo is an open-source testing ecosystem engineered to deliver zero-dependency, mathematically rigorous software verification. The open-source suite comprises **Testudo-JS** (in-browser DOM exploration, single-click uniqueness guarantees, and float-precision accounting math) and **Testudo-JMX** (high-concurrency native Apache JMeter protocol execution), licensed under the Apache License 2.0. Advanced enterprise tools (Testudo LoadForge™ and Testudo LoadTest™) are developed separately as closed-source proprietary software by Aventine Labs LLC.
 
 ---
 
@@ -45,39 +52,48 @@ Testudo is an open-source testing ecosystem engineered to deliver zero-dependenc
             │                                                     │
             ▼                                                     ▼
    [ In-Browser DOM & Math ]                            [ High-Density CLI & GUI ]
-   • Smart Scoping Cascade                              • 100% JMeter CLI flag parity
-   • Zero-alloc blotter math                            • 50k+ VUs on a single box
-   • SAP/European currency parsing                      • Zero JVM GC tail latency tax
-   • Playwright & Puppeteer adapters                    • Web Flight Deck GUI (localhost:3014)
-                                                        • Off-TCP UDP telemetry streamer
+   • Smart Scoping Cascade (8-tier stop)                • 100% JMeter CLI flag parity
+   • Single-click & uniqueness guards                   • 50k+ VUs on a single box
+   • Zero-alloc blotter calculus                        • Zero JVM GC tail latency tax
+   • SAP/European currency parsing                      • Web Flight Deck GUI (localhost:3014)
+   • Playwright page.evaluate() bridge                  • Off-TCP UDP telemetry streamer
 ```
 
 ---
 
 ## 1. Testudo-JS™ (`packages/testudo-js`)
-**Package:** `@aventine/testudo` (npm) • **Runtime:** Browser / Node.js / Playwright / Puppeteer
+**Package:** [`@aventine/testudo`](https://www.npmjs.com/package/@aventine/testudo) (npm) • **Runtime:** Browser / Node.js / Playwright / Puppeteer • **Tests:** `49/49` Passing
 
-Testudo JS provides zero-dependency front-end synthetic testing and financial assertion mathematics:
-* **Smart Scoping Priority Cascade**: Pinpoint DOM elements through a 6-tier fallback heuristic (`data-testid` -> `aria-label` -> `name` -> `role` -> text content -> visual anchor).
-* **High-Precision Financial Math**: Exact IEEE-754 decimal arithmetic, relative epsilon tolerances, half-up rounding, and SAP/European trailing minus currency parser.
-* **Visual DOM Forensic Matchers**: Automated canvas bounding-box inspection and regression detection.
-* **Zero Runtime Dependencies**: Bounded bundle size (<5KB core / <15KB full).
+Testudo-JS provides zero-dependency front-end synthetic testing, interactive DOM exploration, and financial assertion mathematics:
+* **Smart Scoping Priority Cascade**: Pinpoints DOM containers through a deterministic 8-tier hierarchy (`data-testid` -> `data-demo-id` -> `id` -> `name` -> `aria-label` -> `heading` -> `class` -> `tag`), stopping immediately at the highest matching priority tier.
+* **Single-Click & Strict Selector Uniqueness**: Executes one native `element.click()` in standalone mode or `locator.click()` in Playwright mode (zero duplicate synthesized pointer events that could double-fire orders or toggles) and throws an explicit ambiguity error if a selector matches `> 1` element.
+* **High-Precision Financial Math & Multi-Cell Calculus**: Exact IEEE-754 decimal arithmetic, relative epsilon tolerances, half-up rounding, SAP/European trailing minus currency parser, and color-coded multi-cell operand highlighting.
+* **Interactive DOM Explorer (`$T.explore` & `$T.scan`)**: Renders numbered blue badges (`[1]`, `[2]`, `[3]`) over live controls and emits 100% standards-compliant CSS selector snippets (`.type()`, `.select()`, `.click()`).
+* **Zero Runtime Dependencies**: Bounded bundle size (`<5KB` core / `<15KB` full) and 100% XSS-safe `textContent` DOM HUD rendering.
 
 ```bash
 npm install @aventine/testudo
 ```
 
+### Testudo-JS Visual Forensics & DOM Explorer Screengrabs
+
+![Testudo-JS Multi-Cell Financial Calculus & Diff HUD](./assets/screenshots/testudo_fintech_full_settlement_screengrab.png)
+
+![Testudo-JS Interactive DOM Explorer Badges](./assets/screenshots/testudo_dom_explorer_blotter_screengrab.png)
+
+*Explore all Testudo-JS screengrabs, tight crops, and API guides in the [Unified Wiki (`docs/wiki/README.md`)](./docs/wiki/README.md) or [GitHub Wiki](https://github.com/aventine-labs/testudo/wiki).*
+
 ---
 
 ## 2. Testudo-JMX™ (`packages/testudo-jmx`)
-**Package:** `@aventine/testudo-jmx` • **Runtime:** Native Go Single-Binary
+**Package:** [`@aventine/testudo-jmx`](https://www.npmjs.com/package/@aventine/testudo-jmx) • **Runtime:** Native Go Single-Binary
 
 Testudo-JMX is a 100% free, drop-in native execution engine and real-time Web Flight Deck for Apache JMeter test plans (`.jmx`):
 * **Drop-In JMeter CLI Parity**: Run unmodified test plans without Java:
   ```bash
   testudo-jmx -n -t scenario.jmx -l results.jtl -e -o ./report
   ```
-* **Elimination of the JVM Garbage Collection Tax**: Eliminates Stop-the-World JVM pauses that artificially inflate p99 tail latency. Delivers 14x memory reduction (22 MB vs. JMeter's 310 MB RSS).
+* **Elimination of the JVM Garbage Collection Tax**: Eliminates Stop-the-World JVM pauses that artificially inflate p99 tail latency. Delivers up to 33.1x memory reduction (22.4 MB vs. JMeter's 740.7 MB RSS).
 * **Massive Concurrency Density**: Striped 16-way transport pool and sharded mutex tables sustain 50,000+ virtual users on standard developer hardware.
 * **Hierarchical Page Breaks & Inner Loops**: Full support for ZebraTester page breaks and nested JMeter LoopControllers.
 * **Decoupled 60 FPS Web Flight Deck**: Live operational dashboard on `localhost:3014` with tactile concurrency steering (`[ 0.5x ]`, `[ 2x Double ]`, `[ 5x ]`, `[ 10x ]`).
@@ -99,7 +115,35 @@ Tested against an isolated Magento 2 storefront under identical transaction flow
 | **30 VUs** | 6.93 req/s | **6.98 req/s** | 476.7 MB | **23.7 MB** | **20.1x Lower (-95.0%)** |
 | **50 VUs** | 11.46 req/s | **11.55 req/s** | 740.7 MB | **22.4 MB** | **33.1x Lower (-97.0%)** |
 
-*Full 10-tier matrix, high-resolution charts, per-URL breakdown, and Gunther USL saturation analysis available in [benchmarks/jmeter_vs_testudo_magento_benchmark.md](./benchmarks/jmeter_vs_testudo_magento_benchmark.md) and in the [Official Wiki](./docs/wiki/07_HEAD_TO_HEAD_JMETER_BENCHMARK.md).*
+*Full 10-tier matrix, high-resolution charts, per-URL breakdown, and Gunther USL saturation analysis available in [benchmarks/jmeter_vs_testudo_magento_benchmark.md](./benchmarks/jmeter_vs_testudo_magento_benchmark.md) and in the [Unified Wiki (`docs/wiki/07_HEAD_TO_HEAD_JMETER_BENCHMARK.md`)](./docs/wiki/07_HEAD_TO_HEAD_JMETER_BENCHMARK.md).*
+
+---
+
+## Unified Wiki & Documentation Index (`docs/wiki/` & GitHub Wiki)
+
+All documentation and visual screengrabs for **both** Testudo-JS and Testudo-JMX are consolidated in [`docs/wiki/README.md`](./docs/wiki/README.md) and the [GitHub Wiki](https://github.com/aventine-labs/testudo/wiki):
+
+### Part I: Testudo-JS (`@aventine/testudo`)
+* [Architecture & Engineering Philosophy](./docs/wiki/Architecture-and-Philosophy.md)
+* [Visual Error Forensics, Multi-Cell Calculus & HUD (with Screengrabs)](./docs/wiki/Visual-Forensics-and-HUD.md)
+* [Interactive DOM Explorer & Smart Scoping (with Screengrabs)](./docs/wiki/DOM-Explorer-and-Smart-Scoping.md)
+* [Financial Math Engine](./docs/wiki/Financial-Math-Engine.md)
+* [Format & Currency Parser](./docs/wiki/Format-and-Currency-Parser.md)
+* [Framework-Safe Typing, Select & Single-Click](./docs/wiki/Framework-Safe-Typing.md)
+* [Linear Character Diff](./docs/wiki/Linear-Character-Diff.md)
+* [Playwright Integration, In-Page Bridge & Matchers](./docs/wiki/Playwright-Integration-and-Matchers.md)
+* [Standalone Browser & Synthetic Monitors](./docs/wiki/Standalone-Browser-and-Synthetics.md)
+
+### Part II: Testudo-JMX (`@aventine/testudo-jmx`)
+* [01. What Testudo-JMX Does](./docs/wiki/01_WHAT_IT_DOES.md)
+* [02. Why Testudo-JMX Does It (Eliminating the JVM GC Tax)](./docs/wiki/02_WHY_IT_DOES_IT.md)
+* [03. How To Do It (CLI, Programmatic API & Web Flight Deck)](./docs/wiki/03_HOW_TO_DO_IT.md)
+* [04. RegexForge Auto-Correlation & Enterprise Recipes](./docs/wiki/04_REGEXFORGE_RECIPES.md)
+* [05. Migration Guide: From Apache JMeter to Testudo-JMX](./docs/wiki/05_MIGRATION_GUIDE.md)
+* [06. Engineering Advisory: Running 50,000 VUs from a Laptop](./docs/wiki/06_RUNNING_50K_VUS_FROM_A_LAPTOP.md)
+* [07. Head-to-Head JMeter Benchmark Report & Visualizations](./docs/wiki/07_HEAD_TO_HEAD_JMETER_BENCHMARK.md)
+* [08. Plugin Architecture Specification](./docs/wiki/08_PLUGIN_ARCHITECTURE_SPECIFICATION.md)
+* [09. Testudo Scudo Architecture Specification](./docs/wiki/09_TESTUDO_SCUDO_ARCHITECTURE_SPECIFICATION.md)
 
 ---
 

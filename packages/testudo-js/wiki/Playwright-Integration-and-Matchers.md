@@ -1,6 +1,6 @@
 # Playwright Integration & Matchers
 
-Testudo deeply integrates with Microsoft Playwright by extending Playwright's native `expect` assertion engine with custom financial and tolerance matchers, while pre-wiring page fixtures to automatically capture forensic screenshots on test failures.
+Testudo deeply integrates with Microsoft Playwright by extending Playwright's native `expect` assertion engine with custom financial and tolerance matchers, while providing an in-page evaluation bridge (`createPlaywrightTestudo` / `testudoFixture`) that executes DOM scanning, numbered step highlights, and failure forensics directly inside the browser `page` via `page.evaluate()`.
 
 ---
 
@@ -48,14 +48,14 @@ await expect(page.locator('#tax-rate')).toEqualNumber(0.0825, { tolerance: 0.000
 
 ---
 
-## 2. Playwright Fixture (`testudoFixture`)
+## 2. Playwright Fixture (`testudoFixture`) & In-Page Bridge (`createPlaywrightTestudo`)
 
-The official Testudo fixture extends Playwright's test runner, injecting `$T` into your test functions and wiring teardown hooks:
+The official Testudo fixture extends Playwright's test runner, injecting `$T` into your test functions, establishing the in-page `window.__TESTUDO_BRIDGE__` via `page.evaluate()`, and wiring automatic failure screenshots:
 
 ```typescript
 // test-setup.ts or individual test file
 import { test as base, expect } from '@playwright/test';
-import { testudoFixture } from '@aventine/testudo/playwright';
+import { testudoFixture, createPlaywrightTestudo } from '@aventine/testudo/playwright';
 import { testudoMatchers } from '@aventine/testudo/matchers';
 
 expect.extend(testudoMatchers);
@@ -63,21 +63,25 @@ expect.extend(testudoMatchers);
 export const test = base.extend(testudoFixture);
 ```
 
-### Using `$T` Inside Tests
+### Using `$T` Inside Playwright Tests
 
 ```typescript
 test('complete checkout flow', async ({ page, $T }) => {
   await page.goto('https://app.example.com/checkout');
 
-  // Type phone with automatic mask
+  // 1. Scan checkout section inside the browser DOM via page.evaluate()
+  const controls = await $T.scan('checkout');
+  console.log(`Found ${controls.length} actionable controls.`);
+
+  // 2. Type phone with automatic mask (verifies uniqueness count === 1)
   await $T('#phone').type('5551234567', { mask: 'phone' });
 
-  // Scan checkout section
-  const buttons = $T.scan('checkout');
-  console.log(`Found ${buttons.length} actionable buttons.`);
+  // 3. Select dropdown option and execute single native Playwright locator.click()
+  await $T('#shipping-method').select('express');
+  await $T('#btn-recalc').click();
 
-  // Assert balance with tolerance
-  await expect(page.locator('#balance')).toEqualCurrency('$1,250.00');
+  // 4. Assert balance with tolerance (renders in-page red HUD + diff callout on mismatch)
+  await $T('#balance').assertCurrency('$1,250.00', { tolerance: 0.01 });
 });
 ```
 
@@ -85,21 +89,4 @@ test('complete checkout flow', async ({ page, $T }) => {
 
 ## 3. Automatic Failure Forensics & HTML Report Attachment
 
-When a test assertion fails, the Testudo fixture teardown automatically captures a high-resolution screenshot and attaches it directly to the official Playwright HTML Report:
-
-```typescript
-// Inside testudoFixture teardown
-if (testInfo.status !== testInfo.expectedStatus) {
-  const screenshot = await page.screenshot({ fullPage: false });
-  await testInfo.attach('testudo-failure-forensics', {
-    body: screenshot,
-    contentType: 'image/png'
-  });
-}
-```
-
-In your Playwright HTML report (`npx playwright show-report`), the failure report displays:
-
-- The glowing neon red outline around the failing element.
-- The floating HUD detailing the exact character-level diff.
-- The complete error stack trace.
+When an assertion fails, Testudo highlights the target DOM element in glowing neon red, renders the character-level diff HUD inside the browser page, captures a high-resolution screenshot, and attaches it directly to the Playwright HTML Report (`testudo-failure-forensics`).

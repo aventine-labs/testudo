@@ -40,8 +40,7 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 test('TestudoE2E: Full-Spectrum Multi-Site Browser Simulation', async (t) => {
   if (!puppeteer) {
-    t.skip('Puppeteer is not installed in current environment; skipping browser simulation.');
-    return;
+    assert.fail('Puppeteer is required for TestudoE2E browser simulation; failing closed instead of skipping.');
   }
 
   const serverInstance = createServer(PORT);

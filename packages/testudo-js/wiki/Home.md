@@ -1,84 +1,108 @@
-# Welcome to the Testudo Wiki
+# 🛡️ Welcome to the Unified Testudo™ Wiki (`Testudo-JS` & `Testudo-JMX`)
 
-Testudo (`$T`) is an ultra-lightweight, zero-dependency browser testing utility, visual forensic shield, and high-concurrency load testing suite developed by Aventine Labs.
+Welcome to the official technical wiki for the **Testudo™ Testing Suite** by Aventine Labs LLC. Named after the ancient Roman defensive shield formation, Testudo unifies two open-source verification engines under the Apache 2.0 License:
 
-Named after the ancient Roman defensive shield formation, Testudo armors automated end-to-end test suites (Playwright, Puppeteer, Selenium) and synthetic transaction monitors (Apica, Datadog Synthetics, Dynatrace) against the brittle edge cases that consume 90% of a QA engineer's debugging time.
-
----
-
-## The Core Problem Testudo Solves
-
-Automated browser testing often fails not because the application logic is broken, but because modern web standards introduce subtle execution anomalies:
-
-1. **Floating-Point Rounding & Float Drift**: Intermittent test failures on currency balances, tax tables, and interest calculations due to IEEE-754 precision drift (`0.1 + 0.2 === 0.30000000000000004`).
-2. **Framework Synthetic Setter Drops**: Programmatically setting `input.value = "foo"` in synthetic scripts fails because React, Vue, and Angular hook native prototype setters (`_valueTracker`), discarding automated input upon form submission.
-3. **Invisible Character Differences**: Visual equality failing strict string comparison due to non-breaking spaces (`\u202F`, `\u00A0`, `\uFEFF`) common in localized European currency strings.
-4. **Cryptic Assertion Failures**: CI logs reporting whole-string mismatches without pinpointing the exact character difference or capturing visual evidence in CI artifacts.
-5. **Junior Tester Onboarding Friction**: Junior testers struggling to discover actionable DOM elements and construct resilient selectors on complex enterprise single-page applications.
-6. **Expensive Load Testing Bills**: Enterprise teams forced to rewrite functional Playwright suites into separate load testing tools and pay thousands of dollars per month to cloud load testing platforms.
+1. **Shield 1: Testudo-JS™ (`@aventine/testudo` v0.2.3)** - Zero-dependency in-browser DOM exploration, single-click uniqueness guarantees, framework-safe typing (`_valueTracker` bypass), multi-cell financial calculus, and visual error forensics for Playwright, Puppeteer, and synthetic transaction monitors.
+2. **Shield 2: Testudo-JMX™ (`@aventine/testudo-jmx` v1.0.0)** - Single-binary native Go execution engine, 60 FPS Web Flight Deck (`localhost:3014`), and RegexForge™ WASM auto-correlation enclave for Apache JMeter (`.jmx`) workloads.
 
 ---
 
-## Feature Overview
+## 📸 Visual Screengrab Gallery (Testudo-JS & Testudo-JMX)
 
-| Capability                       | Module                  | Description                                                                                                                                       |
-| :------------------------------- | :---------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Financial Math**               | `$T.math`               | Epsilon float equality, currency penny tolerance (`isCloseTo`), negative zero handling, and statistical SLA percentiles (p50-p99).                |
-| **Format & Currency**            | `$T.format`             | Universal currency parser (`(€1,249.50)`, `1.249,50- EUR`), Excel pattern masks (`€#.##0,00`), and invisible space normalization.                 |
-| **Framework-Safe Typing**        | `$T.type`               | React/Vue `_valueTracker` bypass, full synthetic event lifecycle dispatch, typing cadence jitter, and standard input masks.                       |
-| **Linear Character Diff**        | `$T.diff`               | Sub-300-byte character walk divergence scanner pinpointing the exact first index of mismatch with localized context snippet.                      |
-| **Visual Error Forensics**       | `$T.visual`             | Two-mode non-destructive highlighting (hidden mirror div for inputs, native Range for text), glowing neon outline, floating HUD, and SPA cleanup. |
-| **Interactive DOM Explorer**     | `$T.scan`               | Smart Scope Resolver with deterministic priority cascade, resilient snippet generator, visual numbered badges, and production kill switch.        |
-| **Playwright Matchers**          | `$T.matchers`           | Native `expect.extend` matchers (`toEqualCurrency`, `toEqualNumber`) with polling retry support and automatic HTML report screenshot attachment.  |
-| **High-Concurrency Load Engine** | `AventineLoadEngine.py` | Free, multi-threaded load testing engine with microsecond DNS/TLS/TTFB breakdown and dynamic auto-correlation.                                    |
+### A. Testudo-JS (`@aventine/testudo`) Visual Forensics & DOM Explorer
+
+#### 1. Multi-Cell Financial Calculus & Character-Level Diff HUD (`$T.visual` & `$T.calc`)
+![Testudo-JS Multi-Cell Financial Calculus & Diff HUD](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_fintech_full_settlement_screengrab.png)
+
+#### 2. Automated High-DPI Bounding-Box Union Crop & Zoomed Diff Callout
+![Testudo-JS Tight Calculus Crop](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_calculus_tight_crop.png)
+
+![Testudo-JS Zoomed Character Diff Callout](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_zoomed_diff_callout.png)
+
+#### 3. Interactive DOM Explorer & Smart Scoping Badges (`$T.explore` & `$T.scan`)
+![Testudo-JS DOM Explorer Blotter Screengrab](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_dom_explorer_blotter_screengrab.png)
+
+![Testudo-JS DOM Explorer Tight Crop](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_dom_explorer_tight_crop.png)
 
 ---
 
-## 1-Minute Quickstart
+### B. Testudo-JMX (`@aventine/testudo-jmx`) Flight Deck & Head-to-Head JMeter Benchmarks
 
-### Installation
+#### 1. Empirical Head-to-Head Benchmark: Apache JMeter 5.6.3 vs Testudo-JMX 1.0.0
+![Head-to-Head Benchmark Infographic: Apache JMeter vs Testudo-JMX](https://raw.githubusercontent.com/aventine-labs/testudo/main/docs/wiki/visualizations/testudo_jmeter_head_to_head_infographic.png)
+
+#### 2. Resident Memory (VmRSS) & Throughput / Tail-Latency Parity
+![Resident Memory Comparison](https://raw.githubusercontent.com/aventine-labs/testudo/main/docs/wiki/visualizations/01_memory_rss_comparison.png)
+
+![Throughput and Latency Parity](https://raw.githubusercontent.com/aventine-labs/testudo/main/docs/wiki/visualizations/02_throughput_and_latency_parity.png)
+
+#### 3. 60 FPS Web Flight Deck GUI (`localhost:3014`)
+![Testudo-JMX Tab 1: Plan Studio & Auto-Correlator](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_jmx_tab1_plan_studio.png)
+
+![Testudo-JMX Tab 2: Live Web Flight Deck & Concurrency Steering](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_jmx_tab2_flight_deck.png)
+
+![Testudo-JMX Tab 3: Historical Run Ledger & Comparison](https://raw.githubusercontent.com/aventine-labs/testudo/main/assets/screenshots/testudo_jmx_tab3_run_history.png)
+
+---
+
+## ⚡ Quickstarts
+
+### 1. Testudo-JS (`@aventine/testudo`) Quickstart
 
 ```bash
 npm install @aventine/testudo
 ```
-
-### Playwright Test Example
 
 ```typescript
 import { test as base, expect } from '@playwright/test';
 import { testudoFixture } from '@aventine/testudo/playwright';
 import { testudoMatchers } from '@aventine/testudo/matchers';
 
-// Register custom matchers on Playwright expect
 expect.extend(testudoMatchers);
-
-// Extend test runner with pre-wired $T fixture
 export const test = base.extend(testudoFixture);
 
-test('validate checkout invoice and phone mask', async ({ page, $T }) => {
+test('validate checkout invoice, select dropdown, and single-click', async ({ page, $T }) => {
   await page.goto('https://app.example.com/checkout');
-
-  // Framework-safe typing with automatic phone masking
   await $T('#phone').type('5551234567', { mask: 'phone' });
-
-  // High-precision financial tolerance assertion
+  await $T('#asset-filter').select('structured-credit');
+  await $T('#btn-recalc').click();
   await expect(page.locator('#balance')).toEqualCurrency('$1,250.00', { tolerance: 0.01 });
 });
 ```
 
+### 2. Testudo-JMX (`@aventine/testudo-jmx`) Quickstart
+
+```bash
+# Run any unmodified Apache JMeter (.jmx) plan natively without Java
+npx @aventine/testudo-jmx -n -t scenario.jmx -l results.jtl -e -o ./report
+
+# Launch the 60 FPS Web Flight Deck GUI on http://localhost:3014
+npx @aventine/testudo-jmx -gui
+```
+
 ---
 
-## Documentation Index
+## 📚 Unified Documentation Index
 
-Explore the detailed engine guides in the sidebar:
+### Part I: Testudo-JS (`@aventine/testudo`)
+* [Architecture & Philosophy](Architecture-and-Philosophy)
+* [Visual Forensics & HUD](Visual-Forensics-and-HUD)
+* [DOM Explorer & Smart Scoping](DOM-Explorer-and-Smart-Scoping)
+* [Framework-Safe Typing](Framework-Safe-Typing)
+* [Financial Math Engine](Financial-Math-Engine)
+* [Format & Currency Parser](Format-and-Currency-Parser)
+* [Linear Character Diff](Linear-Character-Diff)
+* [Playwright Integration & Matchers](Playwright-Integration-and-Matchers)
+* [Standalone Browser & Synthetics](Standalone-Browser-and-Synthetics)
+* [High-Concurrency Load Testing Engine](Load-Testing-Engine)
 
-- [Architecture & Philosophy](Architecture-and-Philosophy)
-- [Financial Math Engine](Financial-Math-Engine)
-- [Format & Currency Parser](Format-and-Currency-Parser)
-- [Framework-Safe Typing](Framework-Safe-Typing)
-- [Linear Character Diff](Linear-Character-Diff)
-- [Visual Forensics & HUD](Visual-Forensics-and-HUD)
-- [DOM Explorer & Smart Scoping](DOM-Explorer-and-Smart-Scoping)
-- [Playwright Integration & Matchers](Playwright-Integration-and-Matchers)
-- [Standalone Browser & Synthetics](Standalone-Browser-and-Synthetics)
-- [High-Concurrency Load Testing Engine](Load-Testing-Engine)
+### Part II: Testudo-JMX (`@aventine/testudo-jmx`)
+* [01. What Testudo-JMX Does](01_WHAT_IT_DOES)
+* [02. Why Testudo-JMX Does It](02_WHY_IT_DOES_IT)
+* [03. How To Do It (CLI, API & Flight Deck)](03_HOW_TO_DO_IT)
+* [04. RegexForge Auto-Correlation Recipes](04_REGEXFORGE_RECIPES)
+* [05. JMeter to Testudo-JMX Migration Guide](05_MIGRATION_GUIDE)
+* [06. Running 50,000 VUs from a Laptop](06_RUNNING_50K_VUS_FROM_A_LAPTOP)
+* [07. Head-to-Head JMeter Benchmark Report](07_HEAD_TO_HEAD_JMETER_BENCHMARK)
+* [08. Plugin Architecture Specification](08_PLUGIN_ARCHITECTURE_SPECIFICATION)
+* [09. Testudo Scudo Architecture Specification](09_TESTUDO_SCUDO_ARCHITECTURE_SPECIFICATION)
