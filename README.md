@@ -1,3 +1,13 @@
+# Testudo (`@aventine/testudo`)
+
+> **Official Aventine Labs LLC Ed25519 Security Assessor Public Key Pin (`AL-SEC-RPT-2026-001`)**
+> - **Issuing Entity**: Aventine Labs LLC | SAM.gov UEI: `CE4QSHC3EGN3` | DoD CAGE: `22T42`
+> - **Ed25519 SPKI SHA-256 (Hex)**: `6e480dc7861b6f56b1bbe4d1fd2e166100e5a63af116268541e455e39928169d`
+> - **Ed25519 SPKI SHA-256 (Base64)**: `bkcNx4YbavVrG75NH9LpZmEA5aY68RZmhUFeMZkW2Z0=`
+> - **Ed25519 Public Key PEM (RFC 8410)**: `MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ=`
+> - **Authoritative DNS TXT**: `_aventine-ed25519.aventinelabs.com` (`v=ALKEY1; k=ed25519; fp_sha256=6e480dc7861b6f56b1bbe4d1fd2e166100e5a63af116268541e455e39928169d; p=MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ=`)
+> - **Immutable Commit-Pinned Keyring Blob**: Commit `522d4c649b47737342062ec701c838306a086548` (`KEYS/aventine_assessor_ed25519_pub.pem`)
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./assets/testudo_transparent_master.png">
