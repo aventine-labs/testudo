@@ -5,9 +5,9 @@ Legal Entity:          Aventine Labs LLC (Kingston, NY 12401)
 SAM.gov UEI:           CE4QSHC3EGN3
 DoD / NATO CAGE Code:  22T42
 Principal Signer:      Mark Gilbert, Founder & Principal Security Architect
-Document Reference:    AL-SEC-RPT-2026-001-REV5
+Document Reference:    AL-SEC-RPT-2026-001-REV6
 
-1. ED25519 PUBLIC KEY (PEM):
+1. ED25519 PUBLIC KEY (PEM - RFC 8410 SubjectPublicKeyInfo):
 -----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ=
 -----END PUBLIC KEY-----
@@ -17,19 +17,24 @@ MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ=
    - Base64:      bkgNx4Ybb1axu+TR/S4WYQDlpjrxFiaFQeRV45koFp0=
 
 3. LIVE OUT-OF-BAND IDENTITY VERIFICATION CHANNELS:
-   (a) Authoritative DNS TXT Record (Queried via DNS or RFC 8484 DoH over TLS):
-       Record Name:  _aventine-ed25519.aventinelabs.com
-       Record Value: "v=ALKEY1; k=ed25519; fp_sha256=6e480dc7861b6f56b1bbe4d1fd2e166100e5a63af116268541e455e39928169d; p=MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ="
-       DoH Query:    curl -sH "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=_aventine-ed25519.aventinelabs.com&type=TXT"
-       Note: Transport to resolver is authenticated via HTTPS/TLS (RFC 8484); parent-zone DS DNSSEC delegation is not enabled on aventinelabs.com.
+   (a) Public GitHub Keyring (Immutable Commit-Pinned + Repository Overview Pin):
+       - Repository Root Overview (Top README Pin, crawler-accessible per robots.txt):
+         https://github.com/aventine-labs/testudo
+       - Immutable Commit-Pinned Raw PEM (Commit 522d4c649b47737342062ec701c838306a086548):
+         https://raw.githubusercontent.com/aventine-labs/testudo/522d4c649b47737342062ec701c838306a086548/KEYS/aventine_assessor_ed25519_pub.pem
+       - Branch Raw PEM (main):
+         https://raw.githubusercontent.com/aventine-labs/testudo/main/KEYS/aventine_assessor_ed25519_pub.pem
+       - Web Blob View:
+         https://github.com/aventine-labs/testudo/blob/main/KEYS/aventine_assessor_ed25519_pub.pem
 
-   (b) Public GitHub Keyring (Direct File & Raw Content Endpoints):
-       Web View:     https://github.com/aventine-labs/testudo/blob/main/KEYS/aventine_assessor_ed25519_pub.pem
-       Raw PEM URL:  https://raw.githubusercontent.com/aventine-labs/testudo/main/KEYS/aventine_assessor_ed25519_pub.pem
-       Attestation:  https://github.com/aventine-labs/testudo/blob/main/KEYS/KEY_ATTESTATION.txt
+   (b) Authoritative DNS TXT Record (Queried via DNS or RFC 8484 DoH over TLS):
+       - Record Name:  _aventine-ed25519.aventinelabs.com
+       - Record Value: "v=ALKEY1; k=ed25519; fp_sha256=6e480dc7861b6f56b1bbe4d1fd2e166100e5a63af116268541e455e39928169d; p=MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ="
+       - DoH Query:    curl -sH "accept: application/dns-json" "https://cloudflare-dns.com/dns-query?name=_aventine-ed25519.aventinelabs.com&type=TXT"
+       - Transport Note: HTTPS/TLS authenticates the connection to the Cloudflare DoH resolver (RFC 8484); parent-zone DS DNSSEC delegation is not enabled on aventinelabs.com.
 
-   (c) Offline / Air-Gapped External Trust Anchor (--trust-anchor):
-       For contracted engagements or offline verification, pass an externally
-       obtained PEM file to VERIFY.sh via:
-       ./VERIFY.sh --trust-anchor /path/to/external_aventine_pub.pem
+4. GATE 8 TRUST-ORIGIN CLASSIFICATION STATES (VERIFY.sh):
+   - EXTERNAL_IDENTITY_VERIFIED: Public key retrieved directly from live commit-pinned GitHub HTTPS, live RFC 8484 DoH TXT, or an external --trust-anchor <PEM> outside the archive, and verified against release_manifest.sha256.sig.
+   - CALLER_PIN_MATCHED: Bundled key matches caller-supplied --expected-spki <HEX> in an air-gapped sandbox; external signer identity is conditional on the caller having independently authenticated that pin from an external source out-of-band.
+   - UNVERIFIED: No external channel reachable and no caller pin/anchor supplied; VERIFY.sh fails closed (exit 1).
 ================================================================================
