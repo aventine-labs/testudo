@@ -179,6 +179,18 @@ The Testudo Testing Suite enforces a strict separation between open-source devel
 
 ---
 
+## Cryptographic Keyring & Security Assessment Attestation (`KEYS/`)
+
+All NIST SP 800-115 and OWASP WSTG v4.2 vulnerability assessment reports and forensic evidence bundles issued by **Aventine Labs LLC** (`SAM.gov UEI: CE4QSHC3EGN3` | `CAGE: 22T42`) are signed using our official Ed25519 assessor key published in [`KEYS/`](./KEYS):
+
+* **Public Key (PEM)**: [`KEYS/aventine_assessor_ed25519_pub.pem`](./KEYS/aventine_assessor_ed25519_pub.pem) (`MCowBQYDK2VwAyEAKiqesJdU3bY36v8629WJdbSahPNnIq2lhCFfkB7GzLQ=`)
+* **Key Attestation & Channels**: [`KEYS/KEY_ATTESTATION.txt`](./KEYS/KEY_ATTESTATION.txt)
+* **RFC 7469 SPKI SHA-256 Fingerprint (Hex)**: `6e480dc7861b6f56b1bbe4d1fd2e166100e5a63af116268541e455e39928169d`
+* **RFC 7469 SPKI SHA-256 Fingerprint (Base64)**: `bkgNx4Ybb1axu+TR/S4WYQDlpjrxFiaFQeRV45koFp0=`
+* **Authoritative DNS TXT Record**: `_aventine-ed25519.aventinelabs.com`
+
+---
+
 ## License & Trademark Notice
 
 * **Open-Source Components**: Testudo-JS and Testudo-JMX are licensed under the [Apache License, Version 2.0](./LICENSE).
