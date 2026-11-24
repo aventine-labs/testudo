@@ -2,7 +2,7 @@
 
 Welcome to the official technical wiki for the **Testudo™ Testing Suite** by Aventine Labs LLC. Named after the ancient Roman defensive shield formation, Testudo unifies two open-source verification engines under the Apache 2.0 License:
 
-1. **Shield 1: Testudo-JS™ (`@aventine/testudo` v0.2.3)** - Zero-dependency in-browser DOM exploration, single-click uniqueness guarantees, framework-safe typing (`_valueTracker` bypass), multi-cell financial calculus, and visual error forensics for Playwright, Puppeteer, and synthetic transaction monitors.
+1. **Shield 1: Testudo-JS™ (`@aventine/testudo` v0.4.0)** - Zero-dependency in-browser DOM exploration, single-click uniqueness guarantees, framework-safe typing (`_valueTracker` bypass), multi-cell financial calculus, and visual error forensics for Playwright, Puppeteer, and synthetic transaction monitors.
 2. **Shield 2: Testudo-JMX™ (`@aventine/testudo-jmx` v1.0.0)** - Single-binary native Go execution engine, 60 FPS Web Flight Deck (`localhost:3014`), and RegexForge™ WASM auto-correlation enclave for Apache JMeter (`.jmx`) workloads.
 
 ---

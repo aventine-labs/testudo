@@ -229,6 +229,28 @@ Found 8 Actionable Interactive Elements:
 
 ---
 
+### 5. Zero-Dependency Privileged Browser Control Planes (`@aventine/testudo/cdp` & `@aventine/testudo/bidi`)
+
+Drive stock Chromium (CDP) and stock Mozilla Firefox (W3C WebDriver BiDi + Gecko Fission) directly over built-in Node.js RFC 6455 WebSockets with zero Playwright, Puppeteer, Selenium, or Geckodriver dependencies:
+
+```typescript
+import { TestudoCdp } from '@aventine/testudo/cdp';
+import { TestudoBidi } from '@aventine/testudo/bidi';
+
+// Launch stock Headless Firefox via W3C WebDriver BiDi (or TestudoCdp.launchHeadless() for Chromium)
+await using session = await TestudoBidi.launchHeadless();
+await session.enableLiveWireCapture();
+await session.goto('http://localhost:3000');
+
+// Pierce closed Shadow DOMs (mode: 'closed'), route into cross-origin Fission OOPIFs, and dispatch trusted input
+await session.pierceType('#closed-host >>> input.vault-pin', '7391');
+await session.pierceClick('#closed-host >>> button.vault-unlock', { trusted: true });
+await session.evaluateInFrame('127.0.0.1:4000', () => window.$T('#oopif-confirm').click());
+const xray = await session.xray('#trade-ticket-input');
+```
+
+---
+
 ## 🛡️ Part of the Aventine Labs Sovereign Developer Suite
 
 `@aventine/testudo` is part of Aventine Labs' open ecosystem of 100% client-side, zero-telemetry engineering workbenches:

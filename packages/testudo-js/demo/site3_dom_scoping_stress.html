@@ -148,12 +148,15 @@
     function log(msg, isPass = true) {
       const cls = isPass ? 'log-pass' : 'log-fail';
       const mark = isPass ? '✓' : '✖';
-      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      const row = document.createElement('div');
+      row.className = cls;
+      row.textContent = `[${mark}] ${msg}`;
+      logBox.appendChild(row);
       logBox.scrollTop = logBox.scrollHeight;
     }
 
     window.runSite3Tests = async function() {
-      logBox.innerHTML = '';
+      logBox.textContent = '';
       let passes = 0;
       let total = 0;
 
@@ -182,7 +185,7 @@
       let numericSuccess = false;
       try {
         const numericElements = $T.scan('2fa-input');
-        numericSuccess = true;
+        numericSuccess = Array.isArray(numericElements);
       } catch (e) {
         numericSuccess = false;
       }
@@ -216,6 +219,13 @@
       return window.__SITE3_TEST_SUMMARY__;
     };
 
+    document.getElementById('btn-run-cascade')?.addEventListener('click', () => {
+      logBox.textContent = '';
+      const scannedT1 = $T.scan('target-scope');
+      const winnerId = scannedT1[0]?.element?.id || 'none';
+      log(`Priority Cascade Winner for 'target-scope': #${winnerId} (${scannedT1.length} elements in scope)`, winnerId === 'btn-t1-action');
+    });
+
     document.getElementById('btn-run-all-s3')?.addEventListener('click', () => {
       window.runSite3Tests();
     });
@@ -227,7 +237,7 @@
     document.getElementById('btn-test-killswitch')?.addEventListener('click', () => {
       window.TESTUDO_DISABLE_EXPLORER = true;
       $T.explore();
-      alert('Kill switch active: badges suppressed!');
+      log('Kill switch active: badges suppressed!', true);
       window.TESTUDO_DISABLE_EXPLORER = false;
     });
   </script>

@@ -1,6 +1,6 @@
 # Standalone Browser & Synthetic Monitoring
 
-In addition to headless E2E test runners, Testudo is compiled as a self-executing standalone browser bundle (`standalone.js`). This enables Site Reliability Engineers (SREs) and DevOps teams to inject Testudo directly into synthetic transaction monitors (Apica, Datadog Synthetics, Dynatrace, New Relic) and DevTools consoles.
+In addition to headless E2E test runners, Testudo is compiled both as an ESM browser adapter (`dist/adapters/standalone.js`) and as a self-executing IIFE global bundle (`dist/testudo.iife.js`). This enables Site Reliability Engineers (SREs) and DevOps teams to inject Testudo directly into synthetic transaction monitors (Apica, Datadog Synthetics, Dynatrace, New Relic) and DevTools consoles.
 
 ---
 
@@ -8,14 +8,14 @@ In addition to headless E2E test runners, Testudo is compiled as a self-executin
 
 Synthetic monitoring tools execute scheduled browser scripts against production endpoints to detect downtime and transaction latency.
 
-Inject Testudo directly via CDN:
+Inject Testudo directly via `<script>` tag using the self-executing IIFE bundle:
 
 ```html
 <!-- Drop into synthetic monitor script or test runner page -->
-<script src="https://cdn.jsdelivr.net/npm/@aventine/testudo/dist/adapters/standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@aventine/testudo/dist/testudo.iife.js"></script>
 ```
 
-Once loaded, Testudo automatically binds to both `window.testudo` and the global `$T` shorthand.
+Once loaded, Testudo automatically binds to both `window.testudo` and the global `window.$T` shorthand.
 
 ---
 

@@ -185,12 +185,15 @@
     function log(msg, isPass = true) {
       const cls = isPass ? 'log-pass' : 'log-fail';
       const mark = isPass ? '✓' : '✖';
-      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      const row = document.createElement('div');
+      row.className = cls;
+      row.textContent = `[${mark}] ${msg}`;
+      logBox.appendChild(row);
       logBox.scrollTop = logBox.scrollHeight;
     }
 
     window.runSite1Tests = async function() {
-      logBox.innerHTML = '';
+      logBox.textContent = '';
       let passes = 0;
       let total = 0;
 
@@ -262,7 +265,7 @@
     });
 
     document.getElementById('btn-clear-logs')?.addEventListener('click', () => {
-      logBox.innerHTML = 'Awaiting execution...';
+      logBox.textContent = 'Awaiting execution...';
     });
   </script>
 </body>

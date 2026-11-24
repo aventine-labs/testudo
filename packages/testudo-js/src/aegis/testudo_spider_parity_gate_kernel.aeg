@@ -1,0 +1,147 @@
+// @doc_ref: SPEC-TESTUDO-FIREFOX-BIDI-58 (docs/research/SPEC-TESTUDO-FIREFOX-BIDI-58_webdriver_bidi_privileged_parity.md) | @work_order: AL-DEV-491
+// ==============================================================================
+// TESTUDO PRIVILEGED SPIDER & WEBDRIVER BIDI PARITY FORMAL GATE KERNEL
+// Formal Z3 QF_ABV Verification Kernel for Chromium CDP (AL-DEV-482) &
+// Mozilla Firefox WebDriver BiDi (AL-DEV-490 / AL-DEV-491).
+// Strict Rule 6: Zero em-dashes and zero en-dashes across all source and comments.
+// ==============================================================================
+
+module testudo_spider_parity_gate_kernel;
+
+@align(64)
+struct TestudoSpiderParityAuditFrame64 {
+  magic_u32: u32,
+  mode_u32: u32,
+  verdict_code_i64: i64,
+  cookie_hmac_lo64: u64,
+  bundle_sha256_lo64: u64,
+  untrusted_rejected_u64: u64,
+  webauthn_cred_bytes_u64: u64,
+  wire_status_u32: u32,
+  spoof_status_u32: u32,
+  flags_bitmask_u64: u64
+}
+
+// Gate Return Codes:
+//    1 = ORACLE_VERIFIED_ALL_INVARIANTS_CLEAN
+//   -1 = FAIL_PILLAR1_PLAINTEXT_SECRET
+//   -2 = FAIL_BROWSER_ENGINE_OR_ENCLAVE_ISOLATION
+//   -3 = FAIL_M2_CLOSED_SHADOW_ENCAPSULATION_OR_PIERCE
+//   -4 = FAIL_M3_CROSS_ORIGIN_SOP_OR_OOPIF_SPIDER
+//   -5 = FAIL_M1_UNTRUSTED_GUARD_NOT_PROVEN
+//   -6 = FAIL_TRUSTED_INPUT_OR_USER_ACTIVATION
+//   -7 = FAIL_VIRTUAL_WEBAUTHN_PASSKEY
+//   -8 = FAIL_INTRINSIC_MONKEY_PATCHED
+//   -9 = FAIL_HTTPONLY_COOKIE_OR_OUT_OF_PROCESS_INTERCEPT
+//  -10 = FAIL_XRAY_COMPONENT_CHAIN_OR_PROP_REDACTION
+//  -11 = FAIL_BINARY_PNG_OR_PDF_MAGIC_HEADER
+//  -12 = FAIL_M5_BRIDGE_ORIGIN_SHIELD
+@pure
+@requires(
+  is_bidi_mode <= 1 &&
+  raw_secret_leaks_count <= 100000 &&
+  engine_and_enclave_ok <= 1 &&
+  closed_shadow_null_in_main <= 1 &&
+  closed_shadow_pierce_ok <= 1 &&
+  cross_origin_sop_blocked <= 1 &&
+  oopif_and_spider_ok <= 1 &&
+  untrusted_rejected_count <= 100000 &&
+  trusted_click_and_type_ok <= 1 &&
+  user_activation_active <= 1 &&
+  webauthn_cred_id_bytes <= 65536 &&
+  virtual_creds_count <= 65536 &&
+  native_intrinsics_untouched <= 1 &&
+  doc_cookie_empty <= 1 &&
+  intercepted_status_code <= 65535 &&
+  httponly_cookie_hmac_matched <= 1 &&
+  xray_chain_and_redaction_ok <= 1 &&
+  png_and_pdf_magic_ok <= 1 &&
+  spoofed_origin_status_code <= 65535 &&
+  moz_extension_accepted <= 1
+)
+@ensures(
+  result >= -12 && result <= 1 && result != 0 &&
+  (result != 1 || (
+    raw_secret_leaks_count == 0 &&
+    closed_shadow_null_in_main == 1 &&
+    closed_shadow_pierce_ok == 1 &&
+    cross_origin_sop_blocked == 1 &&
+    oopif_and_spider_ok == 1 &&
+    untrusted_rejected_count >= 1 &&
+    trusted_click_and_type_ok == 1 &&
+    user_activation_active == 1 &&
+    webauthn_cred_id_bytes >= 16 &&
+    virtual_creds_count >= 1 &&
+    native_intrinsics_untouched == 1 &&
+    doc_cookie_empty == 1 &&
+    intercepted_status_code == 429 &&
+    httponly_cookie_hmac_matched == 1 &&
+    xray_chain_and_redaction_ok == 1 &&
+    (is_bidi_mode == 0 || (
+      engine_and_enclave_ok == 1 &&
+      png_and_pdf_magic_ok == 1 &&
+      spoofed_origin_status_code == 403 &&
+      moz_extension_accepted == 1
+    ))
+  ))
+)
+export fn testudo_eval_spider_privileged_parity_gate(
+  is_bidi_mode: u64,
+  raw_secret_leaks_count: u64,
+  engine_and_enclave_ok: u64,
+  closed_shadow_null_in_main: u64,
+  closed_shadow_pierce_ok: u64,
+  cross_origin_sop_blocked: u64,
+  oopif_and_spider_ok: u64,
+  untrusted_rejected_count: u64,
+  trusted_click_and_type_ok: u64,
+  user_activation_active: u64,
+  webauthn_cred_id_bytes: u64,
+  virtual_creds_count: u64,
+  native_intrinsics_untouched: u64,
+  doc_cookie_empty: u64,
+  intercepted_status_code: u64,
+  httponly_cookie_hmac_matched: u64,
+  xray_chain_and_redaction_ok: u64,
+  png_and_pdf_magic_ok: u64,
+  spoofed_origin_status_code: u64,
+  moz_extension_accepted: u64
+) -> i64 {
+  if (raw_secret_leaks_count > 0) {
+    return -1;
+  }
+  if (is_bidi_mode == 1 && engine_and_enclave_ok == 0) {
+    return -2;
+  }
+  if (closed_shadow_null_in_main == 0 || closed_shadow_pierce_ok == 0) {
+    return -3;
+  }
+  if (cross_origin_sop_blocked == 0 || oopif_and_spider_ok == 0) {
+    return -4;
+  }
+  if (untrusted_rejected_count < 1) {
+    return -5;
+  }
+  if (trusted_click_and_type_ok == 0 || user_activation_active == 0) {
+    return -6;
+  }
+  if (webauthn_cred_id_bytes < 16 || virtual_creds_count < 1) {
+    return -7;
+  }
+  if (native_intrinsics_untouched == 0) {
+    return -8;
+  }
+  if (doc_cookie_empty == 0 || intercepted_status_code != 429 || httponly_cookie_hmac_matched == 0) {
+    return -9;
+  }
+  if (xray_chain_and_redaction_ok == 0) {
+    return -10;
+  }
+  if (is_bidi_mode == 1 && png_and_pdf_magic_ok == 0) {
+    return -11;
+  }
+  if (is_bidi_mode == 1 && (spoofed_origin_status_code != 403 || moz_extension_accepted == 0)) {
+    return -12;
+  }
+  return 1;
+}

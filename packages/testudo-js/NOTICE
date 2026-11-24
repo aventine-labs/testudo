@@ -1,0 +1,21 @@
+@aventine/testudo - The Zero-Dependency Master of Test Suites
+Copyright 2026 Aventine Labs LLC. All rights reserved.
+
+This product includes software developed at Aventine Labs LLC (https://aventinelabs.com).
+
+Licensed under the Apache License, Version 2.0 (the "License").
+Pursuant to Section 4(d) of the Apache License, Version 2.0, any Derivative Work
+or redistribution of this Work in Source or Object form must retain the above
+copyright notice and this attribution notice.
+
+TRADEMARK & WHITE-LABEL NOTICE (Apache-2.0 Section 6):
+The Apache License, Version 2.0 does not grant permission to use the trade names,
+trademarks, service marks, product names, or mascot artwork of Aventine Labs LLC
+(including "Testudo", "Testudo-JS", "TestudoGuide", "TestudoHelper", and the
+"Sir Testudo" Tuxedo Tortoise mascot), except as required for reasonable and
+customary use in describing the origin of the Work.
+
+When using the Testudo Concierge / LiveGuide UI in Community Mode, the visible
+"Powered by Testudo-JS - Aventine Labs" attribution and Sir Testudo launcher
+badge must remain intact and unobstructed unless unlocked via a valid,
+cryptographically signed Aventine Labs Enterprise White-Label License Key.

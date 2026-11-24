@@ -1,0 +1,8 @@
+node_modules/
+dist/
+extension/testudo.iife.js
+coverage/
+*.log
+.DS_Store
+__pycache__/
+*.pyc

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testudo-JS Runtime Overlay Demo - Amazon Storefront Simulation</title>
+  <style>
+    :root {
+      --bg-dark: #020617;
+      --bg-panel: #0f172a;
+      --border: #1e293b;
+      --accent: #38bdf8;
+      --amber: #f59e0b;
+      --emerald: #10b981;
+      --crimson: #ef4444;
+      --amz-navy: #131921;
+      --amz-subnav: #232f3e;
+      --amz-gold: #febd69;
+      --amz-btn: #ffd814;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+      padding-bottom: 100px;
+    }
+    /* Aventine Reverse-Proxy Control Ribbon */
+    .aventine-ribbon {
+      background: linear-gradient(90deg, #020617 0%, #0f172a 100%);
+      color: #f8fafc;
+      padding: 12px 20px;
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 9000;
+    }
+    .ribbon-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ribbon-badge {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font: 800 10px monospace;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .ribbon-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-mode {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 7px 12px;
+      font: 700 12px system-ui;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-mode:hover {
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+    .btn-mode.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+    }
+    /* Amazon-Familiar Header */
+    .amz-header {
+      background: var(--amz-navy);
+      color: #ffffff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .amz-logo {
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .amz-logo span {
+      color: var(--amz-gold);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .amz-search {
+      flex: 1;
+      display: flex;
+      max-width: 680px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .amz-search select {
+      background: #e6e6e6;
+      border: none;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: #0f172a;
+    }
+    .amz-search input {
+      flex: 1;
+      border: none;
+      padding: 9px 12px;
+      font-size: 14px;
+    }
+    .amz-search button {
+      background: var(--amz-gold);
+      border: none;
+      padding: 0 16px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    /* Layout Grid */
+    .main-grid {
+      max-width: 1360px;
+      margin: 20px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
+    .dark-card {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 20px;
+    }
+    .price-large {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .buy-box {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 16px;
+      background: #f8fafc;
+    }
+    .amz-btn-primary {
+      width: 100%;
+      background: var(--amz-btn);
+      border: 1px solid #fcd200;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: 700 13px system-ui;
+      color: #0f172a;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .ledger-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .ledger-total {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 10px;
+      margin-top: 6px;
+      border-top: 2px solid #0f172a;
+      font-size: 17px;
+      font-weight: 800;
+      color: #b12704;
+    }
+    pre.code-box {
+      background: #090d16;
+      color: #38bdf8;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      font: 11px/1.45 monospace;
+      overflow-x: auto;
+      max-height: 220px;
+      margin: 8px 0;
+    }
+    textarea.script-input {
+      width: 100%;
+      height: 125px;
+      background: #090d16;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      font: 11px/1.4 monospace;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font: 700 10px monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Aventine Reverse-Proxy Overlay Ribbon -->
+  <header class="aventine-ribbon">
+    <div class="ribbon-brand">
+      <span class="ribbon-badge">Testudo-JS v0.4.0 + WASM Brains</span>
+      <div>
+        <div style="font-weight:800;font-size:14px;">Reverse-Proxy Runtime Overlay Demo (Zero App Code Changes)</div>
+        <div style="font-size:11px;color:#94a3b8;">Helper + Trainer + Zero-Driver Tester + Legacy Script Digester + 4-Layer WASM License Gate</div>
+      </div>
+    </div>
+    <div class="ribbon-actions">
+      <button class="btn-mode active" id="mode-helper-btn" type="button">1. Helper (Magic Cursor)</button>
+      <button class="btn-mode" id="mode-trainer-btn" type="button">2. Trainer (1->4 Walkthrough)</button>
+      <button class="btn-mode" id="mode-tester-btn" type="button">3. Zero-Driver Tester ($0.03 Bug)</button>
+      <button class="btn-mode" id="mode-digester-btn" type="button">4. Selenium/Playwright Digester</button>
+      <button class="btn-mode" id="mode-license-btn" type="button">5. WASM Anti-Piracy Gate</button>
+    </div>
+  </header>
+
+  <!-- Familiar E-Commerce Storefront Header -->
+  <nav class="amz-header">
+    <div class="amz-logo">
+      amazonia<span>.prime demo</span>
+    </div>
+    <div class="amz-search">
+      <select id="searchDropdownBox" aria-label="Search Category">
+        <option value="electronics">Electronics & Hardware</option>
+        <option value="security">FIDO2 Security Keys</option>
+        <option value="enterprise">Enterprise Licenses</option>
+      </select>
+      <input id="twotabsearchtextbox" type="text" value="Aventine Sovereign Hardware Vault Key" />
+      <button id="nav-search-submit-button" type="button">Search</button>
+    </div>
+    <div style="font-size:12px;color:#cbd5e1;">
+      Returns &amp; Orders · <strong>Cart (<span id="nav-cart-count">2</span>)</strong>
+    </div>
+  </nav>
+
+  <main class="main-grid">
+    <!-- Left Column: Familiar Storefront Product + Checkout Card -->
+    <section class="card">
+      <div style="font-size:11px;color:#64748b;margin-bottom:6px;">
+        Electronics &rsaquo; Security &amp; Cryptography &rsaquo; Hardware Security Modules
+      </div>
+      <h1 id="productTitle" style="font-size:20px;margin:0 0 12px 0;color:#0f172a;">
+        Aventine Sovereign Bastion Hardware Key (Post-Quantum ML-KEM-1024 Edition)
+      </h1>
+
+      <div class="product-grid">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px;">
+            <span class="price-large" id="unit-price">$219.00</span>
+            <span style="font-size:12px;color:#059669;font-weight:700;">In Stock · Prime 1-Day Delivery</span>
+          </div>
+          <p style="font-size:13px;color:#334155;line-height:1.5;">
+            Zero-telemetry hardware credential vault with deterministic multi-cell financial verification.
+            Injected live with <strong>Testudo-JS</strong> via external JSON manifest without modifying a single attribute of the storefront template.
+          </p>
+
+          <!-- Same-Row Action Strip (Demonstrates WASM 3-Tier Row Staggering) -->
+          <div style="margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+            <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:8px;">
+              CONFIG &amp; PROMO CONTROLS (Same-Row WASM Badge Staggering Demo)
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <label for="quantity" style="font-size:12px;font-weight:600;">Qty:</label>
+              <select id="quantity" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+              </select>
+              <input id="spc-gcpromoinput" type="text" value="VIP10" placeholder="Promo Code" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;width:110px;" />
+              <button id="apply-promo-btn" type="button" style="padding:6px 12px;background:#0f172a;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer;">
+                Apply Promo
+              </button>
+            </div>
+          </div>
+
+          <!-- Intentional Rounding Bug Toggle for Tester Mode -->
+          <div style="margin-top:14px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
+            <label for="bug-toggle" style="font-size:12px;font-weight:700;color:#991b1b;cursor:pointer;">
+              Simulate Checkout IEEE-754 Rounding Bug (+$0.03 drift on Grand Total)
+            </label>
+            <input id="bug-toggle" type="checkbox" checked style="width:16px;height:16px;cursor:pointer;" />
+          </div>
+        </div>
+
+        <!-- Right Buy Box & Checkout Ledger -->
+        <div class="buy-box">
+          <div style="font-weight:800;font-size:14px;margin-bottom:8px;">Order Summary Ledger</div>
+          <div class="ledger-row">
+            <span>Items Subtotal (<span id="summary-qty">2</span>x):</span>
+            <strong id="sc-subtotal">$438.00</strong>
+          </div>
+          <div class="ledger-row">
+            <span>VIP Promo (<span id="sc-promo-rate">1000 bps</span>):</span>
+            <strong id="sc-discount" style="color:#059669;">$43.80</strong>
+          </div>
+          <div class="ledger-row">
+            <span>Estimated Tax (8.35%):</span>
+            <strong id="sc-tax">$32.91</strong>
+          </div>
+          <div class="ledger-total">
+            <span>Order Total:</span>
+            <span id="sc-grand-total">$427.14</span>
+          </div>
+          <button id="add-to-cart-button" class="amz-btn-primary" type="button">
+            Add to Cart &amp; Verify Ledger
+          </button>
+          <div id="checkout-status-banner" style="margin-top:10px;font-size:11px;color:#475569;text-align:center;">
+            Status: Ready for Testudo inspection
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Interactive Workbench (Tester, Script Digester, WASM Gate & Prometheus Stream) -->
+    <aside class="dark-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-weight:800;font-size:14px;color:#38bdf8;" id="workbench-panel-title">
+          Testudo Runtime Control &amp; Telemetry Workbench
+        </span>
+        <span class="pill" style="background:#064e3b;color:#34d399;" id="wasm-engine-pill">WASM READY</span>
+      </div>
+
+      <!-- Quick Action Bar -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <button id="run-trainer-preview-btn" class="btn-mode" type="button">Preview 1-&gt;4 Badges</button>
+        <button id="run-tester-audit-btn" class="btn-mode" style="background:#059669;border-color:#10b981;color:#fff;" type="button">
+          Run Zero-Driver Checkout Audit
+        </button>
+        <button id="clear-overlays-btn" class="btn-mode" type="button">Clear Overlays</button>
+      </div>
+
+      <!-- Legacy Script Digester Drawer -->
+      <div style="border-top:1px solid #1e293b;padding-top:10px;margin-top:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;font-weight:700;color:#f8fafc;">Legacy Script Auto-Digester</span>
+          <div style="display:flex;gap:4px;">
+            <button class="btn-mode" style="padding:3px 8px;font-size:10px;" id="preset-selenium-btn" type="button">Selenium (Java)</button>
+            <button class="btn-mode" style="padding:3px 8px;font-size:10px;" id="preset-playwright-btn" type="button">Playwright</button>
+            <button class="btn-mode" style="padding:3px 8px;font-size:10px;" id="preset-cypress-btn" type="button">Cypress</button>
+          </div>
+        </div>
+        <textarea id="digester-input" class="script-input" aria-label="Legacy Test Script Input">driver.findElement(By.cssSelector("#spc-gcpromoinput")).sendKeys("VIP10");
+driver.findElement(By.cssSelector("#apply-promo-btn")).click();
+assertEquals("$427.11", driver.findElement(By.cssSelector("#sc-grand-total")).getText());</textarea>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button id="btn-digest-transpile" class="btn-mode" style="background:#0284c7;color:#fff;" type="button">
+            Digest &amp; Transpile to Testudo-JS
+          </button>
+          <button id="btn-run-digested" class="btn-mode" type="button">
+            Execute Digested Workflow Live
+          </button>
+        </div>
+        <pre id="digester-output" class="code-box">// Click "Digest &amp; Transpile" to convert Selenium/Playwright/Cypress into Testudo-JS</pre>
+      </div>
+
+      <!-- 4-Layer WASM White-Label & Anti-Piracy Simulator -->
+      <div style="border-top:1px solid #1e293b;padding-top:10px;margin-top:10px;">
+        <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:6px;">
+          4-Layer WASM White-Label &amp; Anti-Piracy Gate Simulator
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <button id="sim-free-tier" class="btn-mode" style="font-size:11px;padding:4px 8px;" type="button">
+            Community Free Tier
+          </button>
+          <button id="sim-amazon-valid" class="btn-mode" style="font-size:11px;padding:4px 8px;" type="button">
+            Valid Amazon White-Label
+          </button>
+          <button id="sim-pirated-domain" class="btn-mode" style="font-size:11px;padding:4px 8px;" type="button">
+            Copied Key on Wrong Domain
+          </button>
+          <button id="sim-pirated-icon" class="btn-mode" style="font-size:11px;padding:4px 8px;" type="button">
+            Copied Key + Swapped Icon
+          </button>
+        </div>
+        <pre id="license-gate-output" class="code-box" style="max-height:110px;color:#a7f3d0;">Gate Status: COMMUNITY_FREE (Sir Testudo Mascot + Aventine Labs Attribution Enforced)</pre>
+      </div>
+
+      <!-- Opt-In Prometheus / HDR Counter Stream -->
+      <div style="border-top:1px solid #1e293b;padding-top:10px;margin-top:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:12px;font-weight:700;color:#38bdf8;">Prometheus / HDR Telemetry Exposition</span>
+          <span style="font-size:10px;color:#94a3b8;" id="telemetry-mode-badge">Enabled in Tester Mode</span>
+        </div>
+        <pre id="prometheus-output" class="code-box" style="max-height:130px;color:#cbd5e1;"># Run Zero-Driver Checkout Audit to stream microsecond step counters &amp; DOM flicker metrics</pre>
+      </div>
+    </aside>
+  </main>
+
+  <script src="../dist/testudo.iife.js"></script>
+  <script>
+    (function () {
+      const $T = window.$T;
+
+      // 1. Register External JSON Manifest for Zero-Touch Reverse-Proxy Overlay
+      $T.concierge.loadManifest({
+        name: 'Amazon Storefront Runtime Manifest',
+        entries: [
+          {
+            selector: '#twotabsearchtextbox',
+            title: 'Storefront Search Input',
+            help: 'Queries the product catalog with React/Vue native setter compatibility.',
+            quip: 'Looking for post-quantum hardware keys? Excellent taste.',
+            liveSelectors: { 'Current Query': '#twotabsearchtextbox', 'Cart Items': '#nav-cart-count' }
+          },
+          {
+            selector: '#quantity',
+            title: 'Order Quantity Selector',
+            help: 'Updates item multiplier and triggers real-time subtotal, VIP discount, and tax recalculation.',
+            liveSelectors: { 'Subtotal': '#sc-subtotal', 'Grand Total': '#sc-grand-total' }
+          },
+          {
+            selector: '#spc-gcpromoinput',
+            title: 'VIP Promo Code Input',
+            help: 'Applies basis-point discount (VIP10 = 1000 bps = 10.00% off).',
+            liveSelectors: { 'Promo Rate': '#sc-promo-rate', 'Discount': '#sc-discount' }
+          },
+          {
+            selector: '#sc-grand-total',
+            title: 'Checkout Grand Total Cell',
+            help: 'Verified by Testudo Multi-Cell Calculus: Subtotal - Discount + Tax == Grand Total.',
+            quip: 'I verify every penny to 0.01 tolerance. Floating-point drift does not get past my shell.',
+            liveSelectors: {
+              'Subtotal': '#sc-subtotal',
+              'Discount': '#sc-discount',
+              'Tax': '#sc-tax',
+              'Grand Total': '#sc-grand-total'
+            }
+          }
+        ]
+      });
+
+      const checkoutSteps = [
+        { selector: '#quantity', action: 'select', value: '2', title: 'Select Qty 2' },
+        { selector: '#spc-gcpromoinput', action: 'type', value: 'VIP10', title: 'Enter VIP10 Promo' },
+        { selector: '#apply-promo-btn', action: 'click', title: 'Apply VIP Discount' },
+        {
+          selector: '#sc-grand-total',
+          action: 'assertCurrency',
+          value: '$427.11',
+          title: 'Verify Grand Total ($427.11)',
+          options: { tolerance: 0.01, mode: 'stable', stableMs: 150, timeout: 600 }
+        }
+      ];
+
+      // Mount Standalone Shadow DOM Concierge Widget
+      const widget = $T.mountWidget({
+        steps: checkoutSteps
+      });
+
+      // Storefront Ledger Calculation Logic
+      function recalculateLedger() {
+        const qty = Number(document.getElementById('quantity').value || 2);
+        const promo = (document.getElementById('spc-gcpromoinput').value || '').trim().toUpperCase();
+        const injectBug = document.getElementById('bug-toggle').checked;
+
+        const unitPrice = 219.0;
+        const subtotal = unitPrice * qty;
+        const discountRate = promo === 'VIP10' ? 0.10 : 0.0;
+        const discount = Math.round(subtotal * discountRate * 100) / 100;
+        const taxable = subtotal - discount;
+        const tax = Math.round(taxable * 0.0835 * 100) / 100;
+        const exactTotal = Math.round((subtotal - discount + tax) * 100) / 100;
+        const displayedTotal = injectBug ? exactTotal + 0.03 : exactTotal;
+
+        document.getElementById('summary-qty').textContent = String(qty);
+        document.getElementById('sc-subtotal').textContent = '$' + subtotal.toFixed(2);
+        document.getElementById('sc-promo-rate').textContent = promo === 'VIP10' ? '1000 bps' : '0 bps';
+        document.getElementById('sc-discount').textContent = '$' + discount.toFixed(2);
+        document.getElementById('sc-tax').textContent = '$' + tax.toFixed(2);
+        document.getElementById('sc-grand-total').textContent = '$' + displayedTotal.toFixed(2);
+      }
+
+      document.getElementById('quantity').addEventListener('change', recalculateLedger);
+      document.getElementById('apply-promo-btn').addEventListener('click', recalculateLedger);
+      document.getElementById('bug-toggle').addEventListener('change', recalculateLedger);
+      recalculateLedger();
+
+      // Mode & Workbench Controls
+      document.getElementById('mode-helper-btn').addEventListener('click', () => {
+        widget.enableMagicCursor();
+        document.getElementById('checkout-status-banner').textContent =
+          'Helper Mode Active: Click any control on the page to inspect it with Sir Testudo.';
+      });
+
+      document.getElementById('mode-trainer-btn').addEventListener('click', () => {
+        widget.disableMagicCursor();
+        const wf = $T.workflow('Amazon Storefront Trainer Walkthrough', checkoutSteps);
+        wf.preview();
+        document.getElementById('checkout-status-banner').textContent =
+          'Trainer Mode Active: 1->4 WASM-staggered walkthrough badges rendered across same-row controls.';
+      });
+
+      document.getElementById('run-trainer-preview-btn').addEventListener('click', () => {
+        const wf = $T.workflow('Amazon Storefront Trainer Walkthrough', checkoutSteps);
+        wf.preview();
+      });
+
+      document.getElementById('clear-overlays-btn').addEventListener('click', () => {
+        $T.visual.cleanup();
+        document.querySelectorAll('[data-testudo-workflow-overlay]').forEach((el) => el.remove());
+      });
+
+      async function runZeroDriverAudit() {
+        widget.disableMagicCursor();
+        $T.visual.cleanup();
+        $T.telemetry.configure({ enabled: true });
+
+        const banner = document.getElementById('checkout-status-banner');
+        banner.textContent = 'Running Zero-Driver Checkout Audit...';
+
+        try {
+          const wf = $T.workflow('Zero-Driver Checkout Audit', checkoutSteps);
+          await wf.run({ stepDelayMs: 60 });
+
+          // Also run Multi-Cell Cross-Element Calculus verification
+          const calcRes = await $T
+            .calc('#sc-subtotal - #sc-discount + #sc-tax')
+            .toEqualCurrency('#sc-grand-total', { tolerance: 0.01, autoHighlight: true });
+          if (!calcRes.pass) {
+            throw new Error(calcRes.message || 'Multi-Cell Ledger Calculus mismatch');
+          }
+
+          banner.style.color = '#059669';
+          banner.textContent = 'PASS: Checkout Grand Total ($427.11) and Multi-Cell Ledger Calculus verified!';
+        } catch (err) {
+          banner.style.color = '#dc2626';
+          banner.textContent = 'FAIL CAUGHT: ' + (err && err.message ? err.message : String(err));
+          // Show Multi-Cell Calculus HUD on the Grand Total cell
+          try {
+            await $T
+              .calc('#sc-subtotal - #sc-discount + #sc-tax')
+              .toEqualCurrency('#sc-grand-total', { tolerance: 0.01, autoHighlight: true });
+          } catch {
+            // Calculus HUD rendered on screen
+          }
+        } finally {
+          document.getElementById('prometheus-output').textContent = $T.telemetry.toPrometheusText();
+        }
+      }
+
+      document.getElementById('mode-tester-btn').addEventListener('click', runZeroDriverAudit);
+      document.getElementById('run-tester-audit-btn').addEventListener('click', runZeroDriverAudit);
+
+      // Legacy Script Presets & Live Digester
+      const PRESETS = {
+        selenium: `driver.findElement(By.cssSelector("#spc-gcpromoinput")).sendKeys("VIP10");
+driver.findElement(By.cssSelector("#apply-promo-btn")).click();
+assertEquals("$427.11", driver.findElement(By.cssSelector("#sc-grand-total")).getText());`,
+        playwright: `await page.locator('#spc-gcpromoinput').fill('VIP10');
+await page.locator('#apply-promo-btn').click();
+await expect(page.locator('#sc-grand-total')).toHaveText('$427.11');`,
+        cypress: `cy.get('#spc-gcpromoinput').type('VIP10');
+cy.get('#apply-promo-btn').click();
+cy.get('#sc-grand-total').should('have.text', '$427.11');`
+      };
+
+      document.getElementById('preset-selenium-btn').addEventListener('click', () => {
+        document.getElementById('digester-input').value = PRESETS.selenium;
+      });
+      document.getElementById('preset-playwright-btn').addEventListener('click', () => {
+        document.getElementById('digester-input').value = PRESETS.playwright;
+      });
+      document.getElementById('preset-cypress-btn').addEventListener('click', () => {
+        document.getElementById('digester-input').value = PRESETS.cypress;
+      });
+
+      let lastDigestedSteps = checkoutSteps;
+      function runDigester() {
+        const raw = document.getElementById('digester-input').value;
+        const res = $T.digest(raw, { workflowName: 'Digested Checkout Audit' });
+        lastDigestedSteps = res.steps;
+        document.getElementById('digester-output').textContent =
+          `// Detected Framework: ${res.detectedFramework.toUpperCase()} (${res.steps.length} steps)\n` +
+          res.generatedCode;
+      }
+
+      document.getElementById('btn-digest-transpile').addEventListener('click', runDigester);
+      document.getElementById('mode-digester-btn').addEventListener('click', runDigester);
+
+      document.getElementById('btn-run-digested').addEventListener('click', async () => {
+        runDigester();
+        $T.telemetry.configure({ enabled: true });
+        try {
+          const wf = $T.workflow('Digested Live Run', lastDigestedSteps);
+          await wf.run({ stepDelayMs: 60 });
+        } catch {
+          // Visual diff rendered on DOM
+        } finally {
+          document.getElementById('prometheus-output').textContent = $T.telemetry.toPrometheusText();
+        }
+      });
+
+      // 4-Layer WASM White-Label & Anti-Piracy Simulator
+      const AMAZON_CUSTOM_SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="24" height="24"><circle cx="14" cy="14" r="12" fill="#FF9900"/><path d="M8 15c3.5 3 8.5 3 12 0" stroke="#131921" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>';
+      const PIRATE_CUSTOM_SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="24" height="24"><rect width="28" height="28" fill="#EF4444"/></svg>';
+
+      const amazonToken = $T.wasm.mintWhiteLabelLicenseToken({
+        orgId: 'AMZN-ENT-001',
+        orgName: 'Amazon.com Services LLC',
+        allowedOrigins: ['amazon.com', '*.amazon.com', 'localhost', '127.0.0.1'],
+        customIconSha256: $T.wasm.computeSvgHash256(AMAZON_CUSTOM_SVG),
+        tier: 'ENTERPRISE_WHITELABEL',
+        expEpoch: Math.floor(Date.now() / 1000) + 86400 * 365
+      });
+
+      function showGateResult(res) {
+        document.getElementById('license-gate-output').textContent = JSON.stringify(res, null, 2);
+      }
+
+      document.getElementById('sim-free-tier').addEventListener('click', () => {
+        showGateResult(widget.updateLicense(undefined, undefined));
+      });
+      document.getElementById('sim-amazon-valid').addEventListener('click', () => {
+        showGateResult(
+          widget.updateLicense(amazonToken, AMAZON_CUSTOM_SVG, 'https://www.amazon.com', 'https://www.amazon.com')
+        );
+      });
+      document.getElementById('sim-pirated-domain').addEventListener('click', () => {
+        showGateResult(
+          widget.updateLicense(
+            amazonToken,
+            AMAZON_CUSTOM_SVG,
+            'https://checkout.evil-competitor.io',
+            'https://checkout.evil-competitor.io'
+          )
+        );
+      });
+      document.getElementById('sim-pirated-icon').addEventListener('click', () => {
+        showGateResult(
+          widget.updateLicense(amazonToken, PIRATE_CUSTOM_SVG, 'https://www.amazon.com', 'https://www.amazon.com')
+        );
+      });
+      document.getElementById('mode-license-btn').addEventListener('click', () => {
+        showGateResult(
+          widget.updateLicense(amazonToken, AMAZON_CUSTOM_SVG, 'https://www.amazon.com', 'https://www.amazon.com')
+        );
+      });
+    })();
+  </script>
+</body>
+</html>

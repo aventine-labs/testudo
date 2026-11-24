@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Node Test & Zero-Dependency Audit
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify strict zero runtime dependencies
+        run: |
+          node -e "import('node:fs').then(fs => { const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8')); if (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) { console.error('Error: Runtime dependencies must be empty!'); process.exit(1); } console.log('Zero runtime dependencies verified.'); });"
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Verify deterministic bundle size limits (<6KB core / <76KB full)
+        run: npm run size

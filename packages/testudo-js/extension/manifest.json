@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Sir Testudo Assistive Browser Bridge (Aventine Labs)",
+  "version": "0.6.0",
+  "description": "Zero-friction assistive browser bridge for Testudo-JS ($T). Injects into existing tabs without reloading, supports on-demand chrome.debugger CDP commands, and pauses for human CAPTCHA/2FA assist.",
+  "permissions": [
+    "scripting",
+    "debugger",
+    "tabs",
+    "activeTab",
+    "tabGroups",
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sir-testudo@aventinelabs.com",
+      "strict_min_version": "128.0"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["testudo.iife.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

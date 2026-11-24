@@ -91,12 +91,13 @@ await type.type('#card-number', '4111222233334444', { mask: 'creditCard' });
 await type.type('#ssn', '123456789', { mask: 'ssn' });
 // Result in field: "123-45-6789"
 
-// 4. Date mask: "MM/DD/YYYY"
-await type.type('#dob', '09252026', { mask: 'date' });
-// Result in field: "09/25/2026"
+// 4. Date mask: "YYYY-MM-DD"
+await type.type('#dob', '20260925', { mask: 'date' });
+// Result in field: "2026-09-25"
 
-// 5. Custom user mask
-await type.type('#sku', 'AB1234XY', { mask: 'AA-####-AA' });
+// 5. Custom user mask (placeholders: X, Y, M, D, 9, #)
+await type.type('#sku', '123456', { mask: 'SKU-####-##' });
+// Result in field: "SKU-1234-56"
 ```
 
 ### Signature
@@ -106,7 +107,7 @@ interface TypeOptions {
   mask?: 'creditCard' | 'phone' | 'ssn' | 'date' | string;
   delay?: number;
   jitter?: number;
-  clear?: boolean;
+  clearFirst?: boolean;
 }
 
 function type(

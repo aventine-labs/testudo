@@ -111,4 +111,20 @@ describe('TestudoCalc: Multi-Cell Financial Calculus Engine', () => {
     assert.strictEqual(clip.width, 1397);
     assert.strictEqual(clip.height, 192);
   });
+
+  it('fails closed with ELEMENT_NOT_FOUND when operand or target selector is missing instead of substituting 0', async () => {
+    const missingOperandEval = calc('#present-cell + #missing-cell', {
+      '#present-cell': '$100.00'
+    });
+    assert.throws(
+      () => missingOperandEval.evaluate(),
+      (err) => err && err.code === 'ELEMENT_NOT_FOUND' && /#missing-cell/.test(err.message)
+    );
+
+    const validFormula = calc('0 + 0');
+    await assert.rejects(
+      async () => validFormula.toEqualCurrency('#nonexistent-target-cell', { autoHighlight: false }),
+      (err) => err && err.code === 'ELEMENT_NOT_FOUND' && /#nonexistent-target-cell/.test(err.message)
+    );
+  });
 });

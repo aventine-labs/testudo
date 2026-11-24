@@ -46,9 +46,7 @@
     .log-fail { color: var(--crimson); }
     .tag-react { background: rgba(56, 189, 248, 0.2); color: var(--cyan); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
   </style>
-  <!-- React 18 UMD dependencies -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Air-gapped local React 18 _valueTracker simulation (zero external CDN egress) -->
 </head>
 <body>
   <div class="header">
@@ -98,7 +96,10 @@
     function log(msg, isPass = true) {
       const cls = isPass ? 'log-pass' : 'log-fail';
       const mark = isPass ? '✓' : '✖';
-      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      const row = document.createElement('div');
+      row.className = cls;
+      row.textContent = `[${mark}] ${msg}`;
+      logBox.appendChild(row);
       logBox.scrollTop = logBox.scrollHeight;
     }
 
@@ -256,7 +257,7 @@
 
     // Automated Suite for Headless Browser verification
     window.runSite2Tests = async function() {
-      logBox.innerHTML = '';
+      logBox.textContent = '';
       let passes = 0;
       let total = 0;
 

@@ -360,7 +360,7 @@
 
         <!-- [2] Asset Filter Select -->
         <div class="input-wrapper">
-          <div class="testudo-badge" id="badge-2" onclick="copySnippet(2, 'await $T(\'#asset-filter\').selectOption(\'structured-credit\');')">[2]</div>
+          <div class="testudo-badge" id="badge-2" onclick="copySnippet(2, 'await $T(\'#asset-filter\').select(\'structured-credit\');')">[2]</div>
           <select id="asset-filter" class="control-select">
             <option value="structured-credit">Structured Credit (ABS/MBS)</option>
             <option value="sovereign">US Sovereign Treasuries</option>
@@ -378,12 +378,12 @@
         <div class="input-wrapper">
           <div class="tab-list" role="tablist">
             <div style="position: relative; display: inline-block;">
-              <div class="testudo-badge" id="badge-4" onclick="copySnippet(4, 'await $T(\'button:has-text(\\\'All Positions\\\')\').click();')">[4]</div>
-              <button role="tab" class="tab-btn">All Positions</button>
+              <div class="testudo-badge" id="badge-4" onclick="copySnippet(4, 'await $T(\'#tab-all-positions\').click();')">[4]</div>
+              <button id="tab-all-positions" role="tab" class="tab-btn">All Positions</button>
             </div>
             <div style="position: relative; display: inline-block;">
-              <div class="testudo-badge" id="badge-5" onclick="copySnippet(5, 'await $T(\'button:has-text(\\\'Discrepancies\\\')\').click();')">[5]</div>
-              <button role="tab" class="tab-btn active">Discrepancies (1)</button>
+              <div class="testudo-badge" id="badge-5" onclick="copySnippet(5, 'await $T(\'#tab-discrepancies\').click();')">[5]</div>
+              <button id="tab-discrepancies" role="tab" class="tab-btn active">Discrepancies (1)</button>
             </div>
           </div>
         </div>
@@ -510,8 +510,8 @@
           <td>select</td>
           <td style="color: #F59E0B;">id="asset-filter"</td>
           <td>#asset-filter</td>
-          <td class="snippet-cell">await $T('#asset-filter').selectOption('structured-credit');</td>
-          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(2, 'await $T(\'#asset-filter\').selectOption(\'structured-credit\');')">Copy</button></td>
+          <td class="snippet-cell">await $T('#asset-filter').select('structured-credit');</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(2, 'await $T(\'#asset-filter\').select(\'structured-credit\');')">Copy</button></td>
         </tr>
         <tr>
           <td><span class="badge-index">[3]</span></td>
@@ -524,18 +524,18 @@
         <tr>
           <td><span class="badge-index">[4]</span></td>
           <td>button</td>
-          <td style="color: #94A3B8;">role="tab" ("All Positions")</td>
-          <td>button:has-text("All Positions")</td>
-          <td class="snippet-cell">await $T('button:has-text("All Positions")').click();</td>
-          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(4, 'await $T(\'button:has-text(\\\'All Positions\\\')\').click();')">Copy</button></td>
+          <td style="color: #94A3B8;">id="tab-all-positions"</td>
+          <td>#tab-all-positions</td>
+          <td class="snippet-cell">await $T('#tab-all-positions').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(4, 'await $T(\'#tab-all-positions\').click();')">Copy</button></td>
         </tr>
         <tr>
           <td><span class="badge-index">[5]</span></td>
           <td>button</td>
-          <td style="color: #94A3B8;">role="tab" ("Discrepancies")</td>
-          <td>button:has-text("Discrepancies")</td>
-          <td class="snippet-cell">await $T('button:has-text("Discrepancies")').click();</td>
-          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(5, 'await $T(\'button:has-text(\\\'Discrepancies\\\')\').click();')">Copy</button></td>
+          <td style="color: #94A3B8;">id="tab-discrepancies"</td>
+          <td>#tab-discrepancies</td>
+          <td class="snippet-cell">await $T('#tab-discrepancies').click();</td>
+          <td style="text-align: center;"><button class="copy-btn" onclick="copySnippet(5, 'await $T(\'#tab-discrepancies\').click();')">Copy</button></td>
         </tr>
         <tr style="background: rgba(16, 185, 129, 0.08);">
           <td><span class="badge-index" style="background: #10B981;">✓ [6]</span></td>
@@ -568,8 +568,8 @@
 
   <script>
     function copySnippet(index, code) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(code);
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(code).catch(() => {});
       }
       const badge = document.getElementById('badge-' + index);
       if (badge) {

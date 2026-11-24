@@ -168,12 +168,15 @@
     function log(msg, isPass = true) {
       const cls = isPass ? 'log-pass' : 'log-fail';
       const mark = isPass ? '✓' : '✖';
-      logBox.innerHTML += `<div class="${cls}">[${mark}] ${msg}</div>`;
+      const row = document.createElement('div');
+      row.className = cls;
+      row.textContent = `[${mark}] ${msg}`;
+      logBox.appendChild(row);
       logBox.scrollTop = logBox.scrollHeight;
     }
 
     window.runSite4Tests = async function() {
-      logBox.innerHTML = '';
+      logBox.textContent = '';
       let passes = 0;
       let total = 0;
 
@@ -252,8 +255,29 @@
     });
 
     document.getElementById('btn-trigger-hud')?.addEventListener('click', async () => {
-      await calc('#cell-principal + #cell-interest - #cell-fee - #cell-tax')
+      const res = await calc('#cell-principal + #cell-interest - #cell-fee - #cell-tax')
         .toEqualCurrency('#cell-settlement', { tolerance: 0.005, autoHighlight: true });
+      log(`HUD Triggered: delta=${res.delta}, pass=${res.pass}`, !res.pass);
+    });
+
+    document.getElementById('btn-test-formulas')?.addEventListener('click', () => {
+      logBox.textContent = '';
+      const sumVal = calc('sum(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      const avgVal = calc('avg(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      const minVal = calc('min(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      const maxVal = calc('max(#tranche-sub-1, #tranche-sub-2, #tranche-sub-3)').evaluate().expectedValue;
+      log(`sum=${sumVal}, avg=${avgVal}, min=${minVal}, max=${maxVal}`, sumVal === 60000 && avgVal === 20000 && minVal === 10000 && maxVal === 30000);
+    });
+
+    document.getElementById('btn-test-reports')?.addEventListener('click', () => {
+      logBox.textContent = '';
+      const splunkOutput = reporter.formatSplunk({
+        level: 'error',
+        event: 'discrepancy_detected',
+        message: 'Discrepancy of -0.01 on #cell-settlement',
+        selector: '#cell-settlement'
+      });
+      log(`Splunk SIEM: ${splunkOutput}`, !splunkOutput.includes('\n'));
     });
   </script>
 </body>

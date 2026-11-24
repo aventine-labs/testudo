@@ -24,62 +24,117 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon'
 };
 
-export function createServer(port = 4173) {
-  const server = http.createServer((req, res) => {
-    // Add CORS headers for testing
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', '*');
+const ALLOWED_PREFIXES = ['/demo/', '/dist/', '/assets/'];
 
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
+export function createServer(port = 4173) {
+  const rootReal = fs.realpathSync(ROOT_DIR);
+
+  const server = http.createServer((req, res) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('405 Method Not Allowed');
       return;
     }
 
-    const parsedUrl = new URL(req.url || '/', `http://127.0.0.1:${port}`);
-    let reqPath = decodeURIComponent(parsedUrl.pathname);
+    let reqPath;
+    try {
+      const parsedUrl = new URL(req.url || '/', 'http://127.0.0.1');
+      reqPath = decodeURIComponent(parsedUrl.pathname);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('400 Bad Request');
+      return;
+    }
+
+    if (reqPath.includes('\0')) {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('400 Bad Request');
+      return;
+    }
+
     if (reqPath === '/') {
       reqPath = '/demo/site1_financial_blotter.html';
     }
 
-    const filePath = path.join(ROOT_DIR, reqPath);
-
-    // Guard against path traversal
-    if (!filePath.startsWith(ROOT_DIR)) {
-      res.writeHead(403, { 'Content-Type': 'text/plain' });
+    const normalizedPosix = path.posix.normalize(reqPath);
+    if (!ALLOWED_PREFIXES.some((prefix) => normalizedPosix.startsWith(prefix))) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('403 Forbidden');
       return;
     }
 
-    fs.stat(filePath, (err, stats) => {
-      if (err || !stats.isFile()) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end(`404 Not Found: ${reqPath}`);
+    const candidatePath = path.resolve(rootReal, '.' + normalizedPosix);
+    if (candidatePath !== rootReal && !candidatePath.startsWith(rootReal + path.sep)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('403 Forbidden');
+      return;
+    }
+
+    fs.realpath(candidatePath, (realErr, realFilePath) => {
+      if (realErr) {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('404 Not Found');
         return;
       }
 
-      const ext = path.extname(filePath).toLowerCase();
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      if (realFilePath !== rootReal && !realFilePath.startsWith(rootReal + path.sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('403 Forbidden');
+        return;
+      }
 
-      res.writeHead(200, { 'Content-Type': contentType });
-      fs.createReadStream(filePath).pipe(res);
+      fs.stat(realFilePath, (err, stats) => {
+        if (err || !stats.isFile()) {
+          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('404 Not Found');
+          return;
+        }
+
+        const ext = path.extname(realFilePath).toLowerCase();
+        const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'X-Content-Type-Options': 'nosniff'
+        });
+        if (req.method === 'HEAD') {
+          res.end();
+          return;
+        }
+        const stream = fs.createReadStream(realFilePath);
+        stream.on('error', () => {
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+          }
+          res.end();
+        });
+        stream.pipe(res);
+      });
     });
   });
 
   return {
-    start: () => new Promise((resolve) => {
-      server.listen(port, '127.0.0.1', () => {
-        console.log(`[TestudoServer] Live on http://127.0.0.1:${port}`);
-        resolve(server);
-      });
-    }),
-    stop: () => new Promise((resolve) => {
-      server.close(() => {
-        console.log('[TestudoServer] Closed');
-        resolve();
-      });
-    }),
+    start: () =>
+      new Promise((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(port, '127.0.0.1', () => {
+          const addr = server.address();
+          const boundPort = typeof addr === 'object' && addr ? addr.port : port;
+          console.log(`[TestudoServer] Live on http://127.0.0.1:${boundPort}`);
+          resolve(server);
+        });
+      }),
+    getPort: () => {
+      const addr = server.address();
+      return typeof addr === 'object' && addr ? addr.port : port;
+    },
+    stop: () =>
+      new Promise((resolve) => {
+        server.close(() => {
+          console.log('[TestudoServer] Closed');
+          resolve();
+        });
+      }),
     server
   };
 }

@@ -348,19 +348,12 @@ export class TestudoCalc {
           }
         }
 
-        // If selector cannot be found, record as 0
-        operands.push({
-          index: operandIndex,
-          selector: sel,
-          rawText: 'NOT_FOUND',
-          value: 0,
-          color: PALETTE[operandIndex % PALETTE.length],
-          borderPattern: PATTERNS[operandIndex % PATTERNS.length],
-          shape: SHAPES[operandIndex % SHAPES.length],
-          label: `Operand [${String.fromCharCode(65 + (operandIndex % 26))}]`
-        });
-        operandIndex++;
-        return 0;
+        // Fail closed when selector cannot be resolved in customValues or DOM
+        const err: any = new Error(
+          `[Testudo ELEMENT_NOT_FOUND] Operand selector "${sel}" could not be found in DOM or customValues`
+        );
+        err.code = 'ELEMENT_NOT_FOUND';
+        throw err;
       }
 
       return 0;
@@ -516,12 +509,27 @@ export class TestudoCalc {
       targetSelector = 'literal';
     } else {
       targetSelector = targetSelectorOrValue;
-      if (doc && doc.querySelector) {
+      if (this.customValues && this.customValues[targetSelector] !== undefined) {
+        const cv = this.customValues[targetSelector];
+        rawTargetText = String(cv);
+        actual = typeof cv === 'number' ? cv : parseCurrency(rawTargetText, options);
+      } else if (doc && doc.querySelector) {
         targetElement = doc.querySelector(targetSelector);
-        if (targetElement) {
-          rawTargetText = (targetElement.value !== undefined ? targetElement.value : targetElement.textContent) || '';
-          actual = parseCurrency(rawTargetText, options);
+        if (!targetElement) {
+          const err: any = new Error(
+            `[Testudo ELEMENT_NOT_FOUND] Target selector "${targetSelector}" could not be found in DOM`
+          );
+          err.code = 'ELEMENT_NOT_FOUND';
+          throw err;
         }
+        rawTargetText = (targetElement.value !== undefined ? targetElement.value : targetElement.textContent) || '';
+        actual = parseCurrency(rawTargetText, options);
+      } else {
+        const err: any = new Error(
+          `[Testudo ELEMENT_NOT_FOUND] Target selector "${targetSelector}" could not be found in DOM or customValues`
+        );
+        err.code = 'ELEMENT_NOT_FOUND';
+        throw err;
       }
     }
 

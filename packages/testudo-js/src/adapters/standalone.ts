@@ -7,12 +7,27 @@
 import { math } from '../math.js';
 import { format, FormatParseOptions, TestudoFormatError } from '../format.js';
 import { type } from '../type.js';
-import { scan, resolveElement } from '../scan.js';
+import { scan, resolveElement, resolveDeepElement } from '../scan.js';
 import { visual } from '../visual.js';
 import { charDiff } from '../diff.js';
 import { calc } from '../calc.js';
 import { reporter } from '../report.js';
 import { createWorkflow, pollDomAssertion, PollOptions, WorkflowStep } from '../workflow.js';
+import { concierge, TestudoInitConfig, getLauncherIconSvg } from '../launcher.js';
+import { digest, digestScript } from '../digest.js';
+import { wasmConcierge } from '../wasm-concierge.js';
+import { telemetry } from '../telemetry.js';
+import { kinetic } from '../kinetic.js';
+import { mountTestudoWidget, ShadowWidgetConfig } from '../ui/shadow-widget.js';
+import { buildMultiAnchor, resolveWithSemanticSelfHeal, assertNativeIntrinsicsUntouched } from '../probe.js';
+import { awaitCausalQuiescence, CausalQuiescenceOptions } from '../quiescence.js';
+import { TestudoWaterfallRecorder } from '../waterfall.js';
+import { runZeroCloudPageAudit } from '../audit.js';
+import { TestudoWireInterceptor, proveIdempotencyAndOutOfOrderSafety } from '../intercept.js';
+import { TestudoTimeTravelRing } from '../timetravel.js';
+import { runDomCardinalityStress, runInputEnduranceAndThreeStepLeakProbe } from '../stress.js';
+import { semanticQueries, expectValue, spyFn, TestudoSuiteRunner } from '../runner.js';
+import { xray, inspectElementXray, XrayOptions } from '../xray.js';
 
 export interface AssertCurrencyOptions extends FormatParseOptions, PollOptions {
   tolerance?: number;
@@ -47,6 +62,65 @@ export function createTestudoInstance() {
       return selectorOrElement;
     };
 
+    const runNumericPoll = async (
+      expVal: number,
+      opts: any,
+      parseFn: (raw: string) => number,
+      hlExpected: string,
+      defaultMsgFn: (actual: number) => string,
+      errFn: (actual: number, raw: string, delta: number, mode: string) => string
+    ) => {
+      const target = getElement(true);
+      if (!target) throw new Error(`[Testudo] Element not found: ${selectorOrElement}`);
+      const tol = opts?.tolerance ?? 0.01;
+      let lastFmtErr: any = null;
+      const pollRes = await pollDomAssertion<number>(
+        () => {
+          const raw = readElementText(target);
+          try {
+            const actual = parseFn(raw);
+            lastFmtErr = null;
+            const delta = Math.round((actual - expVal) * 1e4) / 1e4;
+            return { pass: math.isCloseTo(actual, expVal, tol), actual, expected: expVal, rawText: raw, delta };
+          } catch (err: any) {
+            if (err instanceof TestudoFormatError) lastFmtErr = err;
+            return { pass: false, actual: Number.NaN, expected: expVal, rawText: raw, delta: Number.NaN };
+          }
+        },
+        {
+          timeout: opts?.timeout ?? (opts?.mode === 'stable' ? 1500 : 250),
+          interval: opts?.interval ?? 50,
+          mode: opts?.mode ?? 'eventually',
+          stableMs: opts?.stableMs ?? 250,
+          signal: opts?.signal
+        }
+      );
+      if (!pollRes.pass) {
+        const delta = pollRes.delta ?? Number.NaN;
+        const msg = opts?.message || (lastFmtErr ? lastFmtErr.message : defaultMsgFn(pollRes.actual));
+        const { diff } = await visual.highlightError(target, { message: msg, expected: hlExpected, actual: pollRes.rawText });
+        reporter.error(msg, {
+          selector: typeof selectorOrElement === 'string' ? selectorOrElement : target.id || target.tagName,
+          expected: expVal,
+          actual: pollRes.actual,
+          delta,
+          tolerance: tol,
+          divergenceIndex: diff?.index
+        });
+        if (lastFmtErr) throw lastFmtErr;
+        throw new Error(errFn(pollRes.actual, pollRes.rawText, delta, pollRes.mode));
+      }
+      return {
+        pass: true,
+        expected: expVal,
+        actual: pollRes.actual,
+        delta: pollRes.delta ?? 0,
+        mode: pollRes.mode,
+        observedStableMs: pollRes.observedStableMs,
+        samples: pollRes.samples
+      };
+    };
+
     const el = getElement(false);
 
     return {
@@ -71,178 +145,31 @@ export function createTestudoInstance() {
         if (!target) return [];
         return scan.scan(target);
       },
+      xray: (options?: XrayOptions) => inspectElementXray(selectorOrElement, options),
       assertCurrency: async (expected: string | number, options?: AssertCurrencyOptions) => {
-        const target = getElement(true);
-        if (!target) throw new Error(`[Testudo] Element not found: ${selectorOrElement}`);
-
         const expVal = typeof expected === 'number' ? expected : format.parse(expected, options);
-        const tol = options?.tolerance ?? 0.01;
-        const timeout = options?.timeout ?? (options?.mode === 'stable' ? 1500 : 250);
-        let lastFormatError: any = null;
-
-        const pollRes = await pollDomAssertion<number>(
-          () => {
-            const raw = readElementText(target);
-            try {
-              const actualVal = format.parse(raw, options);
-              lastFormatError = null;
-              const delta = Math.round((actualVal - expVal) * 1e4) / 1e4;
-              const pass = math.isCloseTo(actualVal, expVal, tol);
-              return {
-                pass,
-                actual: actualVal,
-                expected: expVal,
-                rawText: raw,
-                delta
-              };
-            } catch (err: any) {
-              if (err instanceof TestudoFormatError) {
-                lastFormatError = err;
-              }
-              return {
-                pass: false,
-                actual: Number.NaN,
-                expected: expVal,
-                rawText: raw,
-                delta: Number.NaN
-              };
-            }
-          },
-          {
-            timeout,
-            interval: options?.interval ?? 50,
-            mode: options?.mode ?? 'eventually',
-            stableMs: options?.stableMs ?? 250,
-            signal: options?.signal
-          }
+        return runNumericPoll(
+          expVal,
+          options,
+          (raw) => format.parse(raw, options),
+          typeof expected === 'string' ? expected : String(expected),
+          (actual) => `Currency mismatch: expected ${expVal}, got ${actual}`,
+          (actual, raw, delta, mode) =>
+            `[Testudo] ${options?.message || `Currency mismatch: expected ${expVal}, got ${actual}`} | Currency assertion failed on ${selectorOrElement}. Expected: ${expVal}, Actual: ${actual} (raw: "${raw}", delta: ${delta}, mode: ${mode})`
         );
-
-        if (!pollRes.pass) {
-          const raw = pollRes.rawText;
-          const actualVal = pollRes.actual;
-          const delta = pollRes.delta ?? Number.NaN;
-          const msg =
-            options?.message ||
-            (lastFormatError
-              ? lastFormatError.message
-              : `Currency mismatch: expected ${expVal}, got ${actualVal}`);
-          const { diff } = await visual.highlightError(target, {
-            message: msg,
-            expected: typeof expected === 'string' ? expected : String(expected),
-            actual: raw
-          });
-          reporter.error(msg, {
-            selector: typeof selectorOrElement === 'string' ? selectorOrElement : target.id || target.tagName,
-            expected: expVal,
-            actual: actualVal,
-            delta,
-            tolerance: tol,
-            divergenceIndex: diff?.index
-          });
-          if (lastFormatError) {
-            throw lastFormatError;
-          }
-          throw new Error(
-            `[Testudo] ${msg} | Currency assertion failed on ${selectorOrElement}. Expected: ${expVal}, Actual: ${actualVal} (raw: "${raw}", delta: ${delta}, mode: ${pollRes.mode})`
-          );
-        }
-
-        return {
-          pass: true,
-          expected: expVal,
-          actual: pollRes.actual,
-          delta: pollRes.delta ?? 0,
-          mode: pollRes.mode,
-          observedStableMs: pollRes.observedStableMs,
-          samples: pollRes.samples
-        };
       },
       assertBasisPoints: async (expected: string | number, options?: AssertBasisPointsOptions) => {
-        const target = getElement(true);
-        if (!target) throw new Error(`[Testudo] Element not found: ${selectorOrElement}`);
-
         const expBps = typeof expected === 'number' ? expected : format.parseBasisPoints(expected, options).bps;
-        const tol = options?.tolerance ?? 0.01;
-        const timeout = options?.timeout ?? (options?.mode === 'stable' ? 1500 : 250);
-        let lastFormatError: any = null;
-
-        const pollRes = await pollDomAssertion<number>(
-          () => {
-            const raw = readElementText(target);
-            try {
-              const parsed = format.parseBasisPoints(raw, options);
-              lastFormatError = null;
-              const delta = Math.round((parsed.bps - expBps) * 1e4) / 1e4;
-              const pass = math.isCloseTo(parsed.bps, expBps, tol);
-              return {
-                pass,
-                actual: parsed.bps,
-                expected: expBps,
-                rawText: raw,
-                delta
-              };
-            } catch (err: any) {
-              if (err instanceof TestudoFormatError) {
-                lastFormatError = err;
-              }
-              return {
-                pass: false,
-                actual: Number.NaN,
-                expected: expBps,
-                rawText: raw,
-                delta: Number.NaN
-              };
-            }
-          },
-          {
-            timeout,
-            interval: options?.interval ?? 50,
-            mode: options?.mode ?? 'eventually',
-            stableMs: options?.stableMs ?? 250,
-            signal: options?.signal
-          }
+        const res = await runNumericPoll(
+          expBps,
+          options,
+          (raw) => format.parseBasisPoints(raw, options).bps,
+          `${expBps} bps`,
+          (actual) => `Basis points mismatch: expected ${expBps} bps, got ${actual} bps`,
+          (actual, raw, delta) =>
+            `[Testudo] Basis points assertion failed on ${selectorOrElement}. Expected: ${expBps} bps, Actual: ${actual} bps (raw: "${raw}", delta: ${delta})`
         );
-
-        if (!pollRes.pass) {
-          const raw = pollRes.rawText;
-          const actualBps = pollRes.actual;
-          const delta = pollRes.delta ?? Number.NaN;
-          const msg =
-            options?.message ||
-            (lastFormatError
-              ? lastFormatError.message
-              : `Basis points mismatch: expected ${expBps} bps, got ${actualBps} bps`);
-          const { diff } = await visual.highlightError(target, {
-            message: msg,
-            expected: `${expBps} bps`,
-            actual: raw
-          });
-          reporter.error(msg, {
-            selector: typeof selectorOrElement === 'string' ? selectorOrElement : target.id || target.tagName,
-            expected: expBps,
-            actual: actualBps,
-            delta,
-            tolerance: tol,
-            divergenceIndex: diff?.index
-          });
-          if (lastFormatError) {
-            throw lastFormatError;
-          }
-          throw new Error(
-            `[Testudo] Basis points assertion failed on ${selectorOrElement}. Expected: ${expBps} bps, Actual: ${actualBps} bps (raw: "${raw}", delta: ${delta})`
-          );
-        }
-
-        return {
-          pass: true,
-          expected: expBps,
-          actual: pollRes.actual,
-          delta: pollRes.delta ?? 0,
-          unit: 'bps' as const,
-          mode: pollRes.mode,
-          observedStableMs: pollRes.observedStableMs,
-          samples: pollRes.samples
-        };
+        return { ...res, unit: 'bps' as const };
       },
       assertText: async (expected: string, options?: AssertTextOptions) => {
         const target = getElement(true);
@@ -338,6 +265,7 @@ export function createTestudoInstance() {
       scan: (scope?: string | HTMLElement) => scan.scan(scope),
       resolveScope: (scope?: string | HTMLElement, options?: any) => scan.resolveScope(scope, options),
       resolveElement: (sel: string | HTMLElement) => resolveElement(sel),
+      resolveDeepElement: (sel: string | HTMLElement, root?: any, opts?: any) => resolveDeepElement(sel, root, opts),
       explore: (scope?: string) => scan.explore(scope),
       clearBadges: () => scan.clearBadges()
     }
@@ -351,6 +279,38 @@ export function createTestudoInstance() {
   instance.reporter = reporter;
   instance.workflow = (name: string, steps: WorkflowStep[]) => createWorkflow(name, steps);
   instance.poll = pollDomAssertion;
+  instance.concierge = concierge;
+  instance.init = (config?: TestudoInitConfig) => concierge.init(config);
+  instance.getLauncherIconSvg = getLauncherIconSvg;
+  instance.digest = Object.assign((raw: string, opts?: any) => digestScript(raw, opts), digest);
+  instance.wasmConcierge = wasmConcierge;
+  instance.wasm = wasmConcierge;
+  instance.telemetry = telemetry;
+  instance.kinetic = kinetic;
+  instance.mountWidget = (config?: ShadowWidgetConfig) => mountTestudoWidget(config);
+  instance.awaitCausalQuiescence = (opts?: CausalQuiescenceOptions) => awaitCausalQuiescence(opts);
+  instance.waterfall = (opts?: any) => new TestudoWaterfallRecorder(opts);
+  instance.audit = (root?: Document | null) => runZeroCloudPageAudit(root);
+  instance.intercept = new TestudoWireInterceptor();
+  instance.chaos = { proveIdempotency: proveIdempotencyAndOutOfOrderSafety };
+  instance.timeTravel = new TestudoTimeTravelRing();
+  instance.stress = {
+    amplifyDomVolume: runDomCardinalityStress,
+    inputEndurance: runInputEnduranceAndThreeStepLeakProbe
+  };
+  instance.probe = {
+    buildMultiAnchor,
+    resolveWithSemanticSelfHeal,
+    assertNativeIntrinsicsUntouched
+  };
+  instance.xray = xray;
+  instance.byRole = semanticQueries.byRole;
+  instance.byLabel = semanticQueries.byLabel;
+  instance.byText = semanticQueries.byText;
+  instance.byTestId = semanticQueries.byTestId;
+  instance.expect = expectValue;
+  instance.spyFn = spyFn;
+  instance.suite = () => new TestudoSuiteRunner();
 
   return instance;
 }

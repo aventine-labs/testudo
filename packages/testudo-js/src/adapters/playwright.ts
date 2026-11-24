@@ -546,16 +546,20 @@ export function createPlaywrightTestudo(page: any, testInfo?: any): TestudoPlayw
       });
       const serialOpts = stripNonSerializableOptions(options);
 
+      const serialStepsSig = JSON.stringify(serialSteps);
+
       const ensureWf = async () => {
         await ensureInPageBridge(page);
         await page.evaluate(
-          ({ wfName, wfSteps, wfOpts }: any) => {
+          ({ wfName, wfSteps, wfOpts, wfSig }: any) => {
             const win = window as any;
-            if (!win.__TESTUDO_WORKFLOWS__[wfName]) {
+            win.__TESTUDO_WORKFLOW_SIGS__ = win.__TESTUDO_WORKFLOW_SIGS__ || {};
+            if (!win.__TESTUDO_WORKFLOWS__[wfName] || win.__TESTUDO_WORKFLOW_SIGS__[wfName] !== wfSig) {
               win.__TESTUDO_WORKFLOWS__[wfName] = win.$T.workflow(wfName, wfSteps, wfOpts);
+              win.__TESTUDO_WORKFLOW_SIGS__[wfName] = wfSig;
             }
           },
-          { wfName: name, wfSteps: serialSteps, wfOpts: serialOpts }
+          { wfName: name, wfSteps: serialSteps, wfOpts: serialOpts, wfSig: serialStepsSig }
         );
       };
 

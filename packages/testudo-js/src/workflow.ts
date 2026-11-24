@@ -14,6 +14,10 @@ import { type, TypeOptions } from './type.js';
 import { resolveElement } from './scan.js';
 import { visual, sanitizeCssColor } from './visual.js';
 import { reporter } from './report.js';
+import { wasmConcierge } from './wasm-concierge.js';
+import { telemetry } from './telemetry.js';
+import { concierge } from './launcher.js';
+import { kinetic, KineticScrollOptions, ThinkPauseOptions } from './kinetic.js';
 
 export type PollMode = 'eventually' | 'stable';
 
@@ -36,7 +40,11 @@ export type WorkflowActionType =
   | 'select'
   | 'assertCurrency'
   | 'assertBasisPoints'
-  | 'assertText';
+  | 'assertText'
+  | 'kineticScroll'
+  | 'thinkPause'
+  | 'expandAll'
+  | 'waitForHumanAssist';
 
 export interface WorkflowStepDefinition {
   id?: string;
@@ -44,10 +52,12 @@ export interface WorkflowStepDefinition {
   selector: string;
   action: WorkflowActionType;
   value?: string | number;
-  options?: AssertionPollOptions & TypeOptions;
+  options?: AssertionPollOptions & TypeOptions & KineticScrollOptions & ThinkPauseOptions;
   expectedUrlContains?: string;
   preconditionSelector?: string;
   preconditionText?: { selector: string; expected: string };
+  prereqSteps?: string[];
+  speakerCue?: string;
   guard?: () => boolean | Promise<boolean>;
 }
 
@@ -63,11 +73,19 @@ export interface WorkflowStepResult {
   elapsedMs: number;
   observedValue?: string | number;
   expectedValue?: string | number;
+  humanAssistWaitedMs?: number;
   error?: string;
   errorCode?: string;
 }
 
-export type WorkflowStatus = 'idle' | 'previewed' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type WorkflowStatus =
+  | 'idle'
+  | 'previewed'
+  | 'running'
+  | 'awaiting_human_assist'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export interface WorkflowReport {
   name: string;
@@ -77,6 +95,7 @@ export interface WorkflowReport {
   elapsedMs: number;
   completedSteps: number;
   totalSteps: number;
+  humanAssistPauses?: number;
   steps: WorkflowStepResult[];
   error?: {
     stepNumber: number;
@@ -91,6 +110,10 @@ export interface WorkflowRunOptions {
   signal?: AbortSignal;
   lockUrlPath?: boolean;
   keepBadgesOnSuccess?: boolean;
+  persistAcrossNavigation?: boolean;
+  autoPauseOnChallenge?: boolean;
+  challengeTimeoutMs?: number;
+  fastRehearsal?: boolean;
 }
 
 function sleepWithAbort(ms: number, isCancelled: () => boolean, signal?: AbortSignal): Promise<void> {
@@ -262,6 +285,7 @@ export class TestudoWorkflow {
   private startedAt: string | null = null;
   private completedAt: string | null = null;
   private elapsedMs = 0;
+  private humanAssistPauses = 0;
   private stepResults: WorkflowStepResult[] = [];
   private failureInfo?: {
     stepNumber: number;
@@ -278,7 +302,7 @@ export class TestudoWorkflow {
       throw new Error(`[Testudo Workflow] Workflow "${name}" must define at least one step.`);
     }
     this.name = name;
-    this.steps = steps.map((s) => ({ ...s }));
+    this.steps = steps.map((s) => ({ ...s, selector: s.selector || 'body' }));
     this.initStepResults();
   }
 
@@ -287,7 +311,7 @@ export class TestudoWorkflow {
       stepNumber: idx + 1,
       id: s.id,
       title: s.title,
-      selector: s.selector,
+      selector: s.selector || 'body',
       action: s.action,
       status: 'pending',
       elapsedMs: 0
@@ -307,6 +331,7 @@ export class TestudoWorkflow {
       elapsedMs: this.elapsedMs,
       completedSteps: this.stepResults.filter((s) => s.status === 'passed').length,
       totalSteps: this.steps.length,
+      humanAssistPauses: this.humanAssistPauses,
       steps: this.stepResults.map((s) => ({ ...s })),
       ...(this.failureInfo ? { error: { ...this.failureInfo } } : {})
     };
@@ -317,7 +342,12 @@ export class TestudoWorkflow {
    */
   public cancel(reason: string = 'Cancelled by caller'): void {
     this.cancelReason = reason;
-    if (this.status === 'running' || this.status === 'idle' || this.status === 'previewed') {
+    if (
+      this.status === 'running' ||
+      this.status === 'awaiting_human_assist' ||
+      this.status === 'idle' ||
+      this.status === 'previewed'
+    ) {
       this.status = 'cancelled';
     }
   }
@@ -327,7 +357,7 @@ export class TestudoWorkflow {
    * Requires explicit { confirmReplay: true } to prevent accidental duplicate form/order submissions.
    */
   public reset(options?: { confirmReplay?: boolean }): this {
-    if (this.status === 'running') {
+    if (this.status === 'running' || this.status === 'awaiting_human_assist') {
       throw new Error(`[Testudo WORKFLOW_RUNNING] Cannot reset workflow "${this.name}" while it is running. Call cancel() first.`);
     }
     if (
@@ -345,6 +375,7 @@ export class TestudoWorkflow {
     this.startedAt = null;
     this.completedAt = null;
     this.elapsedMs = 0;
+    this.humanAssistPauses = 0;
     this.failureInfo = undefined;
     this.initStepResults();
     this.clearWorkflowOverlays();
@@ -379,25 +410,53 @@ export class TestudoWorkflow {
     const safeBorder = sanitizeCssColor(styleSpec.border, '#38BDF8');
     const rect = el.getBoundingClientRect();
 
+    let sameRowCount = 0;
+    const existingBoxes = document.querySelectorAll('[data-testudo-workflow-overlay]');
+    existingBoxes.forEach((other) => {
+      const topAttr = other.getAttribute('data-testudo-row-top');
+      if (topAttr !== null && Math.abs(Number(topAttr) - rect.top) < 32) {
+        sameRowCount++;
+      }
+    });
+    const badgeTopOffsetPx = wasmConcierge.computeRowStaggerOffsetPx(sameRowCount, rect.top < 72);
+
     const box = document.createElement('div');
     box.setAttribute('data-testudo-overlay', 'true');
     box.setAttribute('data-testudo-workflow-overlay', 'true');
     box.setAttribute('data-testudo-workflow-step', String(stepNumber));
     box.setAttribute('data-testudo-workflow-state', state);
+    box.setAttribute('data-testudo-row-top', String(Math.round(rect.top)));
     // Strictly non-intercepting (pointer-events: none) and absolute-positioned (zero layout shift)
     box.style.cssText = `position:absolute;top:${rect.top + window.scrollY - 3}px;left:${rect.left + window.scrollX - 3}px;width:${rect.width + 6}px;height:${rect.height + 6}px;border:2px solid ${safeBorder};border-radius:6px;box-shadow:0 0 12px ${safeBorder}66;pointer-events:none;z-index:99997;box-sizing:border-box;`;
 
     const badge = document.createElement('div');
     badge.setAttribute('data-testudo-workflow-badge', String(stepNumber));
-    badge.style.cssText = `position:absolute;top:-20px;left:-2px;background:${styleSpec.bg};color:${styleSpec.text};font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;`;
+    badge.setAttribute('data-testudo-stagger-top', String(badgeTopOffsetPx));
+    badge.style.cssText = `position:absolute;top:${badgeTopOffsetPx}px;left:-2px;background:${styleSpec.bg};color:${styleSpec.text};font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;pointer-events:none;`;
     badge.textContent = `${styleSpec.prefix} ${title}`;
 
     box.appendChild(badge);
     document.body.appendChild(box);
   }
 
+  private isNonElementAction(action: WorkflowActionType): boolean {
+    return (
+      action === 'kineticScroll' ||
+      action === 'thinkPause' ||
+      action === 'expandAll' ||
+      action === 'waitForHumanAssist'
+    );
+  }
+
   private resolveAndValidateLiveElement(step: WorkflowStepDefinition): HTMLElement {
-    const el = resolveElement(step.selector, document, { requireUnique: true });
+    if (this.isNonElementAction(step.action) && (!step.selector || step.selector === 'body')) {
+      if (typeof document !== 'undefined' && document.body) {
+        return document.body;
+      }
+    }
+    const el = resolveElement(step.selector, document, {
+      requireUnique: !this.isNonElementAction(step.action)
+    });
     if (!el) {
       const err: any = new Error(
         `[Testudo ELEMENT_NOT_FOUND] Step "${step.title}" could not find element for selector "${step.selector}".`
@@ -496,7 +555,7 @@ export class TestudoWorkflow {
    * and performs ZERO clicks, inputs, or state mutations.
    */
   public preview(): WorkflowReport {
-    if (this.status === 'running') {
+    if (this.status === 'running' || this.status === 'awaiting_human_assist') {
       throw new Error(`[Testudo WORKFLOW_RUNNING] Cannot preview workflow "${this.name}" while it is running.`);
     }
     this.clearWorkflowOverlays();
@@ -518,10 +577,10 @@ export class TestudoWorkflow {
 
   /**
    * Executes the workflow with live element re-resolution, precondition guards, cancellation checks,
-   * and replay protection.
+   * automatic CAPTCHA/2FA human assist pause-and-resume, and replay protection.
    */
   public async run(options: WorkflowRunOptions = {}): Promise<WorkflowReport> {
-    if (this.status === 'running') {
+    if (this.status === 'running' || this.status === 'awaiting_human_assist') {
       const err: any = new Error(`[Testudo WORKFLOW_REPLAY_BLOCKED] Workflow "${this.name}" is already running.`);
       err.code = 'WORKFLOW_REPLAY_BLOCKED';
       throw err;
@@ -548,7 +607,9 @@ export class TestudoWorkflow {
     this.clearWorkflowOverlays();
     for (let i = 0; i < this.steps.length; i++) {
       try {
-        const el = resolveElement(this.steps[i].selector, document, { requireUnique: true });
+        const el = resolveElement(this.steps[i].selector, document, {
+          requireUnique: !this.isNonElementAction(this.steps[i].action)
+        });
         if (el) this.renderStepOverlay(el, i + 1, this.steps[i].title, 'preview');
       } catch {
         // Defer error to the step's live execution
@@ -561,22 +622,81 @@ export class TestudoWorkflow {
       const step = this.steps[i];
       const stepRes = this.stepResults[i];
       const stepStartMs = Date.now();
+      let lastPollStats: { instabilityCount: number; observedStableMs: number; samples: number; delta?: number } = {
+        instabilityCount: 0,
+        observedStableMs: 0,
+        samples: 1
+      };
 
       if (isCancelled()) {
         this.status = 'cancelled';
         stepRes.status = 'cancelled';
         this.completedAt = new Date().toISOString();
         this.elapsedMs = Date.now() - runStartMs;
+        telemetry.recordWorkflowRun(this.name, 'cancelled');
         return this.getReport();
       }
 
       let liveEl: HTMLElement | null = null;
       try {
+        // 0a. Automatic Human-in-the-Loop CAPTCHA / 2FA Detection & Explicit Pause-Resume Gate
+        if (options.autoPauseOnChallenge !== false || step.action === 'waitForHumanAssist') {
+          const challengeStatus = concierge.detectChallenge();
+          const explicitAssist = step.action === 'waitForHumanAssist';
+          const customChallengeSelector =
+            explicitAssist && step.selector && step.selector !== 'body' ? step.selector : undefined;
+          const customTargetPresent =
+            customChallengeSelector && typeof document !== 'undefined'
+              ? Boolean(resolveElement(customChallengeSelector, document, { requireUnique: false }))
+              : false;
+          if (challengeStatus.detected || explicitAssist) {
+            this.status = 'awaiting_human_assist';
+            this.humanAssistPauses++;
+            const assistRes = await concierge.waitForHumanAssist({
+              timeoutMs: options.challengeTimeoutMs ?? step.options?.timeout ?? 120000,
+              intervalMs: step.options?.interval ?? 30,
+              signal: options.signal,
+              forcePause: explicitAssist && !challengeStatus.detected,
+              customSelector: customTargetPresent ? customChallengeSelector : undefined,
+              customReason: explicitAssist ? step.title || 'Explicit Human Assist Gate' : undefined
+            });
+            stepRes.humanAssistWaitedMs = assistRes.waitedMs;
+            if (!assistRes.resolved) {
+              const err: any = new Error(
+                `[Testudo HUMAN_ASSIST_TIMEOUT] Challenge (${assistRes.challengeType || 'security'}) was not resolved within timeout before step "${step.title}".`
+              );
+              err.code = 'HUMAN_ASSIST_TIMEOUT';
+              throw err;
+            }
+            if (this.status === 'awaiting_human_assist') {
+              this.status = 'running';
+            }
+          }
+        }
+
+        // 0b. Execute optional prerequisite selectors (e.g. open tab/drawer) before resolving step target
+        if (Array.isArray(step.prereqSteps) && step.prereqSteps.length > 0 && typeof document !== 'undefined') {
+          for (const prereqSelector of step.prereqSteps) {
+            const prereqEl = resolveElement(prereqSelector, document, { requireUnique: false });
+            if (prereqEl) {
+              await type.click(prereqEl);
+            }
+          }
+        }
+
         // 1. Check unexpected state changes & preconditions before touching the DOM
         await this.verifyStepPreconditions(step, initialPathname, options.lockUrlPath);
 
-        // 2. Re-resolve element fresh from live DOM right before use
-        liveEl = this.resolveAndValidateLiveElement(step);
+        // 2. Re-resolve element fresh from live DOM right before use (for waitForHumanAssist after disappearance, fall back to body)
+        if (step.action === 'waitForHumanAssist' && step.selector && step.selector !== 'body') {
+          try {
+            liveEl = this.resolveAndValidateLiveElement(step);
+          } catch {
+            liveEl = (typeof document !== 'undefined' ? document.body : null) as HTMLElement;
+          }
+        } else {
+          liveEl = this.resolveAndValidateLiveElement(step);
+        }
         this.renderStepOverlay(liveEl, i + 1, step.title, 'active');
 
         if (stepDelayMs > 0) {
@@ -587,10 +707,13 @@ export class TestudoWorkflow {
             this.renderStepOverlay(liveEl, i + 1, step.title, 'cancelled');
             this.completedAt = new Date().toISOString();
             this.elapsedMs = Date.now() - runStartMs;
+            telemetry.recordWorkflowRun(this.name, 'cancelled');
             return this.getReport();
           }
           // Re-verify element connectedness after delay
-          liveEl = this.resolveAndValidateLiveElement(step);
+          if (step.action !== 'waitForHumanAssist') {
+            liveEl = this.resolveAndValidateLiveElement(step);
+          }
         }
 
         // 3. Execute step action
@@ -599,11 +722,32 @@ export class TestudoWorkflow {
         } else if (step.action === 'click') {
           await type.click(liveEl);
         } else if (step.action === 'type') {
-          await type.type(liveEl as HTMLInputElement, String(step.value ?? ''), step.options);
+          await type.type(liveEl, String(step.value ?? ''), step.options);
           stepRes.observedValue = readElementText(liveEl);
         } else if (step.action === 'select') {
           await type.select(liveEl as HTMLSelectElement, String(step.value ?? ''));
           stepRes.observedValue = readElementText(liveEl);
+        } else if (step.action === 'kineticScroll') {
+          const scrollRes = await kinetic.scrollFeed({
+            ...step.options,
+            fastRehearsal: options.fastRehearsal ?? step.options?.fastRehearsal
+          });
+          stepRes.observedValue = scrollRes.netDeltaY;
+        } else if (step.action === 'thinkPause') {
+          const pauseRes = await kinetic.thinkPause({
+            ...step.options,
+            fastRehearsal: options.fastRehearsal ?? step.options?.fastRehearsal
+          });
+          stepRes.observedValue = pauseRes.plannedMs;
+        } else if (step.action === 'expandAll') {
+          const patterns = step.value ? [String(step.value)] : undefined;
+          const expRes = kinetic.expandAll({
+            scope: step.selector && step.selector !== 'body' ? step.selector : undefined,
+            patterns
+          });
+          stepRes.observedValue = expRes.clickedCount;
+        } else if (step.action === 'waitForHumanAssist') {
+          stepRes.observedValue = stepRes.humanAssistWaitedMs ?? 0;
         } else if (step.action === 'assertCurrency') {
           const expected = step.value ?? 0;
           const opts = step.options || {};
@@ -644,12 +788,20 @@ export class TestudoWorkflow {
             }
           );
 
+          lastPollStats = {
+            instabilityCount: pollRes.instabilityCount,
+            observedStableMs: pollRes.observedStableMs,
+            samples: pollRes.samples,
+            delta: pollRes.delta
+          };
+
           if (isCancelled()) {
             this.status = 'cancelled';
             stepRes.status = 'cancelled';
             this.renderStepOverlay(liveEl, i + 1, step.title, 'cancelled');
             this.completedAt = new Date().toISOString();
             this.elapsedMs = Date.now() - runStartMs;
+            telemetry.recordWorkflowRun(this.name, 'cancelled');
             return this.getReport();
           }
 
@@ -702,6 +854,22 @@ export class TestudoWorkflow {
             }
           );
 
+          lastPollStats = {
+            instabilityCount: pollRes.instabilityCount,
+            observedStableMs: pollRes.observedStableMs,
+            samples: pollRes.samples
+          };
+
+          if (isCancelled()) {
+            this.status = 'cancelled';
+            stepRes.status = 'cancelled';
+            this.renderStepOverlay(liveEl, i + 1, step.title, 'cancelled');
+            this.completedAt = new Date().toISOString();
+            this.elapsedMs = Date.now() - runStartMs;
+            telemetry.recordWorkflowRun(this.name, 'cancelled');
+            return this.getReport();
+          }
+
           stepRes.observedValue = pollRes.actual;
           stepRes.expectedValue = expBps;
 
@@ -741,6 +909,22 @@ export class TestudoWorkflow {
             }
           );
 
+          lastPollStats = {
+            instabilityCount: pollRes.instabilityCount,
+            observedStableMs: pollRes.observedStableMs,
+            samples: pollRes.samples
+          };
+
+          if (isCancelled()) {
+            this.status = 'cancelled';
+            stepRes.status = 'cancelled';
+            this.renderStepOverlay(liveEl, i + 1, step.title, 'cancelled');
+            this.completedAt = new Date().toISOString();
+            this.elapsedMs = Date.now() - runStartMs;
+            telemetry.recordWorkflowRun(this.name, 'cancelled');
+            return this.getReport();
+          }
+
           stepRes.observedValue = pollRes.actual;
           stepRes.expectedValue = expected;
 
@@ -760,6 +944,36 @@ export class TestudoWorkflow {
         stepRes.status = 'passed';
         stepRes.elapsedMs = Date.now() - stepStartMs;
         this.renderStepOverlay(liveEl, i + 1, step.title, 'passed');
+
+        telemetry.recordStepSample({
+          workflowName: this.name,
+          stepNumber: i + 1,
+          stepTitle: step.title,
+          selector: step.selector,
+          action: step.action,
+          status: 'passed',
+          durationUs: Math.max(1, stepRes.elapsedMs * 1000),
+          instabilityCount: lastPollStats.instabilityCount,
+          observedStableMs: lastPollStats.observedStableMs,
+          pollSamples: lastPollStats.samples,
+          financialDelta: lastPollStats.delta
+        });
+
+        if (options.persistAcrossNavigation && typeof sessionStorage !== 'undefined') {
+          try {
+            sessionStorage.setItem(
+              'testudo_workflow_state',
+              JSON.stringify({
+                workflowName: this.name,
+                lastCompletedStep: i + 1,
+                status: 'running',
+                updatedAt: new Date().toISOString()
+              })
+            );
+          } catch {
+            // Ignore storage quota / security errors in restricted contexts
+          }
+        }
       } catch (err: any) {
         stepRes.status = 'failed';
         stepRes.elapsedMs = Date.now() - stepStartMs;
@@ -767,6 +981,20 @@ export class TestudoWorkflow {
         const message = err?.message || String(err);
         stepRes.error = message;
         stepRes.errorCode = code;
+
+        telemetry.recordStepSample({
+          workflowName: this.name,
+          stepNumber: i + 1,
+          stepTitle: step.title,
+          selector: step.selector,
+          action: step.action,
+          status: 'failed',
+          durationUs: Math.max(1, stepRes.elapsedMs * 1000),
+          instabilityCount: lastPollStats.instabilityCount,
+          observedStableMs: lastPollStats.observedStableMs,
+          pollSamples: lastPollStats.samples,
+          financialDelta: lastPollStats.delta
+        });
 
         if (liveEl && code !== 'WORKFLOW_ASSERTION_FAILED') {
           this.renderStepOverlay(liveEl, i + 1, step.title, 'failed');
@@ -785,6 +1013,7 @@ export class TestudoWorkflow {
         };
         this.completedAt = new Date().toISOString();
         this.elapsedMs = Date.now() - runStartMs;
+        telemetry.recordWorkflowRun(this.name, 'failed');
 
         reporter.error(`Workflow "${this.name}" halted at step ${i + 1} (${step.title}): ${message}`, {
           selector: step.selector
@@ -797,6 +1026,22 @@ export class TestudoWorkflow {
     this.status = 'completed';
     this.completedAt = new Date().toISOString();
     this.elapsedMs = Date.now() - runStartMs;
+    telemetry.recordWorkflowRun(this.name, 'completed');
+    if (options.persistAcrossNavigation && typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem(
+          'testudo_workflow_state',
+          JSON.stringify({
+            workflowName: this.name,
+            lastCompletedStep: this.steps.length,
+            status: 'completed',
+            updatedAt: new Date().toISOString()
+          })
+        );
+      } catch {
+        // Ignore storage errors
+      }
+    }
     if (options.keepBadgesOnSuccess === false) {
       this.clearWorkflowOverlays();
     }

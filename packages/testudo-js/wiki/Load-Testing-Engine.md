@@ -56,14 +56,17 @@ python3 engines/python/AventineLoadEngine.py --scenario scenario.json --workers 
 
 ### Supported Arguments
 
-| Flag         | Default | Description                                |
-| :----------- | :------ | :----------------------------------------- |
-| `--url`      | None    | Target URL to test.                        |
-| `--scenario` | None    | Path to a declarative JSON scenario file.  |
-| `--workers`  | `10`    | Number of concurrent worker threads.       |
-| `--duration` | `30`    | Test duration in seconds.                  |
-| `--headers`  | None    | Custom headers as JSON string.             |
-| `--csv`      | None    | Path to export raw request metrics to CSV. |
+| Flag                                      | Default | Description                                                                 |
+| :---------------------------------------- | :------ | :-------------------------------------------------------------------------- |
+| `--url` (or positional `url`)             | None    | Target URL to test (`http://` or `https://`).                               |
+| `--scenario`                              | None    | Path to a declarative JSON scenario file.                                   |
+| `-c`, `--concurrency`, `--workers`, `--vus` | `10`  | Number of concurrent worker threads.                                        |
+| `-n`, `--requests`                        | `100`   | Total request budget when `--duration` is `0`.                              |
+| `-d`, `--duration`                        | `0`     | Sustained test duration in seconds (takes precedence over `--requests`).    |
+| `--headers`                               | None    | Custom request headers as a JSON object string.                             |
+| `--csv`, `--jtl`                          | None    | Path to atomically export raw request metrics to CSV/JTL.                   |
+| `--timeout`                               | `10.0`  | Socket timeout in seconds.                                                  |
+| `--insecure`                              | `false` | Opt in to skip TLS certificate verification for local self-signed targets.  |
 
 ---
 

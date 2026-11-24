@@ -51,12 +51,47 @@ export class TestudoType {
   }
 
   /**
-   * Sets value on an HTMLInputElement / HTMLTextAreaElement / HTMLSelectElement bypassing React/Vue internal state trackers (_valueTracker).
+   * Checks whether an element is a contenteditable rich-text container (e.g. LinkedIn Quill / X Lexical).
+   */
+  public isContentEditableElement(element: HTMLElement | null): boolean {
+    if (!element) return false;
+    if ((element as any).isContentEditable === true) return true;
+    const attr =
+      typeof element.getAttribute === 'function'
+        ? (element.getAttribute('contenteditable') || '').toLowerCase()
+        : '';
+    return attr === 'true' || attr === 'plaintext-only';
+  }
+
+  /**
+   * Sets value on an HTMLInputElement / HTMLTextAreaElement / HTMLSelectElement or contenteditable
+   * container bypassing React/Vue/Quill internal state trackers (_valueTracker).
    */
   public setNativeValue(
-    element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+    element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLElement,
     value: string
   ): void {
+    if (this.isContentEditableElement(element)) {
+      if (typeof document !== 'undefined' && typeof document.execCommand === 'function') {
+        try {
+          element.focus?.();
+          document.execCommand('selectAll', false, undefined);
+          if (value === '') {
+            document.execCommand('delete', false, undefined);
+          } else {
+            document.execCommand('insertText', false, value);
+          }
+        } catch {
+          // Fallback to direct textContent/innerText assignment
+        }
+      }
+      if ((element.innerText || element.textContent || '') !== value) {
+        element.textContent = value;
+        (element as any).innerText = value;
+      }
+      return;
+    }
+
     const prototype =
       typeof HTMLTextAreaElement !== 'undefined' && element instanceof HTMLTextAreaElement
         ? window.HTMLTextAreaElement.prototype
@@ -142,19 +177,19 @@ export class TestudoType {
   }
 
   /**
-   * Types text into an unambiguous target input element safely, dispatching native event sequences.
+   * Types text into an unambiguous target input or contenteditable element safely, dispatching native event sequences.
    */
   public async type(
-    elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+    elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement | HTMLElement,
     text: string,
     options: TypeOptions = {}
-  ): Promise<void> {
-    let element: HTMLInputElement | HTMLTextAreaElement | null = null;
+  ): Promise<{ value: string; masked: boolean }> {
+    let element: HTMLInputElement | HTMLTextAreaElement | HTMLElement | null = null;
 
     if (typeof elementOrSelector === 'string') {
       element = resolveElement(elementOrSelector, undefined, {
         requireUnique: true
-      }) as HTMLInputElement | HTMLTextAreaElement | null;
+      });
     } else {
       element = elementOrSelector;
     }
@@ -165,7 +200,9 @@ export class TestudoType {
 
     const { delay = 0, jitter = 0, mask, clearFirst = true } = options;
 
-    element.focus();
+    if (typeof element.focus === 'function') {
+      element.focus();
+    }
     this.dispatch(element, 'focus');
 
     if (clearFirst) {
@@ -180,9 +217,11 @@ export class TestudoType {
       this.setNativeValue(element, targetText);
       this.dispatch(element, 'input');
       this.dispatch(element, 'change');
-      element.blur();
+      if (typeof element.blur === 'function') {
+        element.blur();
+      }
       this.dispatch(element, 'blur');
-      return;
+      return { value: targetText, masked: Boolean(mask) };
     }
 
     // Incremental typing with human cadence simulation
@@ -206,8 +245,11 @@ export class TestudoType {
     }
 
     this.dispatch(element, 'change');
-    element.blur();
+    if (typeof element.blur === 'function') {
+      element.blur();
+    }
     this.dispatch(element, 'blur');
+    return { value: targetText, masked: Boolean(mask) };
   }
 }
 
@@ -215,13 +257,13 @@ const defaultInstance = new TestudoType();
 
 export const type = Object.assign(
   (
-    elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+    elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement | HTMLElement,
     text: string,
     options?: TypeOptions
   ) => defaultInstance.type(elementOrSelector, text, options),
   {
     type: (
-      elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement,
+      elementOrSelector: string | HTMLInputElement | HTMLTextAreaElement | HTMLElement,
       text: string,
       options?: TypeOptions
     ) => defaultInstance.type(elementOrSelector, text, options),
@@ -231,9 +273,11 @@ export const type = Object.assign(
     applyMask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
     mask: (raw: string, maskType: string) => defaultInstance.applyMask(raw, maskType),
     setNativeValue: (
-      element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+      element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLElement,
       value: string
-    ) => defaultInstance.setNativeValue(element, value)
+    ) => defaultInstance.setNativeValue(element, value),
+    isContentEditableElement: (element: HTMLElement | null) =>
+      defaultInstance.isContentEditableElement(element)
   }
 );
 

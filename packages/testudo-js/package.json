@@ -1,7 +1,7 @@
 {
   "name": "@aventine/testudo",
-  "version": "0.3.0",
-  "description": "The Zero-Dependency Master of Test Suites: High-Precision Financial Math, Framework-Safe Typing, and In-Browser QA Forensics",
+  "version": "1.1.0",
+  "description": "The Zero-Dependency Polyglot Unit, Real-DOM Component, Contract Cassette, 5-Lane Waterfall & 1:N Hybrid Load Engine",
   "main": "dist/index.js",
   "module": "dist/testudo.esm.js",
   "browser": "dist/testudo.iife.js",
@@ -9,6 +9,9 @@
   "jsdelivr": "dist/testudo.iife.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "bin": {
+    "testudo": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -59,9 +62,109 @@
       "types": "./dist/workflow.d.ts",
       "import": "./dist/workflow.js"
     },
+    "./launcher": {
+      "types": "./dist/launcher.d.ts",
+      "import": "./dist/launcher.js"
+    },
+    "./digest": {
+      "types": "./dist/digest.d.ts",
+      "import": "./dist/digest.js"
+    },
+    "./wasm": {
+      "types": "./dist/wasm-concierge.d.ts",
+      "import": "./dist/wasm-concierge.js"
+    },
+    "./telemetry": {
+      "types": "./dist/telemetry.d.ts",
+      "import": "./dist/telemetry.js"
+    },
+    "./kinetic": {
+      "types": "./dist/kinetic.d.ts",
+      "import": "./dist/kinetic.js"
+    },
+    "./probe": {
+      "types": "./dist/probe.d.ts",
+      "import": "./dist/probe.js"
+    },
+    "./quiescence": {
+      "types": "./dist/quiescence.d.ts",
+      "import": "./dist/quiescence.js"
+    },
+    "./waterfall": {
+      "types": "./dist/waterfall.d.ts",
+      "import": "./dist/waterfall.js"
+    },
+    "./intercept": {
+      "types": "./dist/intercept.d.ts",
+      "import": "./dist/intercept.js"
+    },
+    "./audit": {
+      "types": "./dist/audit.d.ts",
+      "import": "./dist/audit.js"
+    },
+    "./timetravel": {
+      "types": "./dist/timetravel.d.ts",
+      "import": "./dist/timetravel.js"
+    },
+    "./stress": {
+      "types": "./dist/stress.d.ts",
+      "import": "./dist/stress.js"
+    },
+    "./runner": {
+      "types": "./dist/runner.d.ts",
+      "import": "./dist/runner.js"
+    },
+    "./ast-advisor": {
+      "types": "./dist/ast-advisor.d.ts",
+      "import": "./dist/ast-advisor.js"
+    },
+    "./xray": {
+      "types": "./dist/xray.d.ts",
+      "import": "./dist/xray.js"
+    },
+    "./unit": {
+      "types": "./dist/unit.d.ts",
+      "import": "./dist/unit.js"
+    },
+    "./cassettes": {
+      "types": "./dist/cassette-contract.d.ts",
+      "import": "./dist/cassette-contract.js"
+    },
+    "./mutation": {
+      "types": "./dist/mutation-dag.d.ts",
+      "import": "./dist/mutation-dag.js"
+    },
+    "./polyglot": {
+      "types": "./dist/polyglot-orchestrator.d.ts",
+      "import": "./dist/polyglot-orchestrator.js"
+    },
+    "./security-enclave": {
+      "types": "./dist/security-enclave.d.ts",
+      "import": "./dist/security-enclave.js"
+    },
+    "./hybrid-load-canary": {
+      "types": "./dist/hybrid-load-canary.d.ts",
+      "import": "./dist/hybrid-load-canary.js"
+    },
+    "./studio": {
+      "types": "./dist/studio-server.d.ts",
+      "import": "./dist/studio-server.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/shadow-widget.d.ts",
+      "import": "./dist/ui/shadow-widget.js"
+    },
     "./playwright": {
       "types": "./dist/adapters/playwright.d.ts",
       "import": "./dist/adapters/playwright.js"
+    },
+    "./cdp": {
+      "types": "./dist/adapters/cdp.d.ts",
+      "import": "./dist/adapters/cdp.js"
+    },
+    "./bidi": {
+      "types": "./dist/adapters/bidi.d.ts",
+      "import": "./dist/adapters/bidi.js"
     },
     "./standalone": {
       "types": "./dist/adapters/standalone.d.ts",
@@ -70,20 +173,25 @@
   },
   "files": [
     "dist",
+    "sdk",
+    "extension",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc && node scripts/build-bundles.js",
     "pretest": "tsc && node scripts/build-bundles.js",
     "test": "node --test tests/*.test.js",
-    "test:ts": "tsc && node scripts/build-bundles.js && node --test dist/tests/*.test.js",
+    "test:ts": "npm run build && node --test tests/*.test.js",
     "size": "tsc && node scripts/build-bundles.js && node scripts/check-size.js"
   },
   "keywords": [
     "testudo",
     "testing",
-    "playwright",
+    "waterfall",
+    "browser-stress",
+    "load-testing",
     "synthetic-monitoring",
     "financial-math",
     "currency",

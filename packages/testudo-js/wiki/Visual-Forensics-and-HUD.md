@@ -32,7 +32,7 @@ In modern web applications (e.g. Next.js with Google Fonts), web fonts often loa
 
 Testudo mitigates this race condition through two layers:
 1. `await document.fonts.ready` before initial measurement.
-2. An event listener on `document.fonts.addEventListener('loadingdone', ..., { once: true })` that automatically re-calculates the ghost overlay if a late web font finishes loading.
+2. A tracked `document.fonts.addEventListener('loadingdone', ...)` listener (`activeFontListener`, automatically detached on `cleanup()`) that re-calculates the ghost overlay if a late web font finishes loading.
 
 ---
 

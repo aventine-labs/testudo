@@ -7,6 +7,7 @@
 
 import { charDiff, CharDiffResult } from './diff.js';
 import { resolveElement } from './scan.js';
+import { wasmConcierge } from './wasm-concierge.js';
 
 /**
  * Escapes HTML special characters to prevent DOM XSS / markup corruption in visual HUD overlays.
@@ -60,6 +61,7 @@ export interface VisualErrorOptions {
 
 export class TestudoVisual {
   private activeObserver: MutationObserver | null = null;
+  private activeFontListener: (() => void) | null = null;
 
   /**
    * Removes all active Testudo visual overlays from the page.
@@ -82,10 +84,19 @@ export class TestudoVisual {
       this.activeObserver.disconnect();
       this.activeObserver = null;
     }
+
+    if (
+      this.activeFontListener &&
+      (document as any).fonts &&
+      typeof (document as any).fonts.removeEventListener === 'function'
+    ) {
+      (document as any).fonts.removeEventListener('loadingdone', this.activeFontListener);
+      this.activeFontListener = null;
+    }
   }
 
   /**
-   * Highlights a step element with a labeled Testudo bounding box (used in guided walkthroughs).
+   * Highlights a step element with a labeled Testudo bounding box and WASM-computed 3-tier row staggering.
    */
   public highlightStep(
     elementOrSelector: string | HTMLElement,
@@ -105,15 +116,36 @@ export class TestudoVisual {
 
     const safeColor = sanitizeCssColor(options.color, '#10B981');
     const rect = element.getBoundingClientRect();
+    const scrollY = typeof window !== 'undefined' ? window.scrollY || 0 : 0;
+    const scrollX = typeof window !== 'undefined' ? window.scrollX || 0 : 0;
+    const absTop = rect.top + scrollY;
+    const absLeft = rect.left + scrollX;
+
+    // Count existing step boxes on the same horizontal row within 360px
+    const existingBoxes = Array.from(document.querySelectorAll('[data-testudo-step-box]')) as HTMLElement[];
+    const sameRowCount = existingBoxes.filter((other) => {
+      const otherTop = parseFloat(other.getAttribute('data-box-top') || '-9999');
+      const otherLeft = parseFloat(other.getAttribute('data-box-left') || '-9999');
+      return Math.abs(otherTop - absTop) < 38 && Math.abs(otherLeft - absLeft) < 360;
+    }).length;
+
+    const isNearTopHeader = rect.top < 72;
+    const staggerOffsetPx = wasmConcierge.computeRowStaggerOffsetPx(sameRowCount, isNearTopHeader);
+    const alignRight = typeof window !== 'undefined' && rect.left > (window.innerWidth || 1280) - 360;
 
     const box = document.createElement('div');
     box.setAttribute('data-testudo-overlay', 'true');
     box.setAttribute('data-testudo-step-box', 'true');
-    box.style.cssText = `position:absolute;top:${rect.top + window.scrollY - 4}px;left:${rect.left + window.scrollX - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px;border:2px solid ${safeColor};border-radius:6px;box-shadow:0 0 14px ${safeColor}66;pointer-events:none;z-index:99997;box-sizing:border-box;`;
+    box.setAttribute('data-box-top', String(absTop));
+    box.setAttribute('data-box-left', String(absLeft));
+    box.setAttribute('data-stagger-offset', String(staggerOffsetPx));
+    box.style.cssText = `position:absolute;top:${absTop - 4}px;left:${absLeft - 4}px;width:${rect.width + 8}px;height:${rect.height + 8}px;border:2px solid ${safeColor};border-radius:6px;box-shadow:0 0 14px ${safeColor}66;pointer-events:none;z-index:99997;box-sizing:border-box;`;
 
     if (options.label) {
       const pill = document.createElement('div');
-      pill.style.cssText = `position:absolute;top:-20px;left:-2px;background:${safeColor};color:#030712;font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;`;
+      const vPos = staggerOffsetPx > 0 ? `bottom:-${staggerOffsetPx}px` : `top:${staggerOffsetPx}px`;
+      const hPos = alignRight ? 'right:-2px' : 'left:-2px';
+      pill.style.cssText = `position:absolute;${vPos};${hPos};background:${safeColor};color:#030712;font:800 10px monospace;padding:1px 6px;border-radius:4px;white-space:nowrap;`;
       pill.textContent = options.label;
       box.appendChild(pill);
     }
@@ -283,7 +315,11 @@ export class TestudoVisual {
       (document as any).fonts &&
       (document as any).fonts.addEventListener
     ) {
-      (document as any).fonts.addEventListener('loadingdone', () => renderGhost());
+      if (this.activeFontListener && (document as any).fonts.removeEventListener) {
+        (document as any).fonts.removeEventListener('loadingdone', this.activeFontListener);
+      }
+      this.activeFontListener = () => renderGhost();
+      (document as any).fonts.addEventListener('loadingdone', this.activeFontListener);
     }
   }
 
